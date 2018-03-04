@@ -1,3 +1,7 @@
 [submodule "Shared"]
 	path = Shared
 	url = git@github.com:superbr4in/Shared.git
+[submodule "Capstone"]
+	path = Capstone
+	url = git@github.com:aquynh/capstone.git
+	branch = master
