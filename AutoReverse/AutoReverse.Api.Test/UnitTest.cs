@@ -8,7 +8,7 @@ namespace AutoReverse.Api.Test
         [TestMethod]
         public void TestMethod1()
         {
-            FooClass.Foo();
+            Assert.AreEqual(FooClass.Foo(), 0);
         }
     }
 }
