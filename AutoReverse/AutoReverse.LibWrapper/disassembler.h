@@ -7,18 +7,18 @@
 class disassembler
 {
 public:
-	const uint8_t *bytes;
-	const size_t size;
+    const uint8_t *bytes;
+    const size_t size;
 
-	csh handle { };
+    csh handle { };
 
-	size_t offset;
-	const cs_arch architecture;
+    size_t offset;
+    const cs_arch architecture;
 
-	disassembler(cs_arch architecture, cs_mode mode, const uint8_t *bytes, size_t size);
-	~disassembler();
+    disassembler(cs_arch architecture, cs_mode mode, const uint8_t *bytes, size_t size);
+    ~disassembler();
 
-	int disassemble(cs_insn &instruction);
+    int disassemble(cs_insn &instruction);
 
-	int skip(size_t length);
+    int skip(size_t length);
 };
