@@ -1,6 +1,7 @@
 // disassembler.cpp
 
 #include "stdafx.h"
+
 #include "disassembler.h"
 
 disassembler::disassembler(const cs_arch architecture, const cs_mode mode, const uint8_t *bytes, const size_t size)
@@ -11,7 +12,7 @@ disassembler::disassembler(const cs_arch architecture, const cs_mode mode, const
     offset = 0;
 }
 
-disassembler::~disassembler()
+void disassembler::close()
 {
     cs_close(&handle);
 }
@@ -27,9 +28,9 @@ int disassembler::disassemble(cs_insn &instruction)
     return skip(instruction.size);
 }
 
-int disassembler::skip(const size_t length)
+int disassembler::skip(const size_t count)
 {
-    offset += length;
+    offset += count;
 
     if (offset < size)
         return 0;

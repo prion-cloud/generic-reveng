@@ -16,9 +16,10 @@ public:
     const cs_arch architecture;
 
     disassembler(cs_arch architecture, cs_mode mode, const uint8_t *bytes, size_t size);
-    ~disassembler();
+
+    void close();
 
     int disassemble(cs_insn &instruction);
 
-    int skip(size_t length);
+    int skip(size_t count);
 };
