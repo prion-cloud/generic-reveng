@@ -6,20 +6,15 @@
 
 class disassembler
 {
+    FILE *file_ { };
+    size_t size_ { };
+
+    csh handle_ { };
+
 public:
-    const uint8_t *bytes;
-    const size_t size;
-
-    csh handle { };
-
-    size_t offset;
-    const cs_arch architecture;
-
-    disassembler(cs_arch architecture, cs_mode mode, const uint8_t *bytes, size_t size);
+    explicit disassembler(const char *file_name);
 
     void close();
 
     int disassemble(cs_insn &instruction);
-
-    int skip(size_t count);
 };
