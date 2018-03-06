@@ -24,7 +24,7 @@ namespace AutoReverse.Api.Test
         {
             var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_STACK_1).FullName);
 
-            using (var file = File.Create(@"C:\Users\Superbrain\Desktop\output.txt"))
+            using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output.txt"))
             using (var writer = new StreamWriter(file))
                 WriteInstructions(writer, instructions);
         }
