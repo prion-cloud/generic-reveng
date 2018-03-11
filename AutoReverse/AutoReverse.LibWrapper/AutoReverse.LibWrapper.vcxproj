@@ -86,12 +86,14 @@
   <ItemGroup>
     <ClInclude Include="binary_reader.h" />
     <ClInclude Include="decompiler.h" />
+    <ClInclude Include="pe_header.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="binary_reader.cpp" />
     <ClCompile Include="api.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="pe_header.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
