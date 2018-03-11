@@ -13,7 +13,7 @@ public:
 
     size_t length() const;
 
-    long offset() const;
+    size_t offset() const;
 
     template <typename T>
     int read(T*& t);

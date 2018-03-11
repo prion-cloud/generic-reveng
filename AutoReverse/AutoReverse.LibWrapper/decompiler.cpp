@@ -19,7 +19,7 @@ void decompiler::close()
 int decompiler::disassemble(cs_insn& instruction)
 {
     const size_t count = 16;
-    const uint64_t address = reader_.offset();
+    const auto address = reader_.offset();
 
     auto code = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * count));
     const auto res = reader_.read(code, count);

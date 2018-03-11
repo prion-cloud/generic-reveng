@@ -21,7 +21,7 @@ size_t binary_reader::length() const
     return length_;
 }
 
-long binary_reader::offset() const
+size_t binary_reader::offset() const
 {
     return ftell(stream_);
 }
