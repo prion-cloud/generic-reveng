@@ -26,6 +26,10 @@ size_t binary_reader::offset() const
     return ftell(stream_);
 }
 
+void binary_reader::seek() const
+{
+    seek(0);
+}
 void binary_reader::seek(const long offset) const
 {
     seek(offset, SEEK_SET);
