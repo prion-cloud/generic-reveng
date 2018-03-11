@@ -58,6 +58,9 @@
     <None Include="TestFiles\8bytes">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="TestFiles\hello">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="TestFiles\stack1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -67,6 +70,11 @@
       <Project>{23e8ea86-ef27-4c77-b5c8-3728b1043ba8}</Project>
       <Name>AutoReverse.Api</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="TestFiles\Test.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

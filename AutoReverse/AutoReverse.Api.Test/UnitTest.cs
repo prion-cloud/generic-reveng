@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -27,12 +28,27 @@ namespace AutoReverse.Api.Test
             AssertInstructionArrayEquals(expected, actual);
         }
 
-        [TestMethod]
-        public void Disassemble_x86_32_File_stack1()
-        {
-            var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_STACK_1).FullName);
+        //[TestMethod] public void Disassemble_x86_32_File_stack1()
+        //{
+        //    var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_STACK_1).FullName);
 
-            using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output.txt"))
+        //    using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output.txt"))
+        //    using (var writer = new StreamWriter(file))
+        //        WriteInstructions(writer, instructions);
+        //}
+
+        //[TestMethod] public void Disassemble_x86_32_File_hello()
+        //{
+        //    var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_HELLO).FullName);
+
+        //    WriteInstructions(Console.Out, instructions);
+        //}
+
+        [TestMethod] public void Disassemble_x86_32_File_Test_exe()
+        {
+            var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_TEST_EXE).FullName).ToArray();
+
+            using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output_test_exe.txt"))
             using (var writer = new StreamWriter(file))
                 WriteInstructions(writer, instructions);
         }
