@@ -14,7 +14,7 @@ namespace AutoReverse.Api.Test
     {
         [TestMethod] public void Disassemble_x86_32_File_8bytes()
         {
-            var actual = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_8_BYTES).FullName).ToArray();
+            var actual = Disassembler.Disassemble_x86_32(Deploy.FILE_8_BYTES).ToArray();
 
             WriteInstructions(Console.Out, actual);
 
@@ -27,26 +27,23 @@ namespace AutoReverse.Api.Test
 
             AssertInstructionArrayEquals(expected, actual);
         }
+        [TestMethod] public void Disassemble_x86_32_File_lea()
+        {
+            var actual = Disassembler.Disassemble_x86_32(Deploy.FILE_LEA).ToArray();
 
-        //[TestMethod] public void Disassemble_x86_32_File_stack1()
-        //{
-        //    var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_STACK_1).FullName);
+            WriteInstructions(Console.Out, actual);
 
-        //    using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output.txt"))
-        //    using (var writer = new StreamWriter(file))
-        //        WriteInstructions(writer, instructions);
-        //}
+            var expected = new[]
+            {
+                new AsmInstruction(0x0, new byte[] { 0x8D, 0x95, 0xD4, 0xFE, 0xFF, 0xFF }, "lea", "edx, dword ptr [ebp - 0x12c]")
+            };
 
-        //[TestMethod] public void Disassemble_x86_32_File_hello()
-        //{
-        //    var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_HELLO).FullName);
-
-        //    WriteInstructions(Console.Out, instructions);
-        //}
+            AssertInstructionArrayEquals(expected, actual);
+        }
 
         [TestMethod] public void Disassemble_x86_32_File_Test_exe()
         {
-            var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_TEST_EXE).FullName).ToArray();
+            var instructions = Disassembler.Disassemble_x86_32(Deploy.FILE_TEST_EXE).ToArray();
 
             using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output_test_exe.txt"))
             using (var writer = new StreamWriter(file))
@@ -78,7 +75,6 @@ namespace AutoReverse.Api.Test
                 writer.WriteLine(res);
             }
         }
-
         private static void AssertInstructionArrayEquals(AsmInstruction[] expected, AsmInstruction[] actual)
         {
             Assert.AreEqual(expected.Length, actual.Length);

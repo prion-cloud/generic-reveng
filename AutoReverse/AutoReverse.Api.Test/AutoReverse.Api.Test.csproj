@@ -61,6 +61,9 @@
     <None Include="TestFiles\hello">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="TestFiles\lea">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="TestFiles\stack1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

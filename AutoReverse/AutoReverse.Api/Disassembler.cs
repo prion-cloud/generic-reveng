@@ -19,7 +19,12 @@ namespace AutoReverse.Api
             do
             {
                 result = PInvoke.disassemble(dis, out var instr);
-                yield return new AsmInstruction(instr.Address, instr.Bytes.Take(instr.Size).ToArray(), instr.Mnemonic,
+                yield return new AsmInstruction(
+                    instr.Address,
+                    instr.Bytes.Take(instr.Size).ToArray(),
+                    instr.Id == 0xFFFFFFFF
+                        ? null
+                        : instr.Mnemonic,
                     instr.OpStr);
             }
             while (result == 0);
