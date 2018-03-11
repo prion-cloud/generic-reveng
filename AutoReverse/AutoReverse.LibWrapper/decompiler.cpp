@@ -18,7 +18,7 @@ void decompiler::close()
 
 int decompiler::disassemble(cs_insn& instruction)
 {
-    const auto count = 16;
+    const size_t count = 16;
     const uint64_t address = reader_.offset();
 
     auto code = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * count));
@@ -29,7 +29,7 @@ int decompiler::disassemble(cs_insn& instruction)
 
     instruction = *insn;
 
-    reader_.seek(instruction.size - (res + count), SEEK_CUR);
+    reader_.seek(instruction.size - static_cast<long>(res + count), SEEK_CUR);
 
     return reader_.offset() >= reader_.length();
 }

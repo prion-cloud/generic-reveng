@@ -22,7 +22,7 @@ public:
     template <typename T>
     int read(T& t);
     template <typename T>
-    int read(T*& t, int count);
+    size_t read(T*& t, size_t count);
 
     void seek(long offset) const;
     void seek(long offset, int origin) const;
@@ -34,7 +34,7 @@ int binary_reader::read(T& t)
     return read(t, 1);
 }
 template <typename T>
-int binary_reader::read(T*& t, const int count)
+size_t binary_reader::read(T*& t, const size_t count)
 {
     return fread(t, sizeof(T), count, stream_) - count;
 }
