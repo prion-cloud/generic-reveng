@@ -11,12 +11,20 @@ namespace AutoReverse.Api.Test
     [DeploymentItem(Deploy.FOLDER, Deploy.FOLDER)]
     public class UnitTest
     {
-        [TestMethod]
-        public void Disassemble_x86_32_File_8bytes()
+        [TestMethod] public void Disassemble_x86_32_File_8bytes()
         {
-            var instructions = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_8_BYTES).FullName);
+            var actual = Disassembler.Disassemble_x86_32(new FileInfo(Deploy.FILE_8_BYTES).FullName).ToArray();
 
-            WriteInstructions(Console.Out, instructions);
+            WriteInstructions(Console.Out, actual);
+
+            var expected = new[]
+            {
+                new AsmInstruction(0x0, new byte[] { 0x55 }, "push", "ebp"),
+                new AsmInstruction(0x1, new byte[] { 0x48 }, "dec", "eax"),
+                new AsmInstruction(0x2, new byte[] { 0x8B, 0x05, 0xB8, 0x13, 0x00, 0x00 }, "mov", "eax, dword ptr [0x13b8]")
+            };
+
+            AssertInstructionArrayEquals(expected, actual);
         }
 
         [TestMethod]
@@ -29,20 +37,47 @@ namespace AutoReverse.Api.Test
                 WriteInstructions(writer, instructions);
         }
 
-        private static void WriteInstructions(TextWriter writer, IEnumerable<(ulong, byte[], ushort, string, string)> instructions)
+        private static void WriteInstructions(TextWriter writer, IEnumerable<AsmInstruction> instructions)
         {
-            foreach (var instr in instructions)
+            foreach (var ins in instructions)
             {
-                var bytesStr = string.Empty;
-                for (var j = 0; j < instr.Item3; j++)
+                var strAddress = $"{ins.Address:X8}";
+
+                var strBytes = string.Empty;
+                for (var j = 0; j < ins.Bytes.Length; j++)
                 {
                     if (j > 0)
-                        bytesStr += " ";
+                        strBytes += " ";
 
-                    bytesStr += $"{instr.Item2[j]:X2}";
+                    strBytes += $"{ins.Bytes[j]:X2}";
                 }
+                
+                var res = $"{strAddress}: ";
 
-                writer.WriteLine($"{instr.Item1:X8}\t{bytesStr.PadRight(20)}\t{instr.Item4} {instr.Item5}");
+                if (ins.Mnemonic == null)
+                    res += $"; {strBytes}";
+                else
+                    res += $"  {ins.Mnemonic} {ins.Operands} ({strBytes})";
+
+                writer.WriteLine(res);
+            }
+        }
+
+        private static void AssertInstructionArrayEquals(AsmInstruction[] expected, AsmInstruction[] actual)
+        {
+            Assert.AreEqual(expected.Length, actual.Length);
+
+            for (var i = 0; i < expected.Length; i++)
+            {
+                var exp = expected[i];
+                var act = actual[i];
+
+                Assert.AreEqual(exp.Address, act.Address);
+
+                Assert.IsTrue(act.Bytes.SequenceEqual(exp.Bytes));
+
+                Assert.AreEqual(exp.Mnemonic, act.Mnemonic);
+                Assert.AreEqual(exp.Operands, act.Operands);
             }
         }
     }
