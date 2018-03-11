@@ -6,6 +6,9 @@ class decompiler
 {
     binary_reader reader_;
 
+    size_t text_start_ { };
+    size_t text_end_ { };
+
     csh handle_ { };
 
 public:
