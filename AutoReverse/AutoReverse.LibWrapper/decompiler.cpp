@@ -27,6 +27,8 @@ int decompiler::disassemble(cs_insn& instruction)
     cs_insn* insn;
     cs_disasm(handle_, code, count, address, 1, &insn);
 
+    free(code);
+
     instruction = *insn;
 
     reader_.seek(instruction.size - static_cast<long>(res + count), SEEK_CUR);

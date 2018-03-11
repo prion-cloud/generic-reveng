@@ -16,7 +16,7 @@ public:
     long offset() const;
 
     template <typename T>
-    int read(T& t);
+    int read(T*& t);
     template <typename T>
     size_t read(T*& t, size_t count);
 
@@ -25,7 +25,7 @@ public:
 };
 
 template <typename T>
-int binary_reader::read(T& t)
+int binary_reader::read(T*& t)
 {
     return read(t, 1);
 }
