@@ -2,8 +2,6 @@
 
 #include "binary_reader.h"
 
-#include "include/capstone.h"
-
 class decompiler
 {
     binary_reader reader_;

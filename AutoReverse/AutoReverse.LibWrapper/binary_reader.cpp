@@ -1,5 +1,3 @@
-// binary_reader.cpp
-
 #include "stdafx.h"
 
 #include "binary_reader.h"

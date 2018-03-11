@@ -1,13 +1,9 @@
-// binary_reader.h
-
 #pragma once
-
-#include <cstdio>
 
 class binary_reader
 {
     FILE* stream_ { };
-    size_t length_;
+    size_t length_ { };
 
 public:
 
