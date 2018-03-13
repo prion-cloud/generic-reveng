@@ -2,6 +2,8 @@
 
 #include "pe_header.h"
 
+#include "binary_reader.h"
+
 pe_header* pe_header::find(binary_reader reader)
 {
     const auto offset = reader.offset();

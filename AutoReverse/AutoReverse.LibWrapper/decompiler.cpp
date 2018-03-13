@@ -1,26 +1,12 @@
 #include "stdafx.h"
 
-#include "binary_reader.h"
 #include "decompiler.h"
-#include "pe_header.h"
 
-decompiler::decompiler(const char* file_name)
+#include "binary_reader.h"
+
+decompiler::decompiler(const string file_name)
     : reader_(file_name)
 {
-    const auto pe_h = pe_header::find(reader_);
-
-    if (pe_h == nullptr)
-    {
-        text_start_ = 0;
-        text_end_ = reader_.length();
-    }
-    else
-    {
-        const auto th = pe_h->section_headers[0];
-        text_start_ = th->PointerToRawData;
-        text_end_ = text_start_ + th->SizeOfRawData;
-    }
-
     cs_open(CS_ARCH_X86, CS_MODE_32, &handle_);
 }
 
@@ -41,16 +27,12 @@ int decompiler::disassemble(cs_insn& instruction)
 
     auto def = false;
 
-    if (address >= text_start_ && address < text_end_)
-    {
-        cs_insn* insn;
-        cs_disasm(handle_, bytes, size, address, 1, &insn);
+    cs_insn* insn;
+    cs_disasm(handle_, bytes, size, address, 1, &insn);
 
-        if (insn == nullptr)
-            def = true;
-        else instruction = *insn;
-    }
-    else def = true;
+    if (insn == nullptr)
+        def = true;
+    else instruction = *insn;
 
     if (def)
     {

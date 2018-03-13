@@ -1,7 +1,5 @@
 #pragma once
 
-#include "stdafx.h"
-
 #include "binary_reader.h"
 
 struct pe_header

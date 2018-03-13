@@ -7,7 +7,7 @@ class binary_reader
 
 public:
 
-    explicit binary_reader(const char* file_name);
+    explicit binary_reader(string file_name);
 
     void close() const;
 

@@ -2,9 +2,9 @@
 
 #include "binary_reader.h"
 
-binary_reader::binary_reader(const char* file_name)
+binary_reader::binary_reader(const string file_name)
 {
-    fopen_s(&stream_, file_name, "rb");
+    fopen_s(&stream_, file_name.c_str(), "rb");
 
     fseek(stream_, 0, SEEK_END);
     length_ = ftell(stream_);
