@@ -16,12 +16,12 @@ void binary_reader::close() const
     fclose(stream_);
 }
 
-size_t binary_reader::length() const
+long binary_reader::length() const
 {
     return length_;
 }
 
-size_t binary_reader::offset() const
+long binary_reader::offset() const
 {
     return ftell(stream_);
 }

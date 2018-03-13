@@ -23,7 +23,6 @@ void pe_header::find(binary_reader reader, pe_header*& p_pe_h)
     uint16_t* mz_id;
     if (reader.read(mz_id) || *mz_id != 0x5A4D)
         return;
-    auto x = *mz_id;
     free(mz_id);
 
     reader.seek();

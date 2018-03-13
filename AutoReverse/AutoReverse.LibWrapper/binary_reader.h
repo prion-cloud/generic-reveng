@@ -3,7 +3,7 @@
 class binary_reader
 {
     FILE* stream_ { };
-    size_t length_ { };
+    long length_ { };
 
 public:
 
@@ -11,12 +11,12 @@ public:
 
     void close() const;
 
-    size_t length() const;
+    long length() const;
 
-    size_t offset() const;
+    long offset() const;
 
     template <typename T>
-    int read(T*& t);
+    size_t read(T*& t);
     template <typename T>
     size_t read(T*& t, size_t count);
 
@@ -26,7 +26,7 @@ public:
 };
 
 template <typename T>
-int binary_reader::read(T*& t)
+size_t binary_reader::read(T*& t)
 {
     return read(t, 1);
 }
