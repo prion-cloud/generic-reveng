@@ -50,5 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Capstone\msvc\x64\Debug\capstone.lib" />
+    <Library Include="..\..\Unicorn\msvc\x64\Debug\unicorn_static.lib" />
   </ItemGroup>
 </Project>
