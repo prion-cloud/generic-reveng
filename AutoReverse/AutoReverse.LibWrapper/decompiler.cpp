@@ -4,7 +4,7 @@
 
 #include "binary_reader.h"
 
-decompiler::decompiler(const string file_name)
+decompiler::decompiler(const std::string file_name)
     : reader_(file_name)
 {
     cs_open(CS_ARCH_X86, CS_MODE_32, &handle_);

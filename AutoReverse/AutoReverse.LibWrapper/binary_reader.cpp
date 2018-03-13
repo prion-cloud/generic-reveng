@@ -2,7 +2,7 @@
 
 #include "binary_reader.h"
 
-binary_reader::binary_reader(const string file_name)
+binary_reader::binary_reader(const std::string file_name)
 {
     fopen_s(&stream_, file_name.c_str(), "rb");
 

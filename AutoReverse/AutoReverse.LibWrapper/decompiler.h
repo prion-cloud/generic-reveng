@@ -10,7 +10,7 @@ class decompiler
 
 public:
 
-    explicit decompiler(string file_name);
+    explicit decompiler(std::string file_name);
 
     void close();
 
