@@ -16,9 +16,9 @@ public:
     long offset() const;
 
     template <typename T>
-    size_t read(T*& t);
-    template <typename T>
-    size_t read(T*& t, size_t count);
+    bool read(T& t);
+    template <typename T, size_t Size>
+    size_t read(std::array<T, Size>& t_arr);
 
     void seek() const;
     void seek(long offset) const;
@@ -26,13 +26,27 @@ public:
 };
 
 template <typename T>
-size_t binary_reader::read(T*& t)
+bool binary_reader::read(T& t)
 {
-    return read(t, 1);
+    auto t_ptr = static_cast<T*>(malloc(sizeof(T)));
+    auto res = fread(t_ptr, sizeof(T), 1, stream_) - 1;
+
+    t = *t_ptr;
+
+    free(t_ptr);
+
+    return res;
 }
-template <typename T>
-size_t binary_reader::read(T*& t, const size_t count)
+template <typename T, size_t Size>
+size_t binary_reader::read(std::array<T, Size>& t_arr)
 {
-    t = static_cast<T*>(malloc(sizeof(T) * count));
-    return fread(t, sizeof(T), count, stream_) - count;
+    auto i = 0;
+
+    for (; i < Size; ++i)
+    {
+        if (read(t_arr[i]))
+            break;
+    }
+
+    return i - Size;
 }
