@@ -2,10 +2,8 @@
 
 #include "decompiler.h"
 
-#include "binary_reader.h"
-
 decompiler::decompiler(const std::string file_name)
-    : reader_(file_name)
+    : reader_(file_name), header_(pe_header::find(reader_))
 {
     cs_open(CS_ARCH_X86, CS_MODE_32, &handle_);
 }

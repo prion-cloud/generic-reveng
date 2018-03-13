@@ -1,10 +1,13 @@
 #pragma once
 
 #include "binary_reader.h"
+#include "pe_header.h"
 
 class decompiler
 {
     binary_reader reader_;
+
+    std::optional<pe_header> header_ { };
 
     csh handle_ { };
 
