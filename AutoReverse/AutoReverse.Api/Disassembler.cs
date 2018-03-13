@@ -1,28 +1,31 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace AutoReverse.Api
 {
     public static class Disassembler
     {
-        public static IEnumerable<(ulong, byte[], ushort, string, string)> Disassemble_x86_32(byte[] bytes)
+        public static IEnumerable<AsmInstruction> Disassemble_x86_32(string fileName)
         {
-            return Disassemble(PInvoke.Architecture.X86, PInvoke.Mode.B32, bytes);
-        }
-        public static IEnumerable<(ulong, byte[], ushort, string, string)> Disassemble_x86_64(byte[] bytes)
-        {
-            return Disassemble(PInvoke.Architecture.X86, PInvoke.Mode.B64, bytes);
+            return Disassemble(fileName);
         }
 
-        private static IEnumerable<(ulong, byte[], ushort, string, string)> Disassemble(PInvoke.Architecture architecture, PInvoke.Mode mode, byte[] bytes)
+        private static IEnumerable<AsmInstruction> Disassemble(string fileName)
         {
-            var dis = PInvoke.disassembler_open(architecture, mode, bytes, bytes.Length);
+            var dis = PInvoke.disassembler_open(fileName);
 
             int result;
-
+            
             do
             {
                 result = PInvoke.disassemble(dis, out var instr);
-                yield return (instr.Address, instr.Bytes, instr.Size, instr.Mnemonic, instr.OpStr);
+                yield return new AsmInstruction(
+                    instr.Address,
+                    instr.Bytes.Take(instr.Size).ToArray(),
+                    instr.Id == 0xFFFFFFFF
+                        ? null
+                        : instr.Mnemonic,
+                    instr.OpStr);
             }
             while (result == 0);
 
