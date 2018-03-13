@@ -5,3 +5,7 @@
 	path = Capstone
 	url = git@github.com:aquynh/capstone.git
 	branch = master
+[submodule "Unicorn"]
+	path = Unicorn
+	url = git@github.com:unicorn-engine/unicorn.git
+	branch = master
