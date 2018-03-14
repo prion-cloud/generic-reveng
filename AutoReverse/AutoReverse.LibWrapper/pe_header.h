@@ -1,7 +1,5 @@
 #pragma once
 
-#include "binary_reader.h"
-
 struct pe_header
 {
     IMAGE_DOS_HEADER dos_header { };
@@ -11,10 +9,4 @@ struct pe_header
     std::optional<IMAGE_OPTIONAL_HEADER64> optional_header64 { };
 
     std::vector<IMAGE_SECTION_HEADER> section_headers { };
-
-    static std::optional<pe_header> find(binary_reader reader);
-
-private:
-
-    static void find(binary_reader reader, std::optional<pe_header>& header);
 };

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pe_header.h"
+
 class binary_reader
 {
     FILE* stream_ { };
@@ -23,6 +25,8 @@ public:
     size_t read(std::array<T, Count>& t_arr);
     template <typename T>
     size_t read(std::vector<T>& t_vec, size_t count);
+
+    std::optional<pe_header> search_header();
 
     void seek() const;
     void seek(long offset) const;

@@ -3,7 +3,7 @@
 #include "decompiler.h"
 
 decompiler::decompiler(const std::string file_name)
-    : reader_(file_name), header_(pe_header::find(reader_))
+    : reader_(file_name), header_(reader_.search_header())
 {
     cs_open(CS_ARCH_X86, CS_MODE_32, &handle_);
 }

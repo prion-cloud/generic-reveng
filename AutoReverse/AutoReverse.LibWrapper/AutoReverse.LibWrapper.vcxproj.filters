@@ -44,9 +44,6 @@
     <ClCompile Include="decompiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pe_header.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Capstone\msvc\x64\Debug\capstone.lib" />
