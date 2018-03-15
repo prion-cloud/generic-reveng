@@ -49,9 +49,11 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssertExtensions.cs" />
     <Compile Include="Deploy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UnitTest.cs" />
+    <Compile Include="DebuggerTestCase.cs" />
+    <Compile Include="DebuggerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
