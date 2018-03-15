@@ -86,7 +86,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="binary_reader.h" />
-    <ClInclude Include="decompiler.h" />
+    <ClInclude Include="debugger.h" />
+    <ClInclude Include="debug_32.h" />
     <ClInclude Include="pe_header.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
@@ -98,7 +99,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="decompiler.cpp" />
+    <ClCompile Include="debugger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Capstone\msvc\x64\Debug\capstone.lib" />

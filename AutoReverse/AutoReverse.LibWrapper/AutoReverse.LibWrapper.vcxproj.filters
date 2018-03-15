@@ -21,10 +21,13 @@
     <ClInclude Include="binary_reader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="decompiler.h">
+    <ClInclude Include="pe_header.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pe_header.h">
+    <ClInclude Include="debugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="debug_32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -41,7 +44,7 @@
     <ClCompile Include="binary_reader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="decompiler.cpp">
+    <ClCompile Include="debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
