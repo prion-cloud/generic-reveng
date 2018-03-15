@@ -1,11 +1,13 @@
 #include "stdafx.h"
 
+#include "binary_reader.h"
 #include "debugger.h"
 
 debugger::debugger(const std::string file_name)
-    : reader_(file_name), header_(reader_.search_header())
 {
     cs_open(CS_ARCH_X86, CS_MODE_32, &cs_handle_);
+    cs_option(cs_handle_, CS_OPT_DETAIL, CS_OPT_ON);
+
     uc_open(UC_ARCH_X86, UC_MODE_32, &uc_handle_);
 
     // -> TODO: Might not be necessary:
@@ -20,74 +22,93 @@ debugger::debugger(const std::string file_name)
     uc_reg_write(uc_handle_, UC_X86_REG_EDI, &zero);
     // <-
 
-    if (header_ == std::nullopt)
+    auto reader = binary_reader(file_name);
+    auto header = reader.search_header();
+
+    if (header == std::nullopt)
     {
-        uc_mem_map(uc_handle_, 0, (reader_.length() / 0x1000 + 1) * 0x1000, UC_PROT_ALL);
+        uc_mem_map(uc_handle_, 0, (reader.length() / 0x1000 + 1) * 0x1000, UC_PROT_ALL);
 
         std::vector<char> byte_vec;
-        reader_.read(byte_vec, reader_.length());
+        reader.read(byte_vec, reader.length());
         uc_mem_write(uc_handle_, 0, &byte_vec[0], byte_vec.size() - 1);
-
-        reader_.seek();
-        uc_reg_write(uc_handle_, UC_X86_REG_EIP, &zero); // TODO: Might not be necessary, too.
     }
     else
     {
-        for (auto i = 0; i < header_->file_header.NumberOfSections; ++i)
+        for (auto i = 0; i < header->file_header.NumberOfSections; ++i)
         {
-            const auto section = header_->section_headers[i];
+            const auto section = header->section_headers[i];
 
             uc_mem_map(uc_handle_, section.VirtualAddress, (section.SizeOfRawData / 0x1000 + 1) * 0x1000, UC_PROT_ALL);
 
             std::vector<char> byte_vec;
-            reader_.seek(section.PointerToRawData);
-            reader_.read(byte_vec, section.SizeOfRawData);
+            reader.seek(section.PointerToRawData);
+            reader.read(byte_vec, section.SizeOfRawData);
             uc_mem_write(uc_handle_, section.VirtualAddress, &byte_vec[0], byte_vec.size() - 1);
         }
 
-        reader_.seek(header_->section_headers[0].PointerToRawData);
-        uc_reg_write(uc_handle_, UC_X86_REG_EIP, &header_->optional_header32->AddressOfEntryPoint);
+        uc_reg_write(uc_handle_, UC_X86_REG_EIP, &header->optional_header32->AddressOfEntryPoint);
     }
+
+    reader.close();
 }
 
 void debugger::close()
 {
     cs_close(&cs_handle_);
     uc_close(uc_handle_);
-
-    reader_.close();
 }
 
-debug_32 debugger::debug()
+debug_32 debugger::debug() const
 {
     const size_t size = 16;
 
-    uint32_t address_virt;
-    uc_reg_read(uc_handle_, X86_REG_EIP, &address_virt);
+    uint32_t cur_addr;
+    uc_reg_read(uc_handle_, X86_REG_EIP, &cur_addr);
 
-    std::array<uint8_t, size> bytes;
-    const auto res = reader_.read(bytes);
+    uint8_t bytes[size];
+    uc_mem_read(uc_handle_, cur_addr, bytes, size);
 
     cs_insn* insn;
-    cs_disasm(cs_handle_, bytes._Unchecked_begin(), size, 0, 1, &insn);
+    cs_disasm(cs_handle_, bytes, size, 0, 1, &insn);
 
-    uc_emu_start(uc_handle_, address_virt, address_virt + size, 0, 1);
+    uc_emu_start(uc_handle_, cur_addr, cur_addr + size, 0, 1);
 
-    reader_.seek(insn->size - static_cast<long>(res + size), SEEK_CUR);
+    auto incr = true;
+
+    for (auto i = 0; i < insn->detail->groups_count; ++i)
+    {
+        switch (insn->detail->groups[i])
+        {
+        case CS_GRP_JUMP:
+        case CS_GRP_CALL:
+        case CS_GRP_RET:
+        case CS_GRP_INT:
+        case CS_GRP_IRET:
+            incr = false;
+        default:;
+        }
+    }
+
+    if (incr)
+    {
+        auto next_addr = cur_addr + insn->size;
+        uc_reg_write(uc_handle_, X86_REG_EIP, &next_addr);
+    }
 
     auto debug = debug_32();
 
     debug.id = insn->id;
 
-    debug.address = address_virt;
+    debug.address = cur_addr;
 
-    for (auto i = 0; i < 16; i++)
+    for (auto i = 0; i < 16; ++i)
         debug.bytes[i] = insn->bytes[i];
     debug.size = insn->size;
     
-    for (auto i = 0; i < strlen(insn->mnemonic); i++)
+    for (auto i = 0; i < strlen(insn->mnemonic); ++i)
         debug.mnemonic[i] = insn->mnemonic[i];
-    for (auto i = 0; i < strlen(insn->op_str); i++)
+    for (auto i = 0; i < strlen(insn->op_str); ++i)
         debug.operands[i] = insn->op_str[i];
     
     uc_reg_read(uc_handle_, X86_REG_EAX, &debug.eax);
