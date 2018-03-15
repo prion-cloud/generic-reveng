@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,85 +10,66 @@ namespace AutoReverse.Api.Test
     [DeploymentItem(Deploy.FOLDER, Deploy.FOLDER)]
     public class UnitTest
     {
-        [TestMethod] public void Disassemble_x86_32_File_8bytes()
+        [TestMethod] public void Debug32_FILE_8bytes()
         {
-            var actual = Disassembler.Disassemble_x86_32(Deploy.FILE_8_BYTES).ToArray();
-
-            WriteInstructions(Console.Out, actual);
-
-            var expected = new[]
+            var expected = new CompareDebug
             {
-                new AsmInstruction(0x0, new byte[] { 0x55 }, "push", "ebp"),
-                new AsmInstruction(0x1, new byte[] { 0x48 }, "dec", "eax"),
-                new AsmInstruction(0x2, new byte[] { 0x8B, 0x05, 0xB8, 0x13, 0x00, 0x00 }, "mov", "eax, dword ptr [0x13b8]")
+                Id = 0x244,
+                Address = 0x0,
+                Bytes = new byte[] { 0x55 },
+                Instruction = "push ebp",
+                Registers = new[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 }
             };
 
-            AssertInstructionArrayEquals(expected, actual);
+            using (var debugger = new Debugger(Deploy.FILE_8_BYTES))
+                AssertDebugEquals(expected, debugger.Debug32());
         }
-        [TestMethod] public void Disassemble_x86_32_File_lea()
+        [TestMethod] public void Debug32_FILE_Test_exe()
         {
-            var actual = Disassembler.Disassemble_x86_32(Deploy.FILE_LEA).ToArray();
-
-            WriteInstructions(Console.Out, actual);
-
-            var expected = new[]
+            var expected = new CompareDebug
             {
-                new AsmInstruction(0x0, new byte[] { 0x8D, 0x95, 0xD4, 0xFE, 0xFF, 0xFF }, "lea", "edx, dword ptr [ebp - 0x12c]")
+                Id = 0x10a,
+                Address = 0x1000,
+                Bytes = new byte[] { 0xeb, 0x10 },
+                Instruction = "jmp 0x12",
+                Registers = new[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1012 }
             };
 
-            AssertInstructionArrayEquals(expected, actual);
+            using (var debugger = new Debugger(Deploy.FILE_TEST_EXE))
+                AssertDebugEquals(expected, debugger.Debug32());
         }
 
-        [TestMethod] public void Disassemble_x86_32_File_Test_exe()
+        private static void WriteDebug(TextWriter writer, Debug32 debug32)
         {
-            var instructions = Disassembler.Disassemble_x86_32(Deploy.FILE_TEST_EXE).ToArray();
+            var strAddress = $"{debug32.Address:X8}";
 
-            using (var file = File.Create(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\output_test_exe.txt"))
-            using (var writer = new StreamWriter(file))
-                WriteInstructions(writer, instructions);
-        }
-
-        private static void WriteInstructions(TextWriter writer, IEnumerable<AsmInstruction> instructions)
-        {
-            foreach (var ins in instructions)
+            var strBytes = string.Empty;
+            for (var j = 0; j < debug32.Bytes.Length; j++)
             {
-                var strAddress = $"{ins.Address:X8}";
+                if (j > 0)
+                    strBytes += " ";
 
-                var strBytes = string.Empty;
-                for (var j = 0; j < ins.Bytes.Length; j++)
-                {
-                    if (j > 0)
-                        strBytes += " ";
-
-                    strBytes += $"{ins.Bytes[j]:X2}";
-                }
-                
-                var res = $"{strAddress}: ";
-
-                if (ins.Mnemonic == null)
-                    res += $"; {strBytes}";
-                else
-                    res += $"  {ins.Mnemonic} {ins.Operands} ({strBytes})";
-
-                writer.WriteLine(res);
+                strBytes += $"{debug32.Bytes[j]:X2}";
             }
+            
+            writer.WriteLine($"{strAddress} {debug32.Instruction} ({strBytes})");
         }
-        private static void AssertInstructionArrayEquals(AsmInstruction[] expected, AsmInstruction[] actual)
+        private static void AssertDebugEquals(IDebug expected, IDebug actual)
         {
-            Assert.AreEqual(expected.Length, actual.Length);
+            Assert.AreEqual(expected.Id, actual.Id);
+            Assert.AreEqual(expected.Address, actual.Address);
+            Assert.IsTrue(actual.Bytes.SequenceEqual(expected.Bytes));
+            Assert.AreEqual(expected.Instruction, actual.Instruction);
+            Assert.IsTrue(actual.Registers.SequenceEqual(expected.Registers));
+        }
 
-            for (var i = 0; i < expected.Length; i++)
-            {
-                var exp = expected[i];
-                var act = actual[i];
-
-                Assert.AreEqual(exp.Address, act.Address);
-
-                Assert.IsTrue(act.Bytes.SequenceEqual(exp.Bytes));
-
-                Assert.AreEqual(exp.Mnemonic, act.Mnemonic);
-                Assert.AreEqual(exp.Operands, act.Operands);
-            }
+        private struct CompareDebug : IDebug
+        {
+            public int Id { get; set; }
+            public int Address { get; set; }
+            public byte[] Bytes { get; set; }
+            public string Instruction { get; set; }
+            public int[] Registers { get; set; }
         }
     }
 }

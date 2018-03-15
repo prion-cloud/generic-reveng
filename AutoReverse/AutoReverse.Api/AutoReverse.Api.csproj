@@ -36,8 +36,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsmInstruction.cs" />
-    <Compile Include="Disassembler.cs" />
+    <Compile Include="Debug32.cs" />
+    <Compile Include="Debugger.cs" />
+    <Compile Include="IDebug.cs" />
     <Compile Include="PInvoke.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
