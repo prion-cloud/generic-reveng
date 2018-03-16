@@ -24,7 +24,7 @@ debugger::debugger(const std::string file_name)
 
         auto section_headers = header->section_headers;
 
-        initialize_section(reader, section_alignment, 0x0, 0xfff /*TODO: Change*/, 0x0);
+        initialize_section(reader, section_alignment, 0x0, 0x1000 /*TODO: Change*/, 0x0);
 
         for (auto i = 0; i < section_headers.size(); ++i)
         {
@@ -95,7 +95,9 @@ void debugger::initialize_section(
     const size_t raw_size,
     const size_t virtual_address) const
 {
-    const auto virtual_size = (raw_size / alignment + 1) * alignment;
+    auto virtual_size = alignment * (raw_size / alignment);
+    if (raw_size % alignment > 0)
+        virtual_size += alignment;
 
     uc_mem_map(uc_handle_, virtual_address, virtual_size, UC_PROT_ALL);
 
