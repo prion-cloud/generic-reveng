@@ -29,7 +29,23 @@
                         Address = 0x0,
                         Bytes = new byte[] { 0x55 },
                         Instruction = "push ebp",
-                        Registers = new[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x87,
+                        Address = 0x1,
+                        Bytes = new byte[] { 0x48 },
+                        Instruction = "dec eax",
+                        Registers = new uint[] { 0xffffffff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2 }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x1ba,
+                        Address = 0x2,
+                        Bytes = new byte[] { 0x8B, 0x05, 0xB8, 0x13, 0x00, 0x00 },
+                        Instruction = "mov eax, dword ptr [0x13b8]", // TODO: Replace bad instruction!
+                        Registers = new uint[] { 0xffffffff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8 }
                     }
                 });
         }
@@ -44,8 +60,8 @@
                         Id = 0x10a,
                         Address = 0x1000,
                         Bytes = new byte[] { 0xeb, 0x10 },
-                        Instruction = "jmp 0x12",
-                        Registers = new[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1012 }
+                        Instruction = "jmp 0x1012",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1012 }
                     },
                     new TestDebug
                     {
@@ -53,18 +69,18 @@
                         Address = 0x1012,
                         Bytes = new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 },
                         Instruction = "mov eax, dword ptr [0x4161bf]",
-                        Registers = new[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1017 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1017 }
                     }
                 });
         }
 
         private struct TestDebug : IDebug
         {
-            public int Id { get; set; }
-            public int Address { get; set; }
+            public uint Id { get; set; }
+            public uint Address { get; set; }
             public byte[] Bytes { get; set; }
             public string Instruction { get; set; }
-            public int[] Registers { get; set; }
+            public uint[] Registers { get; set; }
         }
     }
 }

@@ -2,14 +2,14 @@
 {
     public interface IDebug
     {
-        int Id { get; }
+        uint Id { get; }
 
-        int Address { get; }
+        uint Address { get; }
 
         byte[] Bytes { get; }
 
         string Instruction { get; }
 
-        int[] Registers { get; }
+        uint[] Registers { get; }
     }
 }

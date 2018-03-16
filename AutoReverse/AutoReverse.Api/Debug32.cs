@@ -4,15 +4,15 @@ namespace AutoReverse.Api
 {
     public partial struct Debug32 : IDebug
     {
-        public int Id => Id_;
+        public uint Id => Id_;
 
-        public int Address => Address_;
+        public uint Address => Address_;
 
         public byte[] Bytes => Bytes_.Take(Size_).ToArray();
 
         public string Instruction => $"{Mnemonic_} {Operands_}";
 
-        public int[] Registers => new[]
+        public uint[] Registers => new[]
         {
             Eax_, Ebx_, Ecx_, Edx_,
             Esp_, Ebp_,
