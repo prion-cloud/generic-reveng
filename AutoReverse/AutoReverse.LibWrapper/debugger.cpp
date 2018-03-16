@@ -1,6 +1,5 @@
 #include "stdafx.h"
 
-#include "binary_reader.h"
 #include "debugger.h"
 
 debugger::debugger(const std::string file_name)
@@ -10,44 +9,34 @@ debugger::debugger(const std::string file_name)
 
     uc_open(UC_ARCH_X86, UC_MODE_32, &uc_handle_);
 
-    // -> TODO: Might not be necessary:
-    const uint32_t zero = 0;
-    uc_reg_write(uc_handle_, UC_X86_REG_EAX, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_EBX, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_ECX, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_EDX, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_ESP, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_EBP, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_ESI, &zero);
-    uc_reg_write(uc_handle_, UC_X86_REG_EDI, &zero);
-    // <-
-
     auto reader = binary_reader(file_name);
     auto header = reader.search_header();
 
     if (header == std::nullopt)
     {
-        uc_mem_map(uc_handle_, 0, (reader.length() / 0x1000 + 1) * 0x1000, UC_PROT_ALL);
-
-        std::vector<char> byte_vec;
-        reader.read(byte_vec, reader.length());
-        uc_mem_write(uc_handle_, 0, &byte_vec[0], byte_vec.size() - 1);
+        initialize_section(reader, 0x1000, 0x0, reader.length(), 0x0);
+        initialize_registers(0x0);
     }
     else
     {
-        for (auto i = 0; i < header->file_header.NumberOfSections; ++i)
+        const auto image_base = header->optional_header32->ImageBase;
+        const auto section_alignment = header->optional_header32->SectionAlignment;
+
+        auto section_headers = header->section_headers;
+
+        initialize_section(reader, section_alignment, 0x0, 0xfff /*TODO: Change*/, 0x0);
+
+        for (auto i = 0; i < section_headers.size(); ++i)
         {
-            const auto section = header->section_headers[i];
-
-            uc_mem_map(uc_handle_, section.VirtualAddress, (section.SizeOfRawData / 0x1000 + 1) * 0x1000, UC_PROT_ALL);
-
-            std::vector<char> byte_vec;
-            reader.seek(section.PointerToRawData);
-            reader.read(byte_vec, section.SizeOfRawData);
-            uc_mem_write(uc_handle_, section.VirtualAddress, &byte_vec[0], byte_vec.size() - 1);
+            initialize_section(
+                reader,
+                section_alignment,
+                section_headers[i].PointerToRawData,
+                section_headers[i].SizeOfRawData,
+                image_base + section_headers[i].VirtualAddress);
         }
 
-        uc_reg_write(uc_handle_, UC_X86_REG_EIP, &header->optional_header32->AddressOfEntryPoint);
+        initialize_registers(image_base + header->optional_header32->AddressOfEntryPoint);
     }
 
     reader.close();
@@ -69,16 +58,16 @@ debug_32 debugger::debug() const
     uint8_t bytes[size];
     uc_mem_read(uc_handle_, cur_addr, bytes, size);
 
-    cs_insn* insn;
-    cs_disasm(cs_handle_, bytes, size, 0, 1, &insn);
+    cs_insn* instruction;
+    cs_disasm(cs_handle_, bytes, size, cur_addr, 1, &instruction);
 
-    uc_emu_start(uc_handle_, cur_addr, cur_addr + size, 0, 1);
+    uc_emu_start(uc_handle_, cur_addr, -1, 0, 1);
 
     auto incr = true;
 
-    for (auto i = 0; i < insn->detail->groups_count; ++i)
+    for (auto i = 0; i < instruction->detail->groups_count; ++i)
     {
-        switch (insn->detail->groups[i])
+        switch (instruction->detail->groups[i])
         {
         case CS_GRP_JUMP:
         case CS_GRP_CALL:
@@ -92,25 +81,51 @@ debug_32 debugger::debug() const
 
     if (incr)
     {
-        auto next_addr = cur_addr + insn->size;
+        auto next_addr = cur_addr + instruction->size;
         uc_reg_write(uc_handle_, X86_REG_EIP, &next_addr);
     }
 
+    return create_result(*instruction);
+}
+
+void debugger::initialize_section(
+    binary_reader reader,
+    const size_t alignment,
+    const size_t raw_address,
+    const size_t raw_size,
+    const size_t virtual_address) const
+{
+    const auto virtual_size = (raw_size / alignment + 1) * alignment;
+
+    uc_mem_map(uc_handle_, virtual_address, virtual_size, UC_PROT_ALL);
+
+    std::vector<char> byte_vec;
+    reader.seek(raw_address);
+    reader.read(byte_vec, raw_size);
+    uc_mem_write(uc_handle_, virtual_address, &byte_vec[0], byte_vec.size() - 1);
+}
+void debugger::initialize_registers(const size_t virtual_address_entry_point) const
+{
+    uc_reg_write(uc_handle_, UC_X86_REG_EIP, &virtual_address_entry_point);
+}
+
+debug_32 debugger::create_result(const cs_insn instruction) const
+{
     auto debug = debug_32();
 
-    debug.id = insn->id;
+    debug.id = instruction.id;
 
-    debug.address = cur_addr;
+    debug.address = static_cast<uint32_t>(instruction.address);
 
     for (auto i = 0; i < 16; ++i)
-        debug.bytes[i] = insn->bytes[i];
-    debug.size = insn->size;
-    
-    for (auto i = 0; i < strlen(insn->mnemonic); ++i)
-        debug.mnemonic[i] = insn->mnemonic[i];
-    for (auto i = 0; i < strlen(insn->op_str); ++i)
-        debug.operands[i] = insn->op_str[i];
-    
+        debug.bytes[i] = instruction.bytes[i];
+    debug.size = instruction.size;
+
+    for (auto i = 0; i < strlen(instruction.mnemonic); ++i)
+        debug.mnemonic[i] = instruction.mnemonic[i];
+    for (auto i = 0; i < strlen(instruction.op_str); ++i)
+        debug.operands[i] = instruction.op_str[i];
+
     uc_reg_read(uc_handle_, X86_REG_EAX, &debug.eax);
     uc_reg_read(uc_handle_, X86_REG_EBX, &debug.ebx);
     uc_reg_read(uc_handle_, X86_REG_ECX, &debug.ecx);

@@ -58,18 +58,18 @@
                     new TestDebug
                     {
                         Id = 0x10a,
-                        Address = 0x1000,
+                        Address = 0x401000,
                         Bytes = new byte[] { 0xeb, 0x10 },
-                        Instruction = "jmp 0x1012",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1012 }
+                        Instruction = "jmp 0x401012",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401012 }
                     },
                     new TestDebug
                     {
                         Id = 0x1ba,
-                        Address = 0x1012,
+                        Address = 0x401012,
                         Bytes = new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 },
                         Instruction = "mov eax, dword ptr [0x4161bf]",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1017 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401017 }
                     }
                 });
         }
