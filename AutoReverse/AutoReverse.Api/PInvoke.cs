@@ -16,23 +16,24 @@ namespace AutoReverse.Api
 
     public partial struct Debug32
     {
-        internal UInt32 Id_;
+        internal uint Id_;
 
-        internal UInt32 Address_;
+        internal uint Address_;
+
+        internal ushort Size_;
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
         internal byte[] Bytes_;
-        internal UInt16 Size_;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
         internal string Mnemonic_;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 160)]
         internal string Operands_;
 
-        internal UInt32 Eax_, Ebx_, Ecx_, Edx_;
-        internal UInt32 Esp_, Ebp_;
-        internal UInt32 Esi_, Edi_;
-        internal UInt32 Eip_;
+        internal uint Eax_, Ebx_, Ecx_, Edx_;
+        internal uint Esp_, Ebp_;
+        internal uint Esi_, Edi_;
+        internal uint Eip_;
     }
 
     //#pragma warning disable 649 TODO

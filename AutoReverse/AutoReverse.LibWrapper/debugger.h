@@ -17,11 +17,13 @@ class debugger
     void initialize_registers(
         size_t virtual_address_entry_point) const;
 
-    debug_32 create_result(cs_insn insn) const;
+    debug_32 create_result(
+        cs_insn insn) const;
 
 public:
 
-    explicit debugger(std::string file_name);
+    explicit debugger(
+        std::string file_name);
 
     void close();
 

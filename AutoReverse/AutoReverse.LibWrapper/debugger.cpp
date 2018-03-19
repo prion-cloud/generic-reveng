@@ -7,7 +7,7 @@ debugger::debugger(const std::string file_name)
     cs_open(CS_ARCH_X86, CS_MODE_32, &cs_handle_);
     cs_option(cs_handle_, CS_OPT_DETAIL, CS_OPT_ON);
 
-    uc_open(UC_ARCH_X86, UC_MODE_32, &uc_handle_);
+    uc_open(UC_ARCH_X86, UC_MODE_32, &uc_handle_); // TODO: Determine arch and mode
 
     auto reader = binary_reader(file_name);
     auto header = reader.search_header();
@@ -108,7 +108,7 @@ void debugger::initialize_section(
 }
 void debugger::initialize_registers(const size_t virtual_address_entry_point) const
 {
-    uc_reg_write(uc_handle_, UC_X86_REG_EIP, &virtual_address_entry_point);
+    uc_reg_write(uc_handle_, X86_REG_EIP, &virtual_address_entry_point);
 }
 
 debug_32 debugger::create_result(const cs_insn instruction) const
@@ -119,11 +119,14 @@ debug_32 debugger::create_result(const cs_insn instruction) const
 
     debug.address = static_cast<uint32_t>(instruction.address);
 
-    for (auto i = 0; i < 16; ++i)
-        debug.bytes[i] = instruction.bytes[i];
-    debug.size = instruction.size;
+    const auto size = instruction.size;
 
-    for (auto i = 0; i < strlen(instruction.mnemonic); ++i)
+    debug.size = size;
+
+    for (auto i = 0; i < size; ++i)
+        debug.bytes[i] = instruction.bytes[i];
+
+    for (auto i = 0; i < strlen(instruction.mnemonic); ++i) // TODO: Check strlen
         debug.mnemonic[i] = instruction.mnemonic[i];
     for (auto i = 0; i < strlen(instruction.op_str); ++i)
         debug.operands[i] = instruction.op_str[i];
