@@ -18,6 +18,9 @@ class debugger
         size_t alignment,
         size_t raw_size,
         size_t virtual_address) const;
+    void initialize_import_table(
+        size_t image_base,
+        size_t import_table_address) const;
     void initialize_registers(
         uint32_t stack_pointer,
         uint32_t entry_point) const;

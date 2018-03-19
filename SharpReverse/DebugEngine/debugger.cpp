@@ -41,7 +41,14 @@ debugger::debugger(const std::string file_name)
 
         const auto stack_pointer = stack_offset + stack_size - 1;
 
-        initialize_section(section_alignment, stack_size, stack_offset);
+        initialize_section(
+            section_alignment,
+            stack_size,
+            stack_offset);
+
+        initialize_import_table(
+            image_base,
+            header->optional_header32->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
         initialize_registers(
             stack_pointer,
@@ -121,6 +128,83 @@ void debugger::initialize_section(
         virtual_size += alignment;
 
     uc_mem_map(uc_handle_, virtual_address, virtual_size, UC_PROT_ALL);
+}
+void debugger::initialize_import_table(
+    const size_t image_base,
+    const size_t import_table_address) const
+{
+    std::vector<IMAGE_IMPORT_DESCRIPTOR> descriptors;
+
+    for (auto i = 0;; ++i)
+    {
+        IMAGE_IMPORT_DESCRIPTOR descriptor;
+
+        uc_mem_read(
+            uc_handle_,
+            image_base + import_table_address + i * sizeof(IMAGE_IMPORT_DESCRIPTOR),
+            &descriptor,
+            sizeof(IMAGE_IMPORT_DESCRIPTOR));
+
+        if (descriptor.OriginalFirstThunk == 0x0)
+            break;
+
+        descriptors.push_back(descriptor);
+    }
+
+    if (descriptors.size() == 0)
+        return;
+
+    for (auto i = descriptors[0].OriginalFirstThunk; i < descriptors[0].Name; i += sizeof(uint32_t))
+    {
+        DWORD module_addr = -1;
+
+        for (auto j = 0; j < descriptors.size(); ++j)
+        {
+            if (i >= descriptors[j].OriginalFirstThunk)
+                module_addr = descriptors[j].Name;
+        }
+
+        uint32_t proc_loc;
+        uc_mem_read(uc_handle_, image_base + i, &proc_loc, sizeof(uint32_t));
+
+        if (proc_loc == 0)
+            continue;
+
+        std::vector<char> module_chars;
+        for (auto j = 0;; ++j)
+        {
+            char c;
+            uc_mem_read(uc_handle_, image_base + module_addr + j, &c, 1);
+            module_chars.push_back(c);
+
+            if (c == '\0')
+                break;
+        }
+        std::string module_name(module_chars.begin(), module_chars.end());
+
+        auto brk = false;
+        std::vector<char> proc_chars;
+        for (auto j = 0;; ++j)
+        {
+            char c;
+            uc_mem_read(uc_handle_, image_base + proc_loc + j, &c, 1);
+
+            if (c != '\0')
+                brk = true;
+            else if (!brk)
+                continue;
+
+            proc_chars.push_back(c);
+
+            if (c == '\0' && brk)
+                break;
+        }
+        std::string proc_name(proc_chars.begin(), proc_chars.end());
+
+        const auto addr = GetProcAddress(GetModuleHandleA(module_name.c_str()), proc_name.c_str());
+        auto a = uc_mem_write(uc_handle_, image_base + i, &addr, sizeof(uint32_t));
+        auto b = a;
+    }
 }
 void debugger::initialize_registers(
     const uint32_t stack_pointer,

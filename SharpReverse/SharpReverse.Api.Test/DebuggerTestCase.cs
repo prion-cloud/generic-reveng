@@ -111,7 +111,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x41518c,
                         Bytes = new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 },
                         Instruction = "jmp dword ptr [0x42123c]",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x21670 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb0 }
                     }
                 });
         }
