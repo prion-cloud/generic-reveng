@@ -88,6 +88,30 @@ namespace SharpReverse.Api.Test
                         Bytes = new byte[] { 0x52 },
                         Instruction = "push edx",
                         Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffb, 0xffffffff, 0x0, 0x0, 0x401020 }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x244,
+                        Address = 0x401020,
+                        Bytes = new byte[] { 0x6a, 0x00 },
+                        Instruction = "push 0",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff7, 0xffffffff, 0x0, 0x0, 0x401022 }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x38,
+                        Address = 0x401022,
+                        Bytes = new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 },
+                        Instruction = "call 0x41518c",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x41518c }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x10a,
+                        Address = 0x41518c,
+                        Bytes = new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 },
+                        Instruction = "jmp dword ptr [0x42123c]",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x21670 }
                     }
                 });
         }
