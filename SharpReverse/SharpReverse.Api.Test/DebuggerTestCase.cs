@@ -31,7 +31,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x0,
                         Bytes = new byte[] { 0x41 },
                         Instruction = "inc ecx",
-                        Registers = new uint[] { 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 }
+                        Registers = new uint[] { 0x0, 0x0, 0x1, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x1 }
                     },
                     new TestDebug
                     {
@@ -39,7 +39,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x1,
                         Bytes = new byte[] { 0x4a },
                         Instruction = "dec edx",
-                        Registers = new uint[] { 0x0, 0x0, 0x1, 0xffffffff, 0x0, 0x0, 0x0, 0x0, 0x2 }
+                        Registers = new uint[] { 0x0, 0x0, 0x1, 0xffffffff, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x2 }
                     }
                 });
         }
@@ -55,7 +55,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x401000,
                         Bytes = new byte[] { 0xeb, 0x10 },
                         Instruction = "jmp 0x401012",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401012 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401012 }
                     },
                     new TestDebug
                     {
@@ -63,7 +63,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x401012,
                         Bytes = new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 },
                         Instruction = "mov eax, dword ptr [0x4161bf]",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401017 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401017 }
                     },
                     new TestDebug
                     {
@@ -71,7 +71,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x401017,
                         Bytes = new byte[] { 0xc1, 0xe0, 0x02 },
                         Instruction = "shl eax, 2",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40101a }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101a }
                     },
                     new TestDebug
                     {
@@ -79,7 +79,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x40101a,
                         Bytes = new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 },
                         Instruction = "mov dword ptr [0x4161c3], eax",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40101f }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101f }
                     },
                     new TestDebug
                     {
@@ -87,7 +87,7 @@ namespace SharpReverse.Api.Test
                         Address = 0x40101f,
                         Bytes = new byte[] { 0x52 },
                         Instruction = "push edx",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401020 }
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffb, 0xffffffff, 0x0, 0x0, 0x401020 }
                     }
                 });
         }

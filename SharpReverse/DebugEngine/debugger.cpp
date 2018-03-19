@@ -15,7 +15,7 @@ debugger::debugger(const std::string file_name)
     if (header == std::nullopt)
     {
         initialize_section(reader, 0x1000, 0x0, reader.length(), 0x0);
-        initialize_registers(0x0);
+        initialize_registers(0xffffffff, 0x0);
     }
     else
     {
@@ -36,7 +36,16 @@ debugger::debugger(const std::string file_name)
                 image_base + section_headers[i].VirtualAddress);
         }
 
-        initialize_registers(image_base + header->optional_header32->AddressOfEntryPoint);
+        const auto stack_size = header->optional_header32->SizeOfStackCommit;
+        const auto stack_offset = 0xffffffff - stack_size + 1; // Pointer is end of address space; TODO: Change?
+
+        const auto stack_pointer = stack_offset + stack_size - 1;
+
+        initialize_section(section_alignment, stack_size, stack_offset);
+
+        initialize_registers(
+            stack_pointer,
+            image_base + header->optional_header32->AddressOfEntryPoint);
     }
 
     reader.close();
@@ -95,20 +104,32 @@ void debugger::initialize_section(
     const size_t raw_size,
     const size_t virtual_address) const
 {
-    auto virtual_size = alignment * (raw_size / alignment);
-    if (raw_size % alignment > 0)
-        virtual_size += alignment;
-
-    uc_mem_map(uc_handle_, virtual_address, virtual_size, UC_PROT_ALL);
+    initialize_section(alignment, raw_size, virtual_address);
 
     std::vector<char> byte_vec;
     reader.seek(raw_address);
     reader.read(byte_vec, raw_size);
     uc_mem_write(uc_handle_, virtual_address, &byte_vec[0], byte_vec.size() - 1);
 }
-void debugger::initialize_registers(const size_t virtual_address_entry_point) const
+void debugger::initialize_section(
+    const size_t alignment,
+    const size_t raw_size,
+    const size_t virtual_address) const
 {
-    uc_reg_write(uc_handle_, X86_REG_EIP, &virtual_address_entry_point);
+    auto virtual_size = alignment * (raw_size / alignment);
+    if (raw_size % alignment > 0)
+        virtual_size += alignment;
+
+    uc_mem_map(uc_handle_, virtual_address, virtual_size, UC_PROT_ALL);
+}
+void debugger::initialize_registers(
+    const uint32_t stack_pointer,
+    const uint32_t entry_point) const
+{
+    uc_reg_write(uc_handle_, X86_REG_ESP, &stack_pointer);
+    uc_reg_write(uc_handle_, X86_REG_EBP, &stack_pointer);
+
+    uc_reg_write(uc_handle_, X86_REG_EIP, &entry_point);
 }
 
 debug_32 debugger::create_result(cs_insn* instruction) const
