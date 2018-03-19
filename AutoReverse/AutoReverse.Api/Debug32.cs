@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace AutoReverse.Api
 {
@@ -8,7 +9,7 @@ namespace AutoReverse.Api
 
         public uint Address => Address_;
 
-        public byte[] Bytes => Bytes_.Take(Size_).ToArray();
+        public IEnumerable<byte> Bytes => Bytes_.Take(Size_);
 
         public string Instruction => $"{Mnemonic_} {Operands_}";
 

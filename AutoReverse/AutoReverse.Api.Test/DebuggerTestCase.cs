@@ -1,4 +1,6 @@
-﻿namespace AutoReverse.Api.Test
+﻿using System.Collections.Generic;
+
+namespace AutoReverse.Api.Test
 {
     public class DebuggerTestCase
     {
@@ -20,32 +22,24 @@
         public static DebuggerTestCase GetTestCase1()
         {
             return new DebuggerTestCase(
-                Deploy.FILE_8_BYTES,
+                Deploy.FILE_TEST_1,
                 new IDebug[]
                 {
                     new TestDebug
                     {
-                        Id = 0x244,
+                        Id = 0xd8,
                         Address = 0x0,
-                        Bytes = new byte[] { 0x55 },
-                        Instruction = "push ebp",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 }
+                        Bytes = new byte[] { 0x41 },
+                        Instruction = "inc ecx",
+                        Registers = new uint[] { 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 }
                     },
                     new TestDebug
                     {
                         Id = 0x87,
                         Address = 0x1,
-                        Bytes = new byte[] { 0x48 },
-                        Instruction = "dec eax",
-                        Registers = new uint[] { 0xffffffff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2 }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x1ba,
-                        Address = 0x2,
-                        Bytes = new byte[] { 0x8B, 0x05, 0xB8, 0x13, 0x00, 0x00 },
-                        Instruction = "mov eax, dword ptr [0x13b8]", // TODO: Replace bad instruction!
-                        Registers = new uint[] { 0xffffffff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8 }
+                        Bytes = new byte[] { 0x4a },
+                        Instruction = "dec edx",
+                        Registers = new uint[] { 0x0, 0x0, 0x1, 0xffffffff, 0x0, 0x0, 0x0, 0x0, 0x2 }
                     }
                 });
         }
@@ -70,6 +64,30 @@
                         Bytes = new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 },
                         Instruction = "mov eax, dword ptr [0x4161bf]",
                         Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401017 }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x283,
+                        Address = 0x401017,
+                        Bytes = new byte[] { 0xc1, 0xe0, 0x02 },
+                        Instruction = "shl eax, 2",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40101a }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x1ba,
+                        Address = 0x40101a,
+                        Bytes = new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 },
+                        Instruction = "mov dword ptr [0x4161c3], eax",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40101f }
+                    },
+                    new TestDebug
+                    {
+                        Id = 0x244,
+                        Address = 0x40101f,
+                        Bytes = new byte[] { 0x52 },
+                        Instruction = "push edx",
+                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x401020 }
                     }
                 });
         }
@@ -78,7 +96,7 @@
         {
             public uint Id { get; set; }
             public uint Address { get; set; }
-            public byte[] Bytes { get; set; }
+            public IEnumerable<byte> Bytes { get; set; }
             public string Instruction { get; set; }
             public uint[] Registers { get; set; }
         }

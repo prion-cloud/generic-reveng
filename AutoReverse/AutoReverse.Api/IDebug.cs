@@ -1,4 +1,6 @@
-﻿namespace AutoReverse.Api
+﻿using System.Collections.Generic;
+
+namespace AutoReverse.Api
 {
     public interface IDebug
     {
@@ -6,7 +8,7 @@
 
         uint Address { get; }
 
-        byte[] Bytes { get; }
+        IEnumerable<byte> Bytes { get; }
 
         string Instruction { get; }
 
