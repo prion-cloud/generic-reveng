@@ -26,7 +26,7 @@ debugger::debugger(const std::string file_name)
 
         initialize_section(reader, section_alignment, 0x0, 0x1000 /*TODO: Change*/, 0x0);
 
-        for (auto i = 0; i < section_headers.size(); ++i)
+        for (size_t i = 0; i < section_headers.size(); ++i)
         {
             initialize_section(
                 reader,
@@ -85,7 +85,7 @@ debug_32 debugger::debug() const
         uc_reg_write(uc_handle_, X86_REG_EIP, &next_addr);
     }
 
-    return create_result(*instruction);
+    return create_result(instruction);
 }
 
 void debugger::initialize_section(
@@ -111,25 +111,20 @@ void debugger::initialize_registers(const size_t virtual_address_entry_point) co
     uc_reg_write(uc_handle_, X86_REG_EIP, &virtual_address_entry_point);
 }
 
-debug_32 debugger::create_result(const cs_insn instruction) const
+debug_32 debugger::create_result(cs_insn* instruction) const
 {
     auto debug = debug_32();
 
-    debug.id = instruction.id;
+    debug.id = instruction->id;
 
-    debug.address = static_cast<uint32_t>(instruction.address);
+    debug.address = static_cast<uint32_t>(instruction->address);
 
-    const auto size = instruction.size;
+    debug.size = instruction->size;
 
-    debug.size = size;
+    memcpy(debug.bytes, instruction->bytes, instruction->size);
 
-    for (auto i = 0; i < size; ++i)
-        debug.bytes[i] = instruction.bytes[i];
-
-    for (auto i = 0; i < strlen(instruction.mnemonic); ++i) // TODO: Check strlen
-        debug.mnemonic[i] = instruction.mnemonic[i];
-    for (auto i = 0; i < strlen(instruction.op_str); ++i)
-        debug.operands[i] = instruction.op_str[i];
+    memcpy(debug.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
+    memcpy(debug.operands, instruction->op_str, strlen(instruction->op_str));
 
     uc_reg_read(uc_handle_, X86_REG_EAX, &debug.eax);
     uc_reg_read(uc_handle_, X86_REG_EBX, &debug.ebx);

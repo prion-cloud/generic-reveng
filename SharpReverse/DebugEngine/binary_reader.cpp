@@ -78,15 +78,15 @@ std::optional<pe_header> binary_reader::search_header()
         if (read(shs, fh.NumberOfSections))
             return;
 
-        auto header = pe_header();
+        std::optional<pe_header> header = pe_header();
 
-        header.dos_header = dh;
-        header.file_header = fh;
+        header->dos_header = dh;
+        header->file_header = fh;
 
-        header.optional_header32 = oh32;
-        header.optional_header64 = oh64;
+        header->optional_header32 = oh32;
+        header->optional_header64 = oh64;
 
-        header.section_headers = shs;
+        header->section_headers = shs;
 
         header_opt = header;
     };

@@ -18,7 +18,7 @@ class debugger
         size_t virtual_address_entry_point) const;
 
     debug_32 create_result(
-        cs_insn insn) const;
+        cs_insn* insn) const;
 
 public:
 

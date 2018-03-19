@@ -71,7 +71,7 @@ size_t binary_reader::read(std::vector<T>& t_vec, const size_t count)
 {
     t_vec = std::vector<T>();
 
-    auto i = 0;
+    size_t i = 0;
     for (; i < count; ++i)
     {
         T t;
