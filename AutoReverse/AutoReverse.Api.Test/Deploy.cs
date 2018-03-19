@@ -9,5 +9,6 @@
         public const string FILE_LEA = FOLDER + @"\lea";
         public const string FILE_STACK_1 = FOLDER + @"\stack1";
         public const string FILE_TEST_EXE = FOLDER + @"\Test.exe";
+        public const string FILE_TEST_1 = FOLDER + @"\test1";
     }
 }
