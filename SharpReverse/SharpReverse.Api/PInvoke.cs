@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace AutoReverse.Api
+namespace SharpReverse.Api
 {
     // ReSharper disable All
 
     internal static class PInvoke
     {
-        public const string DLL_NAME = "AutoReverse.LibWrapper.dll";
+        public const string DLL_NAME = "DebugEngine.dll";
 
         [DllImport(DLL_NAME)] public static extern IntPtr open(string fileName);
         [DllImport(DLL_NAME)] public static extern IntPtr close(IntPtr handle);

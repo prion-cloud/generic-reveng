@@ -7,27 +7,31 @@
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Static Libraries">
+      <UniqueIdentifier>{acdd10a4-4b43-43a1-8f0e-71837fd4e80e}</UniqueIdentifier>
+      <Extensions>lib</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="binary_reader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="pe_header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="binary_reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="debug_32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pe_header.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,18 +42,22 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="api.cpp">
+    <ClCompile Include="debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="binary_reader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="debugger.cpp">
+    <ClCompile Include="api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\Capstone\msvc\x64\Debug\capstone.lib" />
-    <Library Include="..\..\Unicorn\msvc\x64\Debug\unicorn_static.lib" />
+    <Library Include="..\..\Capstone\msvc\Debug\capstone.lib">
+      <Filter>Static Libraries</Filter>
+    </Library>
+    <Library Include="..\..\Unicorn\msvc\Win32\Debug\unicorn_static.lib">
+      <Filter>Static Libraries</Filter>
+    </Library>
   </ItemGroup>
 </Project>

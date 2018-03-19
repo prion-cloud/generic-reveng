@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace AutoReverse.Api
+namespace SharpReverse.Api
 {
     public partial struct Debug32 : IDebug
     {

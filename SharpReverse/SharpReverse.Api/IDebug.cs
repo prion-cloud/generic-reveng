@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace AutoReverse.Api
+namespace SharpReverse.Api
 {
     public interface IDebug
     {

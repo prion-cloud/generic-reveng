@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AutoReverse.Api
+namespace SharpReverse.Api
 {
     public class Debugger : IDisposable
     {

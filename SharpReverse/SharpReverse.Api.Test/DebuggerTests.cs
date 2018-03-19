@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace AutoReverse.Api.Test
+namespace SharpReverse.Api.Test
 {
     [TestClass]
     [DeploymentItem(PInvoke.DLL_NAME)]
