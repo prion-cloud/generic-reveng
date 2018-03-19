@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse.Api.Test", "Sh
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine", "DebugEngine\DebugEngine.vcxproj", "{BC77E8CE-943B-409D-8B70-11B3DAA6EDFB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse", "SharpReverse\SharpReverse.csproj", "{C225BE3C-16CD-466B-A6C7-556CE52EE440}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -30,6 +32,10 @@ Global
 		{BC77E8CE-943B-409D-8B70-11B3DAA6EDFB}.Debug|x86.Build.0 = Debug|Win32
 		{BC77E8CE-943B-409D-8B70-11B3DAA6EDFB}.Release|x86.ActiveCfg = Release|Win32
 		{BC77E8CE-943B-409D-8B70-11B3DAA6EDFB}.Release|x86.Build.0 = Release|Win32
+		{C225BE3C-16CD-466B-A6C7-556CE52EE440}.Debug|x86.ActiveCfg = Debug|x86
+		{C225BE3C-16CD-466B-A6C7-556CE52EE440}.Debug|x86.Build.0 = Debug|x86
+		{C225BE3C-16CD-466B-A6C7-556CE52EE440}.Release|x86.ActiveCfg = Release|x86
+		{C225BE3C-16CD-466B-A6C7-556CE52EE440}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
