@@ -88,5 +88,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SharpReverse.Api\SharpReverse.Api.csproj">
+      <Project>{beb3ccdf-24ee-4e86-890f-d29ff81e9e97}</Project>
+      <Name>SharpReverse.Api</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

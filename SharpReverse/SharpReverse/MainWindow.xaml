@@ -5,8 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SharpReverse"
         mc:Ignorable="d"
-        Title="SharpReverse" Height="350" Width="650">
-    <Grid>
-
+        Title="SharpReverse" Height="350" Width="650" ResizeMode="CanMinimize" FontSize="14" Closing="MainWindow_Closing">
+    <Grid Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+        <Button Content="Load file" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Load_Click"/>
+        <Button Content="Step" HorizontalAlignment="Left" Margin="90,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Step_Click"/>
+        <Grid Margin="10,50,10,10">
+            <Border BorderBrush="Black" BorderThickness="1">
+                <TextBlock Margin="1" Name="TextBlock" TextWrapping="NoWrap" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" FontFamily="Consolas"/>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
