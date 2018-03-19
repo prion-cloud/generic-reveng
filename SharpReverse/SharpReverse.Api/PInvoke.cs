@@ -9,9 +9,12 @@ namespace SharpReverse.Api
     {
         public const string DLL_NAME = "DebugEngine.dll";
 
-        [DllImport(DLL_NAME)] public static extern IntPtr open(string fileName);
-        [DllImport(DLL_NAME)] public static extern IntPtr close(IntPtr handle);
-        [DllImport(DLL_NAME)] public static extern void debug_32(IntPtr handle, out Debug32 debug);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr open(string fileName);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr close(IntPtr handle);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void debug_32(IntPtr handle, out Debug32 debug);
     }
 
     public partial struct Debug32
