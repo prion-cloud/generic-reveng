@@ -28,6 +28,9 @@ class debugger
     debug_32 create_result(
         cs_insn* insn) const;
 
+    void load_dll(
+        std::string name) const;
+
 public:
 
     explicit debugger(

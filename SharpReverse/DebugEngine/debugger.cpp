@@ -2,7 +2,10 @@
 
 #include "debugger.h"
 
-debugger::debugger(const std::string file_name)
+#include "uc_extensions.h"
+
+debugger::debugger(
+    const std::string file_name)
 {
     cs_open(CS_ARCH_X86, CS_MODE_32, &cs_handle_);
     cs_option(cs_handle_, CS_OPT_DETAIL, CS_OPT_ON);
@@ -133,77 +136,33 @@ void debugger::initialize_import_table(
     const size_t image_base,
     const size_t import_table_address) const
 {
-    std::vector<IMAGE_IMPORT_DESCRIPTOR> descriptors;
-
     for (auto i = 0;; ++i)
     {
         IMAGE_IMPORT_DESCRIPTOR descriptor;
+        uc_mem_read(uc_handle_, image_base + import_table_address, i, descriptor);
 
-        uc_mem_read(
-            uc_handle_,
-            image_base + import_table_address + i * sizeof(IMAGE_IMPORT_DESCRIPTOR),
-            &descriptor,
-            sizeof(IMAGE_IMPORT_DESCRIPTOR));
-
-        if (descriptor.OriginalFirstThunk == 0x0)
+        if (descriptor.Name == 0x0)
             break;
 
-        descriptors.push_back(descriptor);
-    }
+        std::string module_name;
+        uc_mem_read_string(uc_handle_, image_base + descriptor.Name, module_name);
 
-    if (descriptors.size() == 0)
-        return;
+        load_dll(module_name);
 
-    for (auto i = descriptors[0].OriginalFirstThunk; i < descriptors[0].Name; i += sizeof(uint32_t))
-    {
-        DWORD module_addr = -1;
-
-        for (auto j = 0; j < descriptors.size(); ++j)
-        {
-            if (i >= descriptors[j].OriginalFirstThunk)
-                module_addr = descriptors[j].Name;
-        }
-
-        uint32_t proc_loc;
-        uc_mem_read(uc_handle_, image_base + i, &proc_loc, sizeof(uint32_t));
-
-        if (proc_loc == 0)
-            continue;
-
-        std::vector<char> module_chars;
         for (auto j = 0;; ++j)
         {
-            char c;
-            uc_mem_read(uc_handle_, image_base + module_addr + j, &c, 1);
-            module_chars.push_back(c);
+            uint32_t proc_name_address;
+            uc_mem_read(uc_handle_, image_base + descriptor.FirstThunk, j, proc_name_address);
 
-            if (c == '\0')
+            if (proc_name_address == 0x0)
                 break;
+
+            std::string proc_name;
+            uc_mem_read_string(uc_handle_, image_base + proc_name_address, proc_name);
+
+            const auto proc_address = GetProcAddress(GetModuleHandleA(module_name.c_str()), proc_name.c_str());
+            uc_mem_write(uc_handle_, image_base + descriptor.FirstThunk, j, proc_address);
         }
-        std::string module_name(module_chars.begin(), module_chars.end());
-
-        auto brk = false;
-        std::vector<char> proc_chars;
-        for (auto j = 0;; ++j)
-        {
-            char c;
-            uc_mem_read(uc_handle_, image_base + proc_loc + j, &c, 1);
-
-            if (c != '\0')
-                brk = true;
-            else if (!brk)
-                continue;
-
-            proc_chars.push_back(c);
-
-            if (c == '\0' && brk)
-                break;
-        }
-        std::string proc_name(proc_chars.begin(), proc_chars.end());
-
-        const auto addr = GetProcAddress(GetModuleHandleA(module_name.c_str()), proc_name.c_str());
-        auto a = uc_mem_write(uc_handle_, image_base + i, &addr, sizeof(uint32_t));
-        auto b = a;
     }
 }
 void debugger::initialize_registers(
@@ -216,7 +175,8 @@ void debugger::initialize_registers(
     uc_reg_write(uc_handle_, X86_REG_EIP, &entry_point);
 }
 
-debug_32 debugger::create_result(cs_insn* instruction) const
+debug_32 debugger::create_result(
+    cs_insn* instruction) const
 {
     auto debug = debug_32();
 
@@ -245,4 +205,16 @@ debug_32 debugger::create_result(cs_insn* instruction) const
     uc_reg_read(uc_handle_, X86_REG_EIP, &debug.eip);
 
     return debug;
+}
+
+void debugger::load_dll(
+    const std::string name) const
+{
+    // TODO
+
+    //auto reader = binary_reader("%windir%\\System32\\" + name);
+
+    //auto header = reader.search_header();
+
+    auto a = 0;
 }
