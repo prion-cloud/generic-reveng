@@ -12,7 +12,7 @@ namespace SharpReverse.Api
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr open(string fileName);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr close(IntPtr handle);
+        public static extern void close(IntPtr handle);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void debug_32(IntPtr handle, out Debug32 debug);
     }
