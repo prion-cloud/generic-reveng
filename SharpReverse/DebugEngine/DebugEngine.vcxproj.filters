@@ -31,7 +31,7 @@
     <ClInclude Include="debug_32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pe_header.h">
+    <ClInclude Include="pe_header_32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

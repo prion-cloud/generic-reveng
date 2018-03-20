@@ -19,8 +19,8 @@ debugger::debugger(const std::string file_name)
     }
     else
     {
-        const auto image_base = header->optional_header32->ImageBase;
-        const auto section_alignment = header->optional_header32->SectionAlignment;
+        const auto image_base = header->optional_header.ImageBase;
+        const auto section_alignment = header->optional_header.SectionAlignment;
 
         auto section_headers = header->section_headers;
 
@@ -36,7 +36,7 @@ debugger::debugger(const std::string file_name)
                 image_base + section_headers[i].VirtualAddress);
         }
 
-        const auto stack_size = header->optional_header32->SizeOfStackCommit;
+        const auto stack_size = header->optional_header.SizeOfStackCommit;
         const auto stack_offset = 0xffffffff - stack_size + 1; // Pointer is end of address space; TODO: Change?
 
         const auto stack_pointer = stack_offset + stack_size - 1;
@@ -48,11 +48,11 @@ debugger::debugger(const std::string file_name)
 
         initialize_import_table(
             image_base,
-            header->optional_header32->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+            header->optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
         initialize_registers(
             stack_pointer,
-            image_base + header->optional_header32->AddressOfEntryPoint);
+            image_base + header->optional_header.AddressOfEntryPoint);
     }
 
     reader.close();

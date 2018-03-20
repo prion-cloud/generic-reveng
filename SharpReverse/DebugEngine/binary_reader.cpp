@@ -26,11 +26,11 @@ long binary_reader::offset() const
     return ftell(stream_);
 }
 
-std::optional<pe_header> binary_reader::search_header()
+std::optional<pe_header_32> binary_reader::search_header()
 {
     const auto n = offset();
 
-    const auto find = [this](std::optional<pe_header>& header_opt)
+    const auto find = [this](std::optional<pe_header_32>& header_opt)
     {
         header_opt = std::nullopt;
 
@@ -58,19 +58,11 @@ std::optional<pe_header> binary_reader::search_header()
 
         const auto oh_size = fh.SizeOfOptionalHeader;
 
-        std::optional<IMAGE_OPTIONAL_HEADER32> oh32;
-        std::optional<IMAGE_OPTIONAL_HEADER64> oh64;
+        IMAGE_OPTIONAL_HEADER32 oh;
         if (oh_size == sizeof(IMAGE_OPTIONAL_HEADER32))
         {
-            if (read(oh32))
+            if (read(oh))
                 return;
-            oh64 = std::nullopt;
-        }
-        else if (oh_size == sizeof(IMAGE_OPTIONAL_HEADER64))
-        {
-            if (read(oh64))
-                return;
-            oh32 = std::nullopt;
         }
         else return;
 
@@ -78,20 +70,19 @@ std::optional<pe_header> binary_reader::search_header()
         if (read(shs, fh.NumberOfSections))
             return;
 
-        std::optional<pe_header> header = pe_header();
+        std::optional<pe_header_32> header = pe_header_32();
 
         header->dos_header = dh;
         header->file_header = fh;
 
-        header->optional_header32 = oh32;
-        header->optional_header64 = oh64;
+        header->optional_header = oh;
 
         header->section_headers = shs;
 
         header_opt = header;
     };
 
-    std::optional<pe_header> header_opt;
+    std::optional<pe_header_32> header_opt;
     find(header_opt);
 
     seek(n);
