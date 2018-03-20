@@ -33,9 +33,11 @@ namespace SharpReverse
             if (!dialog.ShowDialog(this).Value)
                 return;
 
-            TextBlock.Text = string.Empty;
+            TextBox.Text = string.Empty;
 
             _debugger = new Debugger(dialog.FileName);
+
+            UpdateRegisterState();
         }
 
         private void Button_Step_Click(object sender, RoutedEventArgs e)
@@ -43,9 +45,26 @@ namespace SharpReverse
             if (_debugger == null)
                 return;
 
-            var debug = _debugger.Debug32();
+            var instruction = _debugger.Debug32();
 
-            TextBlock.Text += $"0x{debug.Address:x8} {debug.Instruction}\n";
+            TextBox.Text += $"0x{instruction.Address:x8} {instruction.Instruction}\n";
+
+            UpdateRegisterState();
+        }
+
+        private void UpdateRegisterState()
+        {
+            var regState = _debugger.GetRegisterState32();
+
+            TbEax.Text = $"0x{regState.Registers[0]:x8}";
+            TbEbx.Text = $"0x{regState.Registers[1]:x8}";
+            TbEcx.Text = $"0x{regState.Registers[2]:x8}";
+            TbEdx.Text = $"0x{regState.Registers[3]:x8}";
+            TbEsp.Text = $"0x{regState.Registers[4]:x8}";
+            TbEbp.Text = $"0x{regState.Registers[5]:x8}";
+            TbEsi.Text = $"0x{regState.Registers[6]:x8}";
+            TbEdi.Text = $"0x{regState.Registers[7]:x8}";
+            TbEip.Text = $"0x{regState.Registers[8]:x8}";
         }
     }
 }
