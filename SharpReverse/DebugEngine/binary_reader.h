@@ -26,7 +26,7 @@ public:
     template <typename T>
     size_t read(std::vector<T>& t_vec, size_t count);
 
-    std::optional<pe_header_32> search_header();
+    std::optional<pe_header_32> inspect_header();
 
     void seek() const;
     void seek(long offset) const;

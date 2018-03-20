@@ -26,7 +26,7 @@ long binary_reader::offset() const
     return ftell(stream_);
 }
 
-std::optional<pe_header_32> binary_reader::search_header()
+std::optional<pe_header_32> binary_reader::inspect_header()
 {
     const auto n = offset();
 

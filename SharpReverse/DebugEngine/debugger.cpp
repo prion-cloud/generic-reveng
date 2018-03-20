@@ -13,7 +13,7 @@ debugger::debugger(
     uc_open(UC_ARCH_X86, UC_MODE_32, &uc_handle_); // TODO: Determine arch and mode
 
     auto reader = binary_reader(file_name);
-    auto header = reader.search_header();
+    auto header = reader.inspect_header();
 
     if (header == std::nullopt)
     {
