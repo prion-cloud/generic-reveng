@@ -21,7 +21,7 @@ namespace SharpReverse.Api.Test
             using (var debugger = new Debugger(@case.FileName))
             {
                 foreach (var debug in @case.Debugs)
-                    Assert.That.DebugEqual(debug, debugger.Debug32());
+                    Assert.That.DebugEqual(debug, (debugger.Debug32(), debugger.GetRegisterState32()));
             }
         }
     }

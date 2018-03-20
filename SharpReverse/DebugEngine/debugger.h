@@ -1,7 +1,9 @@
 #pragma once
 
 #include "binary_reader.h"
-#include "debug_32.h"
+
+#include "instruction_32.h"
+#include "register_state_32.h"
 
 class debugger
 {
@@ -25,9 +27,6 @@ class debugger
         uint32_t stack_pointer,
         uint32_t entry_point) const;
 
-    debug_32 create_result(
-        cs_insn* insn) const;
-
     void load_dll(
         std::string name) const;
 
@@ -38,5 +37,7 @@ public:
 
     void close();
 
-    debug_32 debug() const;
+    instruction_32 debug_32() const;
+
+    register_state_32 get_registers_32() const;
 };

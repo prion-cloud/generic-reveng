@@ -67,7 +67,7 @@ void debugger::close()
     uc_close(uc_handle_);
 }
 
-debug_32 debugger::debug() const
+instruction_32 debugger::debug_32() const
 {
     const size_t size = 16;
 
@@ -104,7 +104,39 @@ debug_32 debugger::debug() const
         uc_reg_write(uc_handle_, X86_REG_EIP, &next_addr);
     }
 
-    return create_result(instruction);
+    auto result = instruction_32();
+
+    result.id = instruction->id;
+
+    result.address = static_cast<uint32_t>(instruction->address);
+
+    result.size = instruction->size;
+
+    memcpy(result.bytes, instruction->bytes, instruction->size);
+
+    memcpy(result.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
+    memcpy(result.operands, instruction->op_str, strlen(instruction->op_str));
+
+    return result;
+}
+register_state_32 debugger::get_registers_32() const
+{
+    auto result = register_state_32();
+
+    uc_reg_read(uc_handle_, X86_REG_EAX, &result.eax);
+    uc_reg_read(uc_handle_, X86_REG_EBX, &result.ebx);
+    uc_reg_read(uc_handle_, X86_REG_ECX, &result.ecx);
+    uc_reg_read(uc_handle_, X86_REG_EDX, &result.edx);
+
+    uc_reg_read(uc_handle_, X86_REG_ESP, &result.esp);
+    uc_reg_read(uc_handle_, X86_REG_EBP, &result.ebp);
+
+    uc_reg_read(uc_handle_, X86_REG_ESI, &result.esi);
+    uc_reg_read(uc_handle_, X86_REG_EDI, &result.edi);
+
+    uc_reg_read(uc_handle_, X86_REG_EIP, &result.eip);
+
+    return result;
 }
 
 void debugger::initialize_section(
@@ -173,38 +205,6 @@ void debugger::initialize_registers(
     uc_reg_write(uc_handle_, X86_REG_EBP, &stack_pointer);
 
     uc_reg_write(uc_handle_, X86_REG_EIP, &entry_point);
-}
-
-debug_32 debugger::create_result(
-    cs_insn* instruction) const
-{
-    auto debug = debug_32();
-
-    debug.id = instruction->id;
-
-    debug.address = static_cast<uint32_t>(instruction->address);
-
-    debug.size = instruction->size;
-
-    memcpy(debug.bytes, instruction->bytes, instruction->size);
-
-    memcpy(debug.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
-    memcpy(debug.operands, instruction->op_str, strlen(instruction->op_str));
-
-    uc_reg_read(uc_handle_, X86_REG_EAX, &debug.eax);
-    uc_reg_read(uc_handle_, X86_REG_EBX, &debug.ebx);
-    uc_reg_read(uc_handle_, X86_REG_ECX, &debug.ecx);
-    uc_reg_read(uc_handle_, X86_REG_EDX, &debug.edx);
-
-    uc_reg_read(uc_handle_, X86_REG_ESP, &debug.esp);
-    uc_reg_read(uc_handle_, X86_REG_EBP, &debug.ebp);
-
-    uc_reg_read(uc_handle_, X86_REG_ESI, &debug.esi);
-    uc_reg_read(uc_handle_, X86_REG_EDI, &debug.edi);
-
-    uc_reg_read(uc_handle_, X86_REG_EIP, &debug.eip);
-
-    return debug;
 }
 
 void debugger::load_dll(

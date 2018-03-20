@@ -28,13 +28,16 @@
     <ClInclude Include="binary_reader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="debug_32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pe_header_32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="uc_extensions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="instruction_32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="register_state_32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

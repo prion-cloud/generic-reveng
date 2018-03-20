@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 
+using SharpReverse.Api.Interface;
+
 namespace SharpReverse.Api.Test
 {
     public class DebuggerTestCase
@@ -8,11 +10,11 @@ namespace SharpReverse.Api.Test
 
         public string FileName { get; }
 
-        public IDebug[] Debugs { get; }
+        public (IInstruction, IRegisterState)[] Debugs { get; }
 
         #endregion
 
-        private DebuggerTestCase(string fileName, IDebug[] debugs)
+        private DebuggerTestCase(string fileName, (IInstruction, IRegisterState)[] debugs)
         {
             FileName = fileName;
 
@@ -23,105 +25,158 @@ namespace SharpReverse.Api.Test
         {
             return new DebuggerTestCase(
                 Deploy.FILE_TEST_1,
-                new IDebug[]
+                new (IInstruction, IRegisterState)[]
                 {
-                    new TestDebug
-                    {
-                        Id = 0xd8,
-                        Address = 0x0,
-                        Bytes = new byte[] { 0x41 },
-                        Instruction = "inc ecx",
-                        Registers = new uint[] { 0x0, 0x0, 0x1, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x1 }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x87,
-                        Address = 0x1,
-                        Bytes = new byte[] { 0x4a },
-                        Instruction = "dec edx",
-                        Registers = new uint[] { 0x0, 0x0, 0x1, 0xffffffff, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x2 }
-                    }
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0xd8,
+                            Address = 0x0,
+                            Bytes = new byte[] { 0x41 },
+                            Instruction = "inc ecx"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x1, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x1 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x87,
+                            Address = 0x1,
+                            Bytes = new byte[] { 0x4a },
+                            Instruction = "dec edx"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x1, 0xffffffff, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x2 }
+                        }
+                    )
                 });
         }
         public static DebuggerTestCase GetTestCase2()
         {
             return new DebuggerTestCase(
                 Deploy.FILE_TEST_EXE,
-                new IDebug[]
+                new (IInstruction, IRegisterState)[]
                 {
-                    new TestDebug
-                    {
-                        Id = 0x10a,
-                        Address = 0x401000,
-                        Bytes = new byte[] { 0xeb, 0x10 },
-                        Instruction = "jmp 0x401012",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401012 }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x1ba,
-                        Address = 0x401012,
-                        Bytes = new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 },
-                        Instruction = "mov eax, dword ptr [0x4161bf]",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401017 }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x283,
-                        Address = 0x401017,
-                        Bytes = new byte[] { 0xc1, 0xe0, 0x02 },
-                        Instruction = "shl eax, 2",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101a }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x1ba,
-                        Address = 0x40101a,
-                        Bytes = new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 },
-                        Instruction = "mov dword ptr [0x4161c3], eax",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101f }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x244,
-                        Address = 0x40101f,
-                        Bytes = new byte[] { 0x52 },
-                        Instruction = "push edx",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffb, 0xffffffff, 0x0, 0x0, 0x401020 }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x244,
-                        Address = 0x401020,
-                        Bytes = new byte[] { 0x6a, 0x00 },
-                        Instruction = "push 0",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff7, 0xffffffff, 0x0, 0x0, 0x401022 }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x38,
-                        Address = 0x401022,
-                        Bytes = new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 },
-                        Instruction = "call 0x41518c",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x41518c }
-                    },
-                    new TestDebug
-                    {
-                        Id = 0x10a,
-                        Address = 0x41518c,
-                        Bytes = new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 },
-                        Instruction = "jmp dword ptr [0x42123c]",
-                        Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb0 }
-                    }
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x10a,
+                            Address = 0x401000,
+                            Bytes = new byte[] { 0xeb, 0x10 },
+                            Instruction = "jmp 0x401012"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401012 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x1ba,
+                            Address = 0x401012,
+                            Bytes = new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 },
+                            Instruction = "mov eax, dword ptr [0x4161bf]"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401017 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x283,
+                            Address = 0x401017,
+                            Bytes = new byte[] { 0xc1, 0xe0, 0x02 },
+                            Instruction = "shl eax, 2"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101a }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x1ba,
+                            Address = 0x40101a,
+                            Bytes = new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 },
+                            Instruction = "mov dword ptr [0x4161c3], eax"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101f }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x244,
+                            Address = 0x40101f,
+                            Bytes = new byte[] { 0x52 },
+                            Instruction = "push edx"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffb, 0xffffffff, 0x0, 0x0, 0x401020 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x244,
+                            Address = 0x401020,
+                            Bytes = new byte[] { 0x6a, 0x00 },
+                            Instruction = "push 0"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff7, 0xffffffff, 0x0, 0x0, 0x401022 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x38,
+                            Address = 0x401022,
+                            Bytes = new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 },
+                            Instruction = "call 0x41518c"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x41518c }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x10a,
+                            Address = 0x41518c,
+                            Bytes = new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 },
+                            Instruction = "jmp dword ptr [0x42123c]"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb0 }
+                        }
+                    )
                 });
         }
 
-        private struct TestDebug : IDebug
+        private struct TestInstruction : IInstruction
         {
             public uint Id { get; set; }
             public uint Address { get; set; }
             public IEnumerable<byte> Bytes { get; set; }
             public string Instruction { get; set; }
+        }
+        private struct TestRegisterState : IRegisterState
+        {
             public uint[] Registers { get; set; }
         }
     }

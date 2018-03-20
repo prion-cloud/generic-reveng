@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace SharpReverse.Api
+namespace SharpReverse.Api.Interface
 {
-    public interface IDebug
+    public interface IInstruction
     {
         uint Id { get; }
 
@@ -11,7 +11,5 @@ namespace SharpReverse.Api
         IEnumerable<byte> Bytes { get; }
 
         string Instruction { get; }
-
-        uint[] Registers { get; }
     }
 }

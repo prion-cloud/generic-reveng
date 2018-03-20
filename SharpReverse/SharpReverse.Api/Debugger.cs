@@ -16,12 +16,6 @@ namespace SharpReverse.Api
             ReleaseUnmanagedResources();
         }
 
-        public Debug32 Debug32()
-        {
-            PInvoke.debug_32(_handle, out var debug);
-            return debug;
-        }
-
         public void Dispose()
         {
             // TODO: Verify dispose pattern.
@@ -32,6 +26,18 @@ namespace SharpReverse.Api
         private void ReleaseUnmanagedResources()
         {
             PInvoke.close(_handle);
+        }
+
+        public Instruction32 Debug32()
+        {
+            PInvoke.debug_32(_handle, out var instruction);
+            return instruction;
+        }
+
+        public RegisterState32 GetRegisterState32()
+        {
+            PInvoke.get_register_state_32(_handle, out var registerState);
+            return registerState;
         }
     }
 }

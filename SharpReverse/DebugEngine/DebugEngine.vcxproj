@@ -87,8 +87,9 @@
   <ItemGroup>
     <ClInclude Include="binary_reader.h" />
     <ClInclude Include="debugger.h" />
-    <ClInclude Include="debug_32.h" />
+    <ClInclude Include="instruction_32.h" />
     <ClInclude Include="pe_header_32.h" />
+    <ClInclude Include="register_state_32.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="uc_extensions.h" />
   </ItemGroup>

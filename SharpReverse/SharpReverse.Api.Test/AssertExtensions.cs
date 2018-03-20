@@ -2,18 +2,21 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using SharpReverse.Api.Interface;
+
 namespace SharpReverse.Api.Test
 {
     public static class AssertExtensions
     {
         // ReSharper disable once UnusedParameter.Global
-        public static void DebugEqual(this Assert assert, IDebug expected, IDebug actual)
+        public static void DebugEqual(this Assert assert, (IInstruction, IRegisterState) expected, (IInstruction, IRegisterState) actual)
         {
-            Assert.AreEqual(expected.Id, actual.Id);
-            Assert.AreEqual(expected.Address, actual.Address);
-            Assert.IsTrue(actual.Bytes.SequenceEqual(expected.Bytes));
-            Assert.AreEqual(expected.Instruction, actual.Instruction);
-            Assert.IsTrue(actual.Registers.SequenceEqual(expected.Registers));
+            Assert.AreEqual(expected.Item1.Id, actual.Item1.Id);
+            Assert.AreEqual(expected.Item1.Address, actual.Item1.Address);
+            Assert.IsTrue(actual.Item1.Bytes.SequenceEqual(expected.Item1.Bytes));
+            Assert.AreEqual(expected.Item1.Instruction, actual.Item1.Instruction);
+
+            Assert.IsTrue(actual.Item2.Registers.SequenceEqual(expected.Item2.Registers));
         }
     }
 }

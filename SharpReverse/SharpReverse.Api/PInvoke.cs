@@ -10,14 +10,24 @@ namespace SharpReverse.Api
         public const string DLL_NAME = "DebugEngine.dll";
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr open(string fileName);
+        public static extern IntPtr open(
+            string fileName);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void close(IntPtr handle);
+        public static extern void close(
+            IntPtr handle);
+
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void debug_32(IntPtr handle, out Debug32 debug);
+        public static extern void debug_32(
+            IntPtr handle,
+            out Instruction32 instruction);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void get_register_state_32(
+            IntPtr handle,
+            out RegisterState32 register_state);
     }
 
-    public partial struct Debug32
+    public partial struct Instruction32
     {
         internal uint Id_;
 
@@ -32,11 +42,11 @@ namespace SharpReverse.Api
         internal string Mnemonic_;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 160)]
         internal string Operands_;
+    }
 
-        internal uint Eax_, Ebx_, Ecx_, Edx_;
-        internal uint Esp_, Ebp_;
-        internal uint Esi_, Edi_;
-        internal uint Eip_;
+    public partial struct RegisterState32
+    {
+        internal uint Eax_, Ebx_, Ecx_, Edx_, Esp_, Ebp_, Esi_, Edi_, Eip_;
     }
 
     //#pragma warning disable 649 TODO
