@@ -14,6 +14,6 @@ namespace SharpReverse.Api
 
         public IEnumerable<byte> Bytes => Bytes_.Take(Size_);
 
-        public string Instruction => $"{Mnemonic_} {Operands_}";
+        public string Instruction => $"{Mnemonic_}{(Operands_ == string.Empty ? null : $" {Operands_}")}";
     }
 }

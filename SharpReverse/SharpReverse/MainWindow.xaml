@@ -8,7 +8,7 @@
     <Grid Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
         <Button Content="Load file" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100" Click="Button_Load_Click"/>
         <Button Content="Step" HorizontalAlignment="Left" Margin="115,10,0,0" VerticalAlignment="Top" Width="100" Click="Button_Step_Click"/>
-        <TextBox Margin="10,38,160,10" Name="TextBox" TextWrapping="NoWrap" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" FontFamily="Consolas" IsReadOnly="True" VerticalScrollBarVisibility="Visible" />
+        <TextBox Margin="10,38,160,10" Name="TextBox" TextWrapping="NoWrap" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" FontFamily="Consolas" IsReadOnly="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" />
         <Grid HorizontalAlignment="Left" Height="273" VerticalAlignment="Top" Width="145" Margin="489,38,0,0">
             <Label Content="EAX:" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top"/>
             <TextBox Name="TbEax" HorizontalAlignment="Left" Height="23" Margin="41,4,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="90" IsReadOnly="True"/>

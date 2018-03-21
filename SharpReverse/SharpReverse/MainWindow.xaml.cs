@@ -47,7 +47,11 @@ namespace SharpReverse
 
             var instruction = _debugger.Debug32();
 
-            TextBox.Text += $"0x{instruction.Address:x8} {instruction.Instruction}\n";
+            var byteStr = string.Empty;
+            foreach (var b in instruction.Bytes)
+                byteStr += $"{b:x2} ";
+
+            TextBox.Text += $"{instruction.Address:x8} {instruction.Instruction} ({byteStr.Substring(0, byteStr.Length - 1)})\r\n";
 
             UpdateRegisterState();
         }
@@ -56,15 +60,15 @@ namespace SharpReverse
         {
             var regState = _debugger.GetRegisterState32();
 
-            TbEax.Text = $"0x{regState.Registers[0]:x8}";
-            TbEbx.Text = $"0x{regState.Registers[1]:x8}";
-            TbEcx.Text = $"0x{regState.Registers[2]:x8}";
-            TbEdx.Text = $"0x{regState.Registers[3]:x8}";
-            TbEsp.Text = $"0x{regState.Registers[4]:x8}";
-            TbEbp.Text = $"0x{regState.Registers[5]:x8}";
-            TbEsi.Text = $"0x{regState.Registers[6]:x8}";
-            TbEdi.Text = $"0x{regState.Registers[7]:x8}";
-            TbEip.Text = $"0x{regState.Registers[8]:x8}";
+            TbEax.Text = $"{regState.Registers[0]:x8}";
+            TbEbx.Text = $"{regState.Registers[1]:x8}";
+            TbEcx.Text = $"{regState.Registers[2]:x8}";
+            TbEdx.Text = $"{regState.Registers[3]:x8}";
+            TbEsp.Text = $"{regState.Registers[4]:x8}";
+            TbEbp.Text = $"{regState.Registers[5]:x8}";
+            TbEsi.Text = $"{regState.Registers[6]:x8}";
+            TbEdi.Text = $"{regState.Registers[7]:x8}";
+            TbEip.Text = $"{regState.Registers[8]:x8}";
         }
     }
 }
