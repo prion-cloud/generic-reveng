@@ -8,16 +8,16 @@ uc_err uc_mem_read(uc_engine* uc, uint64_t address, int offset, T& t); // Reads 
 uc_err uc_mem_read_string(uc_engine* uc, uint64_t address, std::string& s); // Reads a null-terminated string of at least one character (skips preceding zeros).
 
 template <typename T>
-uc_err uc_mem_write(uc_engine* uc, uint64_t address, T& t); // Writes generic data.
+uc_err uc_mem_write(uc_engine* uc, uint64_t address, T t); // Writes generic data.
 template <typename T>
-uc_err uc_mem_write(uc_engine* uc, uint64_t address, int offset, T& t); // Writes generic data on a specified offset.
+uc_err uc_mem_write(uc_engine* uc, uint64_t address, int offset, T t); // Writes generic data on a specified offset.
 
 // ---------------
 
 template <typename T>
 uc_err uc_mem_read(uc_engine* uc, const uint64_t address, T& t)
 {
-    return uc_mem_read_string(uc, address, 0, t);
+    return uc_mem_read(uc, address, 0, t);
 }
 template <typename T>
 uc_err uc_mem_read(uc_engine* uc, const uint64_t address, const int offset, T& t)
@@ -27,12 +27,12 @@ uc_err uc_mem_read(uc_engine* uc, const uint64_t address, const int offset, T& t
 }
 
 template <typename T>
-uc_err uc_mem_write(uc_engine* uc, const uint64_t address, T& t)
+uc_err uc_mem_write(uc_engine* uc, const uint64_t address, T t)
 {
     return uc_mem_write(uc, address, 0, t);
 }
 template <typename T>
-uc_err uc_mem_write(uc_engine* uc, const uint64_t address, const int offset, T& t)
+uc_err uc_mem_write(uc_engine* uc, const uint64_t address, const int offset, T t)
 {
     const auto size = sizeof(T);
     return uc_mem_write(uc, address + offset * size, &t, size);
