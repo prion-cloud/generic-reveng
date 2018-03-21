@@ -182,11 +182,53 @@ void debugger::initialize_registers(
 void debugger::load_dll(
     const std::string name) const
 {
-    // TODO
+    auto reader = binary_reader("C:\\Windows\\System32\\" + name); // TODO: Replace with %windir%, etc.
 
-    //auto reader = binary_reader("%windir%\\System32\\" + name);
+    auto header = reader.inspect_header();
 
-    //auto header = reader.search_header();
+    const auto reloc = header->optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+    const auto dll_base = reinterpret_cast<uint32_t>(GetModuleHandleA(name.c_str())); // TODO: GetModuleHandle?
+    const auto section_alignment = header->optional_header.SectionAlignment;
 
-    auto a = 0;
+    reader.seek();
+    uc_initialize_section(uc_, reader, dll_base, section_alignment, 0x1000 /*TODO: Change*/);
+
+    for (auto sh : header->section_headers)
+    {
+        reader.seek(sh.PointerToRawData);
+        uc_initialize_section(uc_, reader, dll_base + sh.VirtualAddress, section_alignment, sh.SizeOfRawData);
+    }
+
+    auto offset = 0;
+    while (true)
+    {
+        IMAGE_BASE_RELOCATION br;
+        uc_mem_read(uc_, dll_base + reloc + offset, br);
+
+        if (br.VirtualAddress == 0x0)
+            break;
+
+        const int count = (br.SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
+        for (auto j = 0; j < count; ++j)
+        {
+            WORD w;
+            uc_mem_read(uc_, dll_base + reloc + offset + sizeof(IMAGE_BASE_RELOCATION), j, w);
+
+            const auto type = (w & 0xf000) >> 12;
+            w &= 0xfff;
+
+            if (type == IMAGE_REL_BASED_HIGHLOW)
+            {
+                const auto address = dll_base + br.VirtualAddress + w;
+                const auto delta = dll_base - header->optional_header.ImageBase;
+
+                uint32_t value;
+                uc_mem_read(uc_, address, value);
+
+                uc_mem_write(uc_, address, value + delta);
+            }
+        }
+
+        offset += br.SizeOfBlock;
+    }
 }

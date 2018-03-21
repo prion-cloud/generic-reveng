@@ -164,6 +164,71 @@ namespace SharpReverse.Api.Test
                         {
                             Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb0 }
                         }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x1ba,
+                            Address = 0x77554fb0,
+                            Bytes = new byte[] { 0x8b, 0xff },
+                            Instruction = "mov edi, edi"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb2 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x244,
+                            Address = 0x77554fb2,
+                            Bytes = new byte[] { 0x55 },
+                            Instruction = "push ebp"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffff, 0x0, 0x0, 0x77554fb3 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x1ba,
+                            Address = 0x77554fb3,
+                            Bytes = new byte[] { 0x8b, 0xec },
+                            Instruction = "mov ebp, esp"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffef, 0x0, 0x0, 0x77554fb5 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x22e,
+                            Address = 0x77554fb5,
+                            Bytes = new byte[] { 0x5d },
+                            Instruction = "pop ebp"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb6 }
+                        }
+                    ),
+                    (
+                        new TestInstruction
+                        {
+                            Id = 0x10a,
+                            Address = 0x77554fb6,
+                            Bytes = new byte[] { 0xff, 0x25, 0xa0, 0x10, 0x5b, 0x77 },
+                            Instruction = "jmp dword ptr [0x775b10a0]"
+                        },
+                        new TestRegisterState
+                        {
+                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x0009323e }
+                        }
                     )
                 });
         }
