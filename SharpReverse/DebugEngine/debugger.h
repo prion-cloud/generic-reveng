@@ -7,19 +7,9 @@
 
 class debugger
 {
-    csh cs_handle_ { };
-    uc_engine* uc_handle_ { };
+    csh cs_ { };
+    uc_engine* uc_ { };
 
-    void initialize_section(
-        binary_reader reader,
-        size_t alignment,
-        size_t raw_address,
-        size_t raw_size,
-        size_t virtual_address) const;
-    void initialize_section(
-        size_t alignment,
-        size_t raw_size,
-        size_t virtual_address) const;
     void initialize_import_table(
         size_t image_base,
         size_t import_table_address) const;
