@@ -32,8 +32,6 @@ public:
     template <typename T, size_t Size>
     std::array<T, Size> read_array(long offset);
 
-    std::optional<pe_header_32> inspect_header();
-
     void seek() const;
     void seek(long offset) const;
     void seek(long offset, int origin) const;

@@ -91,7 +91,7 @@
     <ClInclude Include="pe_header_32.h" />
     <ClInclude Include="register_state_32.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="uc_extensions.h" />
+    <ClInclude Include="loader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="api.cpp" />
@@ -102,7 +102,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="uc_extensions.cpp" />
+    <ClCompile Include="loader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Capstone\msvc\Debug\capstone.lib" />
