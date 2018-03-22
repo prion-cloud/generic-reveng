@@ -13,7 +13,6 @@ debugger::debugger(
     uc_open(UC_ARCH_X86, UC_MODE_32, &uc_); // TODO: Determine arch and mode
 
     uint32_t entry_point;
-    uint32_t section_alignment;
     uint32_t stack_pointer;
     uint32_t stack_size;
 
@@ -23,37 +22,28 @@ debugger::debugger(
     if (header == std::nullopt)
     {
         entry_point = 0x0;
-        section_alignment = 0x1000;
         stack_pointer = 0xffffffff;
         stack_size = 0x1000;
 
-        reader.seek();
-        uc_initialize_section(uc_, reader, entry_point, section_alignment, reader.length());
+        uc_initialize_section(uc_, reader.read_vector<char>(reader.length(), entry_point), entry_point);
     }
     else
     {
         const auto image_base = header->optional_header.ImageBase;
 
         entry_point = image_base + header->optional_header.AddressOfEntryPoint;
-        section_alignment = header->optional_header.SectionAlignment;
         stack_pointer = 0xffffffff; // End of address space; TODO: Change?
         stack_size = header->optional_header.SizeOfStackCommit;
-        
-        reader.seek();
-        uc_initialize_section(uc_, reader, image_base, section_alignment, 0x1000 /*TODO: Change*/);
 
-        for (auto sh : header->section_headers)
-        {
-            reader.seek(sh.PointerToRawData);
-            uc_initialize_section(uc_, reader, image_base + sh.VirtualAddress, section_alignment, sh.SizeOfRawData);
-        }
+        for (auto s_h : header->section_headers)
+            uc_initialize_section(uc_, reader.read_vector<char>(s_h.SizeOfRawData, s_h.PointerToRawData), image_base + s_h.VirtualAddress);
 
         initialize_import_table(image_base, header->optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
     }
 
     reader.close();
 
-    uc_initialize_section(uc_, std::nullopt, stack_pointer - stack_size + 1, section_alignment, stack_size);
+    uc_initialize_section(uc_, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
     initialize_registers(stack_pointer, entry_point);
 }
 
@@ -188,16 +178,9 @@ void debugger::load_dll(
 
     const auto reloc = header->optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
     const auto dll_base = reinterpret_cast<uint32_t>(GetModuleHandleA(name.c_str())); // TODO: GetModuleHandle?
-    const auto section_alignment = header->optional_header.SectionAlignment;
 
-    reader.seek();
-    uc_initialize_section(uc_, reader, dll_base, section_alignment, 0x1000 /*TODO: Change*/);
-
-    for (auto sh : header->section_headers)
-    {
-        reader.seek(sh.PointerToRawData);
-        uc_initialize_section(uc_, reader, dll_base + sh.VirtualAddress, section_alignment, sh.SizeOfRawData);
-    }
+    for (auto s_h : header->section_headers)
+        uc_initialize_section(uc_, reader.read_vector<char>(s_h.SizeOfRawData, s_h.PointerToRawData), dll_base + s_h.VirtualAddress);
 
     auto offset = 0;
     while (true)

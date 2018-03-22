@@ -44,20 +44,21 @@ uc_err uc_initialize_registers(uc_engine* uc, size_t entry_point, size_t stack_p
 
     return UC_ERR_OK;
 }
-uc_err uc_initialize_section(uc_engine* uc, std::optional<binary_reader> reader, size_t virtual_address, size_t alignment, size_t raw_size)
-{
-    auto virtual_size = alignment * (raw_size / alignment);
-    if (raw_size % alignment > 0)
-        virtual_size += alignment;
 
-    const auto err = uc_mem_map(uc, virtual_address, virtual_size, UC_PROT_ALL);
+uc_err uc_initialize_section(uc_engine* uc, const std::vector<char> bytes, const size_t address)
+{
+    const auto alignment = 0x1000;
+
+    auto size = alignment * (bytes.size() / alignment);
+    if (bytes.size() % alignment > 0)
+        size += alignment;
+
+    const auto err = uc_mem_map(uc, address, size, UC_PROT_ALL);
     if (err != UC_ERR_OK)
         return err;
 
-    if (reader == std::nullopt)
+    if (bytes.size() == 0)
         return UC_ERR_OK;
 
-    std::vector<char> byte_vec;
-    reader->read(byte_vec, raw_size);
-    return uc_mem_write(uc, virtual_address, &byte_vec[0], byte_vec.size() - 1);
+    return uc_mem_write(uc, address, &bytes[0], bytes.size());
 }

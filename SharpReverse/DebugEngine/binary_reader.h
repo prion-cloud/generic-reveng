@@ -18,13 +18,19 @@ public:
     long offset() const;
 
     template <typename T>
-    bool read(T& t);
+    T read_value();
     template <typename T>
-    bool read(std::optional<T>& t_opt);
-    template <typename T, size_t Count>
-    size_t read(std::array<T, Count>& t_arr);
+    T read_value(long offset);
+
     template <typename T>
-    size_t read(std::vector<T>& t_vec, size_t count);
+    std::vector<T> read_vector(size_t size);
+    template <typename T>
+    std::vector<T> read_vector(size_t size, long offset);
+
+    template <typename T, size_t Size>
+    std::array<T, Size> read_array();
+    template <typename T, size_t Size>
+    std::array<T, Size> read_array(long offset);
 
     std::optional<pe_header_32> inspect_header();
 
@@ -34,51 +40,51 @@ public:
 };
 
 template <typename T>
-bool binary_reader::read(T& t)
+T binary_reader::read_value()
 {
     auto t_ptr = static_cast<T*>(malloc(sizeof(T)));
-    auto res = fread(t_ptr, sizeof(T), 1, stream_) - 1;
-
-    t = *t_ptr;
-
+    fread(t_ptr, sizeof(T), 1, stream_);
+    T val = *t_ptr;
     free(t_ptr);
-
-    return res;
+    return val;
 }
 template <typename T>
-bool binary_reader::read(std::optional<T>& t_opt)
+T binary_reader::read_value(const long offset)
 {
-    T t;
-    auto res = read(t);
-    t_opt = t;
-
-    return res;
+    seek(offset);
+    return read_value<T>();
 }
-template <typename T, size_t Count>
-size_t binary_reader::read(std::array<T, Count>& t_arr)
-{
-    auto i = 0;
-    for (; i < Count; ++i)
-    {
-        if (read(t_arr[i]))
-            break;
-    }
 
-    return i - Count;
+template <typename T>
+std::vector<T> binary_reader::read_vector(const size_t size)
+{
+    auto vec = std::vector<T>();
+
+    for (size_t i = 0; i < size; ++i)
+        vec.push_back(read_value<T>());
+
+    return vec;
 }
 template <typename T>
-size_t binary_reader::read(std::vector<T>& t_vec, const size_t count)
+std::vector<T> binary_reader::read_vector(const size_t size, const long offset)
 {
-    t_vec = std::vector<T>();
+    seek(offset);
+    return read_vector<T>(size);
+}
 
-    size_t i = 0;
-    for (; i < count; ++i)
-    {
-        T t;
-        if (read(t))
-            break;
-        t_vec.push_back(t);
-    }
+template <typename T, size_t Size>
+std::array<T, Size> binary_reader::read_array()
+{
+    auto arr = std::array<T, Size>();
 
-    return i - count;
+    for (auto i = 0; i < Size; ++i)
+        arr[i] = read<T>();
+
+    return arr;
+}
+template <typename T, size_t Size>
+std::array<T, Size> binary_reader::read_array(const long offset)
+{
+    seek(offset);
+    return read_array<T>();
 }

@@ -34,41 +34,28 @@ std::optional<pe_header_32> binary_reader::inspect_header()
     {
         header_opt = std::nullopt;
 
-        seek();
-
-        uint16_t mz_id;
-        if (read(mz_id) || mz_id != 0x5A4D)
+        auto mz_id = read_value<uint16_t>(0);
+        if (mz_id != 0x5A4D)
             return;
 
-        seek();
+        auto dh = read_value<IMAGE_DOS_HEADER>(0);
 
-        IMAGE_DOS_HEADER dh;
-        if (read(dh))
+        // TODO: dh -> magic_number?
+
+        auto pe_id = read_value<uint32_t>(dh.e_lfanew);
+        if (pe_id != 0x00004550)
             return;
 
-        seek(dh.e_lfanew);
-
-        uint32_t pe_id;
-        if (read(pe_id) || pe_id != 0x00004550)
-            return;
-
-        IMAGE_FILE_HEADER fh;
-        if (read(fh))
-            return;
+        auto fh = read_value<IMAGE_FILE_HEADER>();
 
         const auto oh_size = fh.SizeOfOptionalHeader;
 
         IMAGE_OPTIONAL_HEADER32 oh;
         if (oh_size == sizeof(IMAGE_OPTIONAL_HEADER32))
-        {
-            if (read(oh))
-                return;
-        }
+            oh = read_value<IMAGE_OPTIONAL_HEADER32>();
         else return;
 
-        std::vector<IMAGE_SECTION_HEADER> shs;
-        if (read(shs, fh.NumberOfSections))
-            return;
+        auto shs = read_vector<IMAGE_SECTION_HEADER>(fh.NumberOfSections);
 
         std::optional<pe_header_32> header = pe_header_32();
 
@@ -83,7 +70,7 @@ std::optional<pe_header_32> binary_reader::inspect_header()
     };
 
     std::optional<pe_header_32> header_opt;
-    find(header_opt);
+    find(header_opt); // TODO: Catch exception?
 
     seek(n);
 

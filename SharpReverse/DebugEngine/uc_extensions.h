@@ -1,7 +1,5 @@
 #pragma once
 
-#include "binary_reader.h"
-
 template <typename T>
 uc_err uc_mem_read(uc_engine* uc, uint64_t address, T& t); // Reads generic data.
 template <typename T>
@@ -15,7 +13,8 @@ template <typename T>
 uc_err uc_mem_write(uc_engine* uc, uint64_t address, int offset, T t); // Writes generic data on a specified offset.
 
 uc_err uc_initialize_registers(uc_engine* uc, size_t stack_pointer, size_t entry_point);
-uc_err uc_initialize_section(uc_engine* uc, std::optional<binary_reader> reader, size_t virtual_address, size_t alignment, size_t raw_size);
+
+uc_err uc_initialize_section(uc_engine* uc, std::vector<char> bytes, size_t address);
 
 // ---------------
 
