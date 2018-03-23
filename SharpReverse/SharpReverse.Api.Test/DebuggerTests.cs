@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -25,7 +26,10 @@ namespace SharpReverse.Api.Test
             using (@case.Debugger)
             {
                 foreach (var debug in @case.Debugs)
+                {
+                    Console.WriteLine($"0x{debug.Item1.Address:x8} | {debug.Item1.Instruction}");
                     AssertDebugEqual(debug, (@case.Debugger.Debug32(), @case.Debugger.GetRegisterState32()));
+                }
             }
         }
 
