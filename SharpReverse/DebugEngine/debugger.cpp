@@ -4,17 +4,9 @@
 
 #include "loader.h"
 
-debugger::debugger(
-    const std::string file_name)
-{
-    load_pe(file_name, cs_, uc_);
-
-    cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
-}
-
 debugger::debugger(const std::vector<char> bytes)
 {
-    load_bytes(bytes, cs_, uc_);
+    load(bytes, cs_, uc_);
 
     cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
 }

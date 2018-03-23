@@ -12,8 +12,6 @@ public:
 
     explicit debugger(std::vector<char> bytes);
 
-    explicit debugger(std::string file_name);
-
     void close();
 
     instruction_32 debug_32() const;

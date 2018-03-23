@@ -1,14 +1,13 @@
 #pragma once
 
-struct debug_info
+struct pe_header_32
 {
-    csh cs;
-    uc_engine* uc;
+    IMAGE_DOS_HEADER dos_header{};
+    IMAGE_FILE_HEADER file_header{};
 
-    size_t stack_pointer;
-    size_t entry_point;
+    IMAGE_OPTIONAL_HEADER32 optional_header{};
+
+    std::vector<IMAGE_SECTION_HEADER> section_headers{};
 };
 
-void load_pe(std::string file_name, csh& cs, uc_engine*& uc);
-
-void load_bytes(std::vector<char> bytes, csh& cs, uc_engine*& uc);
+void load(std::vector<char> bytes, csh& cs, uc_engine*& uc);

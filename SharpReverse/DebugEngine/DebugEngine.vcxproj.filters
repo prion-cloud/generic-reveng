@@ -25,12 +25,6 @@
     <ClInclude Include="debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="binary_reader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="pe_header_32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="instruction_32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -38,6 +32,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bin_dump.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -51,13 +48,13 @@
     <ClCompile Include="debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="binary_reader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bin_dump.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

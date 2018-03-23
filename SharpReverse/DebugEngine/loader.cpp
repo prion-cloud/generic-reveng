@@ -2,7 +2,7 @@
 
 #include "loader.h"
 
-#include "binary_reader.h"
+#include "bin_dump.h"
 
 template <typename T>
 T mem_read(uc_engine* uc, const uint64_t address, const int offset)
@@ -79,71 +79,47 @@ void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t add
         throw;
 }
 
-bool inspect_header(const binary_reader reader, pe_header_32& header)
+int inspect_pe(const std::vector<char> bytes, pe_header_32& header)
 {
-    const auto find = [](binary_reader reader, std::optional<pe_header_32>& header_opt)
-    {
-        header_opt = std::nullopt;
+    size_t cursor = 0;
 
-        auto mz_id = reader.read_value<uint16_t>(0);
-        if (mz_id != 0x5A4D)
-            return;
+    header.dos_header = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
 
-        auto dh = reader.read_value<IMAGE_DOS_HEADER>(0);
+    if (header.dos_header.e_magic != 0x5A4D)
+        return -1;
 
-        // TODO: dh -> magic_number?
+    const auto pe_id = *reinterpret_cast<const DWORD*>(&bytes[cursor += header.dos_header.e_lfanew]);
 
-        auto pe_id = reader.read_value<uint32_t>(dh.e_lfanew);
-        if (pe_id != 0x00004550)
-            return;
+    if (pe_id != 0x4550)
+        return -1;
 
-        auto fh = reader.read_value<IMAGE_FILE_HEADER>();
+    header.file_header = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
+    header.optional_header = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER*>(&bytes[cursor += sizeof(IMAGE_FILE_HEADER)]);
+    
+    header.section_headers = std::vector<IMAGE_SECTION_HEADER>(header.file_header.NumberOfSections);
+    for (auto i = 0; i < header.section_headers.size(); ++i)
+        header.section_headers[i] = *reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + sizeof(IMAGE_OPTIONAL_HEADER) + i * sizeof(IMAGE_SECTION_HEADER)]);
 
-        const auto oh_size = fh.SizeOfOptionalHeader;
+    //std::memcpy(&header.section_headers, &bytes[cursor], header.file_header.NumberOfSections * sizeof(IMAGE_SECTION_HEADER));
 
-        IMAGE_OPTIONAL_HEADER32 oh;
-        if (oh_size == sizeof(IMAGE_OPTIONAL_HEADER32))
-            oh = reader.read_value<IMAGE_OPTIONAL_HEADER32>();
-        else return;
-
-        auto shs = reader.read_vector<IMAGE_SECTION_HEADER>(fh.NumberOfSections);
-
-        std::optional<pe_header_32> h = pe_header_32();
-
-        h->dos_header = dh;
-        h->file_header = fh;
-
-        h->optional_header = oh;
-
-        h->section_headers = shs;
-
-        header_opt = h;
-    };
-
-    std::optional<pe_header_32> header_opt;
-    find(reader, header_opt); // TODO: Catch exception?
-
-    if (header_opt == std::nullopt)
-        return true;
-
-    header = header_opt.value();
-
-    return false;
+    return 0;
 }
 
 void load_dll(uc_engine* uc, const std::string name)
 {
-    auto reader = binary_reader("C:\\Windows\\System32\\" + name); // TODO: Replace with %windir%, etc.
+    const auto file_name = "C:\\Windows\\System32\\" + name; // TODO: Replace with %windir%, etc.
+
+    const auto bytes = create_dump(file_name);
 
     auto header = pe_header_32();
-    if (inspect_header(reader, header))
+    if (inspect_pe(bytes, header))
         throw;
 
     const auto reloc = header.optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
     const auto dll_base = reinterpret_cast<uint32_t>(GetModuleHandleA(name.c_str())); // TODO: GetModuleHandle?
 
     for (auto s_h : header.section_headers)
-        init_section(uc, reader.read_vector<char>(s_h.SizeOfRawData, s_h.PointerToRawData), dll_base + s_h.VirtualAddress);
+        init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_base + s_h.VirtualAddress);
 
     auto offset = 0;
     while (true)
@@ -204,44 +180,43 @@ void initialize_import_table(uc_engine* uc, const size_t image_base, const size_
     }
 }
 
-void load_pe(const std::string file_name, csh& cs, uc_engine*& uc)
+void load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
-    auto reader = binary_reader(file_name);
+    uint32_t entry_point;
+
+    uint32_t stack_pointer;
+    uint32_t stack_size;
 
     auto header = pe_header_32();
-    if (inspect_header(reader, header))
-        throw;
+    if (inspect_pe(bytes, header))
+    {
+        cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
+        uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Arch and mode?
 
-    cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
-    uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Determine arch and mode
+        entry_point = 0x0;
 
-    const auto image_base = header.optional_header.ImageBase;
+        init_section(uc, bytes, entry_point);
 
-    for (auto s_h : header.section_headers)
-        init_section(uc, reader.read_vector<char>(s_h.SizeOfRawData, s_h.PointerToRawData), image_base + s_h.VirtualAddress);
+        stack_pointer = 0xffffffff;
+        stack_size = 0x1000;
+    }
+    else
+    {
+        cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
+        uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Determine arch and mode from header.
 
-    initialize_import_table(uc, image_base, header.optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+        const auto image_base = header.optional_header.ImageBase;
 
-    reader.close();
+        for (auto s_h : header.section_headers)
+            init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
 
-    const auto stack_pointer = 0xffffffff; // End of address space; TODO: Change?
-    const auto stack_size = header.optional_header.SizeOfStackCommit;
+        initialize_import_table(uc, image_base, header.optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-    init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
-    init_registers(uc, stack_pointer, image_base + header.optional_header.AddressOfEntryPoint);
-}
+        entry_point = image_base + header.optional_header.AddressOfEntryPoint;
 
-void load_bytes(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
-{
-    cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
-    uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
-
-    const uint32_t entry_point = 0x0;
-
-    init_section(uc, bytes, entry_point);
-
-    const auto stack_pointer = 0xffffffff;
-    const auto stack_size = 0x1000;
+        stack_pointer = 0xffffffff; // End of address space; TODO: Change?
+        stack_size = header.optional_header.SizeOfStackCommit;
+    }
 
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
     init_registers(uc, stack_pointer, entry_point);

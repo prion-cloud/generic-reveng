@@ -85,17 +85,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="binary_reader.h" />
+    <ClInclude Include="bin_dump.h" />
     <ClInclude Include="debugger.h" />
     <ClInclude Include="instruction_32.h" />
-    <ClInclude Include="pe_header_32.h" />
     <ClInclude Include="register_state_32.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="loader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="api.cpp" />
-    <ClCompile Include="binary_reader.cpp" />
+    <ClCompile Include="bin_dump.cpp" />
     <ClCompile Include="debugger.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="stdafx.cpp">
