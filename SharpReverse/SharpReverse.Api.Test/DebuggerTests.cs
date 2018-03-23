@@ -1,4 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Linq;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+using SharpReverse.Api.Interface;
 
 namespace SharpReverse.Api.Test
 {
@@ -21,8 +25,18 @@ namespace SharpReverse.Api.Test
             using (@case.Debugger)
             {
                 foreach (var debug in @case.Debugs)
-                    Assert.That.DebugEqual(debug, (@case.Debugger.Debug32(), @case.Debugger.GetRegisterState32()));
+                    AssertDebugEqual(debug, (@case.Debugger.Debug32(), @case.Debugger.GetRegisterState32()));
             }
+        }
+
+        private static void AssertDebugEqual((IInstruction, IRegisterState) expected, (IInstruction, IRegisterState) actual)
+        {
+            Assert.AreEqual(expected.Item1.Id, actual.Item1.Id);
+            Assert.AreEqual(expected.Item1.Address, actual.Item1.Address);
+            Assert.IsTrue(actual.Item1.Bytes.SequenceEqual(expected.Item1.Bytes));
+            Assert.AreEqual(expected.Item1.Instruction, actual.Item1.Instruction);
+
+            Assert.IsTrue(actual.Item2.Registers.SequenceEqual(expected.Item2.Registers));
         }
     }
 }

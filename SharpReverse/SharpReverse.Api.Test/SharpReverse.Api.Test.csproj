@@ -49,7 +49,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssertExtensions.cs" />
     <Compile Include="DebuggerTestCase.cs" />
     <Compile Include="DebuggerTests.cs" />
     <Compile Include="Deploy.cs" />
