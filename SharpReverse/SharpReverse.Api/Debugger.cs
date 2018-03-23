@@ -8,7 +8,11 @@ namespace SharpReverse.Api
 
         public Debugger(string fileName)
         {
-            _handle = PInvoke.open(fileName);
+            _handle = PInvoke.open_file(fileName);
+        }
+        public Debugger(byte[] bytes)
+        {
+            _handle = PInvoke.open_bytes(bytes, Convert.ToUInt64(bytes.Length));
         }
 
         ~Debugger()

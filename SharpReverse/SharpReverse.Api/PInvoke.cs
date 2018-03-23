@@ -10,8 +10,12 @@ namespace SharpReverse.Api
         public const string DLL_NAME = "DebugEngine.dll";
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr open(
+        public static extern IntPtr open_file(
             string fileName);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr open_bytes(
+            byte[] bytes, ulong count);
+
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void close(
             IntPtr handle);

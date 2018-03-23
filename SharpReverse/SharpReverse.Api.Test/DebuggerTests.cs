@@ -18,10 +18,10 @@ namespace SharpReverse.Api.Test
 
         private static void TestDebug32(DebuggerTestCase @case)
         {
-            using (var debugger = new Debugger(@case.FileName))
+            using (@case.Debugger)
             {
                 foreach (var debug in @case.Debugs)
-                    Assert.That.DebugEqual(debug, (debugger.Debug32(), debugger.GetRegisterState32()));
+                    Assert.That.DebugEqual(debug, (@case.Debugger.Debug32(), @case.Debugger.GetRegisterState32()));
             }
         }
     }

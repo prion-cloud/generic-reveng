@@ -8,15 +8,15 @@ namespace SharpReverse.Api.Test
     {
         #region Properties
 
-        public string FileName { get; }
+        public Debugger Debugger { get; }
 
         public (IInstruction, IRegisterState)[] Debugs { get; }
 
         #endregion
 
-        private DebuggerTestCase(string fileName, (IInstruction, IRegisterState)[] debugs)
+        private DebuggerTestCase(Debugger debugger, (IInstruction, IRegisterState)[] debugs)
         {
-            FileName = fileName;
+            Debugger = debugger;
 
             Debugs = debugs;
         }
@@ -24,7 +24,7 @@ namespace SharpReverse.Api.Test
         public static DebuggerTestCase GetTestCase1()
         {
             return new DebuggerTestCase(
-                Deploy.FILE_TEST_1,
+                new Debugger(new byte[] { 0x41, 0x4a }), 
                 new (IInstruction, IRegisterState)[]
                 {
                     (
@@ -58,7 +58,7 @@ namespace SharpReverse.Api.Test
         public static DebuggerTestCase GetTestCase2()
         {
             return new DebuggerTestCase(
-                Deploy.FILE_TEST_EXE,
+                new Debugger(Deploy.FILE_TEST_EXE), 
                 new (IInstruction, IRegisterState)[]
                 {
                     (
