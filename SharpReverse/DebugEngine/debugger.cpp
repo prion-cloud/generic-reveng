@@ -6,7 +6,7 @@
 
 debugger::debugger(const std::vector<char> bytes)
 {
-    load(bytes, cs_, uc_);
+    load_x86(bytes, cs_, uc_);
 
     cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
 }

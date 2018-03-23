@@ -54,32 +54,7 @@ void mem_write(uc_engine* uc, const uint64_t address, T t)
     mem_write<T>(uc, address, t, 0);
 }
 
-void init_registers(uc_engine* uc, size_t stack_pointer, size_t entry_point)
-{
-    if (uc_reg_write(uc, X86_REG_ESP, &stack_pointer))
-        throw;
-    if (uc_reg_write(uc, X86_REG_EBP, &stack_pointer))
-        throw;
-
-    if (uc_reg_write(uc, X86_REG_EIP, &entry_point))
-        throw;
-}
-void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t address)
-{
-    const auto alignment = 0x1000;
-
-    auto size = alignment * (bytes.size() / alignment);
-    if (bytes.size() % alignment > 0)
-        size += alignment;
-
-    if (uc_mem_map(uc, address, size, UC_PROT_ALL))
-        throw;
-
-    if (uc_mem_write(uc, address, &bytes[0], bytes.size()))
-        throw;
-}
-
-int inspect_pe(const std::vector<char> bytes, pe_header_32& header)
+int inspect_pe(const std::vector<char> bytes, pe_header& header)
 {
     size_t cursor = 0;
 
@@ -94,65 +69,56 @@ int inspect_pe(const std::vector<char> bytes, pe_header_32& header)
         return -1;
 
     header.file_header = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
-    header.optional_header = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER*>(&bytes[cursor += sizeof(IMAGE_FILE_HEADER)]);
-    
+
+    cursor += sizeof(IMAGE_FILE_HEADER);
+
+    switch (header.file_header.SizeOfOptionalHeader)
+    {
+    case sizeof(IMAGE_OPTIONAL_HEADER32):
+        header.optional_header = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER32*>(&bytes[cursor]);
+        break;
+    case sizeof(IMAGE_OPTIONAL_HEADER64):
+        header.optional_header = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&bytes[cursor]);
+        break;
+    default:
+        return -1;
+    }
+
+    cursor += header.file_header.SizeOfOptionalHeader;
+
     header.section_headers = std::vector<IMAGE_SECTION_HEADER>(header.file_header.NumberOfSections);
     for (auto i = 0; i < header.section_headers.size(); ++i)
-        header.section_headers[i] = *reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + sizeof(IMAGE_OPTIONAL_HEADER) + i * sizeof(IMAGE_SECTION_HEADER)]);
-
-    //std::memcpy(&header.section_headers, &bytes[cursor], header.file_header.NumberOfSections * sizeof(IMAGE_SECTION_HEADER));
+        header.section_headers[i] = *reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]);
 
     return 0;
 }
 
-void load_dll(uc_engine* uc, const std::string name)
+void init_registers(uc_engine* uc, uint64_t stack_pointer, uint64_t entry_point)
 {
-    const auto file_name = "C:\\Windows\\System32\\" + name; // TODO: Replace with %windir%, etc.
-
-    const auto bytes = create_dump(file_name);
-
-    auto header = pe_header_32();
-    if (inspect_pe(bytes, header))
+    if (uc_reg_write(uc, X86_REG_ESP, &stack_pointer))
+        throw;
+    if (uc_reg_write(uc, X86_REG_EBP, &stack_pointer))
         throw;
 
-    const auto reloc = header.optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
-    const auto dll_base = reinterpret_cast<uint32_t>(GetModuleHandleA(name.c_str())); // TODO: GetModuleHandle?
+    if (uc_reg_write(uc, X86_REG_EIP, &entry_point))
+        throw;
+}
+void init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t address)
+{
+    const auto alignment = 0x1000;
 
-    for (auto s_h : header.section_headers)
-        init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_base + s_h.VirtualAddress);
+    auto size = alignment * (bytes.size() / alignment);
+    if (bytes.size() % alignment > 0)
+        size += alignment;
 
-    auto offset = 0;
-    while (true)
-    {
-        const auto br = mem_read<IMAGE_BASE_RELOCATION>(uc, dll_base + reloc + offset);
+    if (uc_mem_map(uc, address, size, UC_PROT_ALL))
+        throw;
 
-        if (br.VirtualAddress == 0x0)
-            break;
-
-        const int count = (br.SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
-        for (auto j = 0; j < count; ++j)
-        {
-            auto w = mem_read<WORD>(uc, dll_base + reloc + offset + sizeof(IMAGE_BASE_RELOCATION), j);
-
-            const auto type = (w & 0xf000) >> 12;
-            w &= 0xfff;
-
-            if (type == IMAGE_REL_BASED_HIGHLOW)
-            {
-                const auto address = dll_base + br.VirtualAddress + w;
-                const auto delta = dll_base - header.optional_header.ImageBase;
-
-                const auto value = mem_read<DWORD>(uc, address);
-
-                mem_write(uc, address, value + delta);
-            }
-        }
-
-        offset += br.SizeOfBlock;
-    }
+    if (uc_mem_write(uc, address, &bytes[0], bytes.size()))
+        throw;
 }
 
-void initialize_import_table(uc_engine* uc, const size_t image_base, const size_t import_table_address)
+void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t import_table_address)
 {
     for (auto i = 0;; ++i)
     {
@@ -161,33 +127,72 @@ void initialize_import_table(uc_engine* uc, const size_t image_base, const size_
         if (descriptor.Name == 0x0)
             break;
 
-        auto module_name = mem_read_string(uc, image_base + descriptor.Name);
+        const auto dll_name = mem_read_string(uc, image_base + descriptor.Name);
+        const auto dll_handle = GetModuleHandleA(dll_name.c_str());   // TODO: GetModuleHandle?
+        const auto dll_base = reinterpret_cast<uint32_t>(dll_handle); //
 
-        load_dll(uc, module_name);
+        const auto dll_bytes = create_dump("C:\\Windows\\System32\\" + dll_name); // TODO: Replace with %windir%, etc. / Search dll file
+        
+        auto dll_header = pe_header();
+        if (inspect_pe(dll_bytes, dll_header))
+            throw;
+
+        const auto dll_reloc = std::get<0>(dll_header.optional_header).DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+        
+        for (auto s_h : dll_header.section_headers)
+            init_section(uc, std::vector<char>(dll_bytes.begin() + s_h.PointerToRawData, dll_bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_base + s_h.VirtualAddress);
+
+        auto offset = 0;
+        while (true)
+        {
+            const auto reloc = mem_read<IMAGE_BASE_RELOCATION>(uc, dll_base + dll_reloc + offset);
+
+            if (!reloc.VirtualAddress)
+                break;
+
+            const int count = (reloc.SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
+            for (auto j = 0; j < count; ++j)
+            {
+                auto w = mem_read<WORD>(uc, dll_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), j);
+
+                const auto type = (w & 0xf000) >> 12;
+                w &= 0xfff;
+
+                if (type == IMAGE_REL_BASED_HIGHLOW)
+                {
+                    const auto address = dll_base + reloc.VirtualAddress + w;
+                    const auto delta = dll_base - std::visit([](auto x) { return static_cast<uint64_t>(x.ImageBase); }, dll_header.optional_header);
+
+                    const auto value = mem_read<DWORD>(uc, address);
+
+                    mem_write(uc, address, value + delta);
+                }
+            }
+
+            offset += reloc.SizeOfBlock;
+        }
 
         for (auto j = 0;; ++j)
         {
             const auto proc_name_address = mem_read<DWORD>(uc, image_base + descriptor.FirstThunk, j);
 
-            if (proc_name_address == 0x0)
+            if (!proc_name_address)
                 break;
 
-            auto proc_name = mem_read_string(uc, image_base + proc_name_address);
-
-            const auto proc_address = GetProcAddress(GetModuleHandleA(module_name.c_str()), proc_name.c_str()); // TODO: GetModuleHandle/GetProcAddress?
-            mem_write(uc, image_base + descriptor.FirstThunk, proc_address, j);
+            mem_write(uc, image_base + descriptor.FirstThunk,
+                GetProcAddress(dll_handle, mem_read_string(uc, image_base + proc_name_address).c_str()), j); // TODO: GetProcAddress?
         }
     }
 }
 
-void load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
+void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
-    uint32_t entry_point;
+    uint64_t entry_point;
 
-    uint32_t stack_pointer;
-    uint32_t stack_size;
+    uint64_t stack_pointer;
+    uint64_t stack_size;
 
-    auto header = pe_header_32();
+    auto header = pe_header();
     if (inspect_pe(bytes, header))
     {
         cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
@@ -202,20 +207,37 @@ void load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     }
     else
     {
-        cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
-        uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Determine arch and mode from header.
+        cs_mode cs_mode;
+        uc_mode uc_mode;
 
-        const auto image_base = header.optional_header.ImageBase;
+        switch (header.file_header.Machine)
+        {
+        case IMAGE_FILE_MACHINE_I386:
+            cs_mode = CS_MODE_32;
+            uc_mode = UC_MODE_32;
+            break;
+        case IMAGE_FILE_MACHINE_AMD64:
+            cs_mode = CS_MODE_64;
+            uc_mode = UC_MODE_64;
+            break;
+        default:
+            throw;
+        }
+
+        cs_open(CS_ARCH_X86, cs_mode, &cs);
+        uc_open(UC_ARCH_X86, uc_mode, &uc);
+
+        const auto image_base = VISIT_CAST(header.optional_header, ImageBase, uint64_t);
 
         for (auto s_h : header.section_headers)
             init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
 
-        initialize_import_table(uc, image_base, header.optional_header.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+        init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-        entry_point = image_base + header.optional_header.AddressOfEntryPoint;
+        entry_point = image_base + VISIT(header.optional_header, AddressOfEntryPoint);
 
         stack_pointer = 0xffffffff; // End of address space; TODO: Change?
-        stack_size = header.optional_header.SizeOfStackCommit;
+        stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, uint64_t);
     }
 
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
