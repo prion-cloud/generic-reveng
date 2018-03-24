@@ -2,15 +2,14 @@
 
 #include "debugger.h"
 
-#include "loader.h"
-
-debugger::debugger(const std::vector<char> bytes)
+target_machine debugger::open(const std::vector<char> bytes)
 {
-    load_x86(bytes, cs_, uc_);
+    const auto target = load_x86(bytes, cs_, uc_);
 
     cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
-}
 
+    return target;
+}
 void debugger::close()
 {
     cs_close(&cs_);
@@ -58,7 +57,7 @@ instruction_info debugger::debug() const
 
     result.id = instruction->id;
 
-    result.address = static_cast<uint32_t>(instruction->address);
+    result.address = instruction->address;
 
     result.size = instruction->size;
 

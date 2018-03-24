@@ -2,10 +2,12 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using SharpReverse.Api.PInvoke;
+
 namespace SharpReverse.Api.Test
 {
     [TestClass]
-    [DeploymentItem(PInvoke.DLL_NAME)]
+    [DeploymentItem(Interop.DLL_NAME)]
     [DeploymentItem(Deploy.FOLDER, Deploy.FOLDER)]
     public class DebuggerTest32
     {
@@ -25,7 +27,7 @@ namespace SharpReverse.Api.Test
                 foreach (var debug in @case.DebugInfos)
                 {
                     Console.WriteLine($"0x{debug.Item1.Address:x8} | {debug.Item1.Instruction}");
-                    DebuggerAssert.Equal(debug, (@case.Debugger.Debug(), @case.Debugger.GetRegisterState()));
+                    DebuggerAssert.Equal(debug, (@case.Debugger.Debug(), @case.Debugger.InspectRegisters()));
                 }
             }
         }

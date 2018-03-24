@@ -53,12 +53,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interface\IRegisterInfo.cs" />
-    <Compile Include="x86-32\RegisterInfo32.cs" />
-    <Compile Include="x86-32\InstructionInfo32.cs" />
+    <Compile Include="IRegisterInfo.cs" />
     <Compile Include="Debugger.cs" />
-    <Compile Include="Interface\IInstructionInfo.cs" />
-    <Compile Include="PInvoke.cs" />
+    <Compile Include="IInstructionInfo.cs" />
+    <Compile Include="TargetMachine.cs" />
+    <Compile Include="PInvoke\Interop.cs" />
+    <Compile Include="PInvoke\Struct\InstructionInfo.cs" />
+    <Compile Include="PInvoke\Struct\RegisterInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

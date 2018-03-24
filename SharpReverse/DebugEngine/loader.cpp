@@ -192,8 +192,10 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
     }
 }
 
-void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
+target_machine load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
+    target_machine target;
+
     size_t entry_point;
 
     size_t stack_pointer;
@@ -202,7 +204,9 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     auto header = pe_header();
     if (inspect_pe(bytes, header))
     {
-        cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
+        target = machine_x86_32;
+
+        cs_open(CS_ARCH_X86, CS_MODE_32, &cs);  //
         uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Arch and mode?
 
         entry_point = 0x0;
@@ -220,11 +224,13 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
         switch (header.file_header.Machine)
         {
         case IMAGE_FILE_MACHINE_I386:
+            target = machine_x86_32;
             cs_mode = CS_MODE_32;
             uc_mode = UC_MODE_32;
             break;
 #ifdef _WIN64
         case IMAGE_FILE_MACHINE_AMD64:
+            target = machine_x86_64;
             cs_mode = CS_MODE_64;
             uc_mode = UC_MODE_64;
             break;
@@ -251,4 +257,6 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
     init_registers(uc, stack_pointer, entry_point);
+
+    return target;
 }

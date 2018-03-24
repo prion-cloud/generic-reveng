@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-
-using SharpReverse.Api.Interface;
-
-namespace SharpReverse.Api.Test
+﻿namespace SharpReverse.Api.Test
 {
     public class DebuggerTestCase
     {
@@ -37,7 +33,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x1, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x1 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x1, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x1 }
                         }
                     ),
                     (
@@ -50,7 +46,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x1, 0xffffffff, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x2 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x1, 0xffffffff, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x2 }
                         }
                     )
                 });
@@ -71,7 +67,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401012 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401012 }
                         }
                     ),
                     (
@@ -84,7 +80,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401017 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x401017 }
                         }
                     ),
                     (
@@ -97,7 +93,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101a }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101a }
                         }
                     ),
                     (
@@ -110,7 +106,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101f }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffff, 0xffffffff, 0x0, 0x0, 0x40101f }
                         }
                     ),
                     (
@@ -123,7 +119,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffb, 0xffffffff, 0x0, 0x0, 0x401020 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffb, 0xffffffff, 0x0, 0x0, 0x401020 }
                         }
                     ),
                     (
@@ -136,7 +132,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff7, 0xffffffff, 0x0, 0x0, 0x401022 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff7, 0xffffffff, 0x0, 0x0, 0x401022 }
                         }
                     ),
                     (
@@ -149,7 +145,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x41518c }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x41518c }
                         }
                     ),
                     (
@@ -162,7 +158,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb0 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb0 }
                         }
                     ),
                     (
@@ -175,7 +171,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb2 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb2 }
                         }
                     ),
                     (
@@ -188,7 +184,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffff, 0x0, 0x0, 0x77554fb3 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffff, 0x0, 0x0, 0x77554fb3 }
                         }
                     ),
                     (
@@ -201,7 +197,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffef, 0x0, 0x0, 0x77554fb5 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffef, 0x0, 0x0, 0x77554fb5 }
                         }
                     ),
                     (
@@ -214,7 +210,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb6 }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb6 }
                         }
                     ),
                     (
@@ -227,7 +223,7 @@ namespace SharpReverse.Api.Test
                         },
                         new TestRegisterInfo
                         {
-                            Registers = new uint[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x0009323e }
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x0009323e }
                         }
                     )
                 });
@@ -236,13 +232,13 @@ namespace SharpReverse.Api.Test
         private struct TestInstructionInfo : IInstructionInfo
         {
             public uint Id { get; set; }
-            public uint Address { get; set; }
-            public IEnumerable<byte> Bytes { get; set; }
+            public ulong Address { get; set; }
+            public byte[] Bytes { get; set; }
             public string Instruction { get; set; }
         }
         private struct TestRegisterInfo : IRegisterInfo
         {
-            public uint[] Registers { get; set; }
+            public ulong[] Registers { get; set; }
         }
     }
 }

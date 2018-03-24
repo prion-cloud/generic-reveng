@@ -2,8 +2,6 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-using SharpReverse.Api.Interface;
-
 namespace SharpReverse.Api.Test
 {
     public static class DebuggerAssert

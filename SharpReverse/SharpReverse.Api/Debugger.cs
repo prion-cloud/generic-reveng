@@ -1,20 +1,22 @@
 ﻿using System;
 
-using SharpReverse.Api.Interface;
+using SharpReverse.Api.PInvoke;
 
 namespace SharpReverse.Api
 {
     public class Debugger : IDisposable
     {
         private readonly IntPtr _handle;
+
+        public TargetMachine TargetMachine { get; }
         
         public Debugger(byte[] bytes)
         {
-            _handle = PInvoke.Open(bytes, Convert.ToUInt64(bytes.Length));
+            TargetMachine = Interop.Open(out _handle, bytes, bytes.Length);
         }
         public Debugger(string fileName)
         {
-            _handle = PInvoke.OpenFile(fileName);
+            TargetMachine = Interop.OpenFile(out _handle, fileName);
         }
 
         ~Debugger()
@@ -31,18 +33,18 @@ namespace SharpReverse.Api
 
         private void ReleaseUnmanagedResources()
         {
-            PInvoke.Close(_handle);
+            Interop.Close(_handle);
         }
 
         public IInstructionInfo Debug()
         {
-            PInvoke.Debug(_handle, out var instruction);
+            Interop.Debug(_handle, out var instruction);
             return instruction;
         }
 
-        public IRegisterInfo GetRegisterState()
+        public IRegisterInfo InspectRegisters()
         {
-            PInvoke.GetRegisterState(_handle, out var registerState);
+            Interop.InspectRegisters(_handle, out var registerState);
             return registerState;
         }
     }

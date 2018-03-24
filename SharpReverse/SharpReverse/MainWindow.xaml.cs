@@ -58,7 +58,7 @@ namespace SharpReverse
 
         private void UpdateRegisterState()
         {
-            var regState = _debugger.GetRegisterState();
+            var regState = _debugger.InspectRegisters();
 
             TbEax.Text = $"{regState.Registers[0]:x8}";
             TbEbx.Text = $"{regState.Registers[1]:x8}";
