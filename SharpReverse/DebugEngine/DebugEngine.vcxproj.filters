@@ -65,5 +65,11 @@
     <Library Include="..\..\Unicorn\msvc\Win32\Debug\unicorn_static.lib">
       <Filter>Static Libraries</Filter>
     </Library>
+    <Library Include="..\..\Capstone\msvc\x64\Debug\capstone.lib">
+      <Filter>Static Libraries</Filter>
+    </Library>
+    <Library Include="..\..\Unicorn\msvc\x64\Debug\unicorn_static.lib">
+      <Filter>Static Libraries</Filter>
+    </Library>
   </ItemGroup>
 </Project>

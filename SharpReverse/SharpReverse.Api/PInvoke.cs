@@ -7,7 +7,12 @@ namespace SharpReverse.Api
 
     internal static class PInvoke
     {
-        public const string DLL_NAME = "DebugEngine.dll";
+        public const string DLL_NAME =
+#if WIN64
+            "DebugEngine64.dll";
+#else
+            "DebugEngine32.dll";
+#endif
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr open_file(
