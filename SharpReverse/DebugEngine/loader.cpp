@@ -8,7 +8,7 @@
 #define VISIT_CAST(var, member, cast) visit([](auto x) { return static_cast<cast>(x.member); }, var)
 
 template <typename T>
-T mem_read(uc_engine* uc, const uint64_t address, const int offset)
+T mem_read(uc_engine* uc, const size_t address, const int offset)
 {
     T t;
     const auto size = sizeof(T);
@@ -17,20 +17,20 @@ T mem_read(uc_engine* uc, const uint64_t address, const int offset)
     return t;
 }
 template <typename T>
-T mem_read(uc_engine* uc, const uint64_t address)
+T mem_read(uc_engine* uc, const size_t address)
 {
     return mem_read<T>(uc, address, 0);
 }
 
 template <typename T>
-void mem_write(uc_engine* uc, const uint64_t address, T t, const int offset)
+void mem_write(uc_engine* uc, const size_t address, T t, const int offset)
 {
     const auto size = sizeof(T);
     if (uc_mem_write(uc, address + offset * size, &t, size))
         throw;
 }
 template <typename T>
-void mem_write(uc_engine* uc, const uint64_t address, T t)
+void mem_write(uc_engine* uc, const size_t address, T t)
 {
     mem_write<T>(uc, address, t, 0);
 }
@@ -42,7 +42,7 @@ void reg_write(uc_engine* uc, const int regid, const T value)
         throw;
 }
 
-std::string mem_read_string(uc_engine* uc, const uint64_t address)
+std::string mem_read_string(uc_engine* uc, const size_t address)
 {
     auto end = false;
     std::vector<char> chars;
@@ -103,14 +103,14 @@ int inspect_pe(const std::vector<char> bytes, pe_header& header)
     return 0;
 }
 
-void init_registers(uc_engine* uc, const uint64_t stack_pointer, const uint64_t entry_point)
+void init_registers(uc_engine* uc, const size_t stack_pointer, const size_t entry_point)
 {
     reg_write(uc, UC_X86_REG_ESP, stack_pointer);
     reg_write(uc, UC_X86_REG_EBP, stack_pointer);
 
     reg_write(uc, UC_X86_REG_EIP, entry_point);
 }
-void init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t address)
+void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t address)
 {
     const auto alignment = 0x1000;
 
@@ -125,7 +125,7 @@ void init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t a
         throw;
 }
 
-void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t import_table_address)
+void init_imports(uc_engine* uc, const size_t image_base, const size_t import_table_address)
 {
     for (auto i = 0;; ++i)
     {
@@ -136,7 +136,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
 
         const auto dll_name = mem_read_string(uc, image_base + descriptor.Name);
         const auto dll_handle = GetModuleHandleA(dll_name.c_str());   // TODO: GetModuleHandle?
-        const auto dll_base = reinterpret_cast<uint32_t>(dll_handle); //
+        const auto dll_base = reinterpret_cast<size_t>(dll_handle); //
 
         const auto dll_bytes = create_dump("C:\\Windows\\System32\\" + dll_name); // TODO: Replace with %windir%, etc. / Search dll file
         
@@ -144,7 +144,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
         if (inspect_pe(dll_bytes, dll_header))
             throw;
 
-        const auto dll_reloc = std::get<0>(dll_header.optional_header).DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+        const auto dll_reloc = VISIT(dll_header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
         
         for (auto s_h : dll_header.section_headers)
             init_section(uc, std::vector<char>(dll_bytes.begin() + s_h.PointerToRawData, dll_bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_base + s_h.VirtualAddress);
@@ -194,10 +194,10 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
 
 void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
-    uint64_t entry_point;
+    size_t entry_point;
 
-    uint64_t stack_pointer;
-    uint64_t stack_size;
+    size_t stack_pointer;
+    size_t stack_size;
 
     auto header = pe_header();
     if (inspect_pe(bytes, header))
@@ -236,7 +236,7 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
         cs_open(CS_ARCH_X86, cs_mode, &cs);
         uc_open(UC_ARCH_X86, uc_mode, &uc);
 
-        const auto image_base = VISIT_CAST(header.optional_header, ImageBase, uint64_t);
+        const auto image_base = VISIT_CAST(header.optional_header, ImageBase, size_t);
 
         for (auto s_h : header.section_headers)
             init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
@@ -246,9 +246,9 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
         entry_point = image_base + VISIT(header.optional_header, AddressOfEntryPoint);
 
         stack_pointer = 0xffffffff; // End of address space; TODO: Change?
-        stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, uint64_t);
+        stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
     }
 
-    init_section(uc, std::vector<char>(static_cast<size_t>(stack_size)), stack_pointer - stack_size + 1);
+    init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
     init_registers(uc, stack_pointer, entry_point);
 }
