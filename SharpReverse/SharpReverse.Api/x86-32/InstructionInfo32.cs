@@ -3,10 +3,9 @@ using System.Linq;
 
 using SharpReverse.Api.Interface;
 
-// ReSharper disable once CheckNamespace
 namespace SharpReverse.Api
 {
-    public partial struct Instruction32 : IInstruction
+    public partial struct Instruction32 : IInstructionInfo
     {
         public uint Id => Id_;
 

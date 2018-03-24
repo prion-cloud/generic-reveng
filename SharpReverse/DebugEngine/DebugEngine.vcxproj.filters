@@ -25,12 +25,6 @@
     <ClInclude Include="debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="instruction_32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="register_state_32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>

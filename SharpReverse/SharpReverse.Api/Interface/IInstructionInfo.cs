@@ -2,7 +2,7 @@
 
 namespace SharpReverse.Api.Interface
 {
-    public interface IInstruction
+    public interface IInstructionInfo
     {
         uint Id { get; }
 

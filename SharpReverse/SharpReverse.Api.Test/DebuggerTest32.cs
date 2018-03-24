@@ -22,10 +22,10 @@ namespace SharpReverse.Api.Test
         {
             using (@case.Debugger)
             {
-                foreach (var debug in @case.Debugs)
+                foreach (var debug in @case.DebugInfos)
                 {
                     Console.WriteLine($"0x{debug.Item1.Address:x8} | {debug.Item1.Instruction}");
-                    DebuggerAssert.Equal(debug, (@case.Debugger.Debug32(), @case.Debugger.GetRegisterState32()));
+                    DebuggerAssert.Equal(debug, (@case.Debugger.Debug(), @case.Debugger.GetRegisterState()));
                 }
             }
         }

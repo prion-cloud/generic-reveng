@@ -1,7 +1,23 @@
 #pragma once
 
-#include "instruction_32.h"
-#include "register_state_32.h"
+struct instruction_info
+{
+    uint32_t id;
+
+    uint32_t address;
+
+    uint16_t size;
+    
+    uint8_t bytes[16];
+    
+    char mnemonic[32];
+    char operands[160];
+};
+
+struct register_info
+{
+    size_t eax, ebx, ecx, edx, esp, ebp, esi, edi, eip;
+};
 
 class debugger
 {
@@ -14,7 +30,7 @@ public:
 
     void close();
 
-    instruction_32 debug_32() const;
+    instruction_info debug() const;
 
-    register_state_32 get_registers_32() const;
+    register_info inspect_registers() const;
 };

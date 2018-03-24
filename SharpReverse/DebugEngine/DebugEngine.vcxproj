@@ -159,8 +159,6 @@
   <ItemGroup>
     <ClInclude Include="bin_dump.h" />
     <ClInclude Include="debugger.h" />
-    <ClInclude Include="instruction_32.h" />
-    <ClInclude Include="register_state_32.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="loader.h" />
   </ItemGroup>

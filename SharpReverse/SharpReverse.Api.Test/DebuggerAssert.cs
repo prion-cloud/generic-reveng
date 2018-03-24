@@ -8,7 +8,7 @@ namespace SharpReverse.Api.Test
 {
     public static class DebuggerAssert
     {
-        public static void Equal((IInstruction, IRegisterState) expected, (IInstruction, IRegisterState) actual)
+        public static void Equal((IInstructionInfo, IRegisterInfo) expected, (IInstructionInfo, IRegisterInfo) actual)
         {
             Assert.AreEqual(expected.Item1.Id, actual.Item1.Id, nameof(actual.Item1.Id));
             Assert.AreEqual(expected.Item1.Address, actual.Item1.Address, nameof(actual.Item1.Address));

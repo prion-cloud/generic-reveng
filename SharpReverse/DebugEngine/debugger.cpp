@@ -17,7 +17,7 @@ void debugger::close()
     uc_close(uc_);
 }
 
-instruction_32 debugger::debug_32() const
+instruction_info debugger::debug() const
 {
     const size_t size = 16;
 
@@ -54,7 +54,7 @@ instruction_32 debugger::debug_32() const
         uc_reg_write(uc_, X86_REG_EIP, &next_addr);
     }
 
-    auto result = instruction_32();
+    auto result = instruction_info();
 
     result.id = instruction->id;
 
@@ -70,9 +70,9 @@ instruction_32 debugger::debug_32() const
     return result;
 }
 
-register_state_32 debugger::get_registers_32() const
+register_info debugger::inspect_registers() const
 {
-    auto result = register_state_32();
+    auto result = register_info();
 
     uc_reg_read(uc_, X86_REG_EAX, &result.eax);
     uc_reg_read(uc_, X86_REG_EBX, &result.ebx);

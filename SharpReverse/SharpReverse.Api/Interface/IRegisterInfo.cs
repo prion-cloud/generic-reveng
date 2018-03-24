@@ -1,6 +1,6 @@
 ﻿namespace SharpReverse.Api.Interface
 {
-    public interface IRegisterState
+    public interface IRegisterInfo
     {
         uint[] Registers { get; }
     }

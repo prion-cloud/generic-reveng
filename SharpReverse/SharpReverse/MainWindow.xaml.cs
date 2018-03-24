@@ -45,7 +45,7 @@ namespace SharpReverse
             if (_debugger == null)
                 return;
 
-            var instruction = _debugger.Debug32();
+            var instruction = _debugger.Debug();
 
             var byteStr = string.Empty;
             foreach (var b in instruction.Bytes)
@@ -58,7 +58,7 @@ namespace SharpReverse
 
         private void UpdateRegisterState()
         {
-            var regState = _debugger.GetRegisterState32();
+            var regState = _debugger.GetRegisterState();
 
             TbEax.Text = $"{regState.Registers[0]:x8}";
             TbEbx.Text = $"{regState.Registers[1]:x8}";
