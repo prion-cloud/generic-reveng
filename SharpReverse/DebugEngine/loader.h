@@ -1,8 +1,5 @@
 #pragma once
 
-#define VISIT(var, member) visit([](auto x) { return x.member; }, var)
-#define VISIT_CAST(var, member, cast) visit([](auto x) { return static_cast<cast>(x.member); }, var)
-
 struct pe_header
 {
     IMAGE_DOS_HEADER dos_header { };

@@ -4,6 +4,9 @@
 
 #include "bin_dump.h"
 
+#define VISIT(var, member) visit([](auto x) { return x.member; }, var)
+#define VISIT_CAST(var, member, cast) visit([](auto x) { return static_cast<cast>(x.member); }, var)
+
 template <typename T>
 T mem_read(uc_engine* uc, const uint64_t address, const int offset)
 {
@@ -17,6 +20,26 @@ template <typename T>
 T mem_read(uc_engine* uc, const uint64_t address)
 {
     return mem_read<T>(uc, address, 0);
+}
+
+template <typename T>
+void mem_write(uc_engine* uc, const uint64_t address, T t, const int offset)
+{
+    const auto size = sizeof(T);
+    if (uc_mem_write(uc, address + offset * size, &t, size))
+        throw;
+}
+template <typename T>
+void mem_write(uc_engine* uc, const uint64_t address, T t)
+{
+    mem_write<T>(uc, address, t, 0);
+}
+
+template <typename T>
+void reg_write(uc_engine* uc, const int regid, const T value)
+{
+    if (uc_reg_write(uc, regid, &value))
+        throw;
 }
 
 std::string mem_read_string(uc_engine* uc, const uint64_t address)
@@ -39,19 +62,6 @@ std::string mem_read_string(uc_engine* uc, const uint64_t address)
     }
 
     return std::string(chars.begin(), chars.end());
-}
-
-template <typename T>
-void mem_write(uc_engine* uc, const uint64_t address, T t, const int offset)
-{
-    const auto size = sizeof(T);
-    if (uc_mem_write(uc, address + offset * size, &t, size))
-        throw;
-}
-template <typename T>
-void mem_write(uc_engine* uc, const uint64_t address, T t)
-{
-    mem_write<T>(uc, address, t, 0);
 }
 
 int inspect_pe(const std::vector<char> bytes, pe_header& header)
@@ -93,15 +103,12 @@ int inspect_pe(const std::vector<char> bytes, pe_header& header)
     return 0;
 }
 
-void init_registers(uc_engine* uc, uint64_t stack_pointer, uint64_t entry_point)
+void init_registers(uc_engine* uc, const uint64_t stack_pointer, const uint64_t entry_point)
 {
-    if (uc_reg_write(uc, X86_REG_ESP, &stack_pointer))
-        throw;
-    if (uc_reg_write(uc, X86_REG_EBP, &stack_pointer))
-        throw;
+    reg_write(uc, UC_X86_REG_ESP, stack_pointer);
+    reg_write(uc, UC_X86_REG_EBP, stack_pointer);
 
-    if (uc_reg_write(uc, X86_REG_EIP, &entry_point))
-        throw;
+    reg_write(uc, UC_X86_REG_EIP, entry_point);
 }
 void init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t address)
 {
@@ -216,10 +223,12 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
             cs_mode = CS_MODE_32;
             uc_mode = UC_MODE_32;
             break;
+#ifdef _WIN64
         case IMAGE_FILE_MACHINE_AMD64:
             cs_mode = CS_MODE_64;
             uc_mode = UC_MODE_64;
             break;
+#endif
         default:
             throw;
         }
@@ -240,6 +249,6 @@ void load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
         stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, uint64_t);
     }
 
-    init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
+    init_section(uc, std::vector<char>(static_cast<size_t>(stack_size)), stack_pointer - stack_size + 1);
     init_registers(uc, stack_pointer, entry_point);
 }
