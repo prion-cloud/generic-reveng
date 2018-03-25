@@ -63,11 +63,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Win32\Debug\DebugEngine32.dll">
+    <None Include="..\Debug\Win32\DebugEngine32.dll">
       <Link>DebugEngine32.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\x64\Debug\DebugEngine64.dll">
+    <None Include="..\Debug\x64\DebugEngine64.dll">
       <Link>DebugEngine64.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
