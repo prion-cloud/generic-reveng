@@ -1,5 +1,9 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 using Microsoft.Win32;
 
@@ -47,11 +51,28 @@ namespace SharpReverse
 
             var instruction = _debugger.Debug();
 
-            var byteStr = string.Empty;
-            foreach (var b in instruction.Bytes)
-                byteStr += $"{b:x2} ";
+            var addrStr = string.Empty;
 
-            TextBox.Text += $"{instruction.Address:x8} {instruction.Instruction} ({byteStr.Substring(0, byteStr.Length - 1)})\r\n";
+            switch (_debugger.TargetMachine)
+            {
+                case TargetMachine.x86_32:
+                    addrStr = instruction.Address.ToString("x8");
+                    break;
+                case TargetMachine.x86_64:
+                    addrStr = instruction.Address.ToString("x16");
+                    break;
+            }
+
+            var byteStr = string.Empty;
+            for (var i = 0; i < instruction.Bytes.Length; i++)
+            {
+                if (i > 0)
+                    byteStr += " ";
+
+                byteStr += $"{instruction.Bytes[i]:x2}";
+            }
+
+            TextBox.Text += $"{addrStr} {instruction.Instruction} ({byteStr})\r\n";
 
             UpdateRegisterState();
         }
@@ -60,15 +81,32 @@ namespace SharpReverse
         {
             var regState = _debugger.InspectRegisters();
 
-            TbEax.Text = $"{regState.Registers[0]:x8}";
-            TbEbx.Text = $"{regState.Registers[1]:x8}";
-            TbEcx.Text = $"{regState.Registers[2]:x8}";
-            TbEdx.Text = $"{regState.Registers[3]:x8}";
-            TbEsp.Text = $"{regState.Registers[4]:x8}";
-            TbEbp.Text = $"{regState.Registers[5]:x8}";
-            TbEsi.Text = $"{regState.Registers[6]:x8}";
-            TbEdi.Text = $"{regState.Registers[7]:x8}";
-            TbEip.Text = $"{regState.Registers[8]:x8}";
+            string format;
+            switch (_debugger.TargetMachine)
+            {
+                case TargetMachine.x86_32:
+                    format = "x8";
+                    break;
+                case TargetMachine.x86_64:
+                    format = "x16";
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            var tbs = TbGrid.Children.OfType<TextBox>().ToArray();
+
+            for (var i = 0; i < tbs.Length; i++)
+            {
+                var prev = tbs[i].Text;
+                var cur = regState.Registers[i].ToString(format);
+
+                if (prev != string.Empty && cur != prev)
+                    tbs[i].Foreground = new SolidColorBrush(Colors.Red);
+                else tbs[i].Foreground = new SolidColorBrush(Colors.Black);
+
+                tbs[i].Text = cur;
+            }
         }
     }
 }
