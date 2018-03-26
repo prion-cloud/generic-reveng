@@ -16,19 +16,22 @@ namespace SharpReverse.Api.PInvoke
             "DebugEngine32.dll";
 #endif
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "open")]
-        public static extern TargetMachine Open(out IntPtr handle, byte[] bytes, int size);
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "open_file")]
-        public static extern TargetMachine OpenFile(out IntPtr handle, string fileName);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int debugger_open(out IntPtr handle, byte[] bytes, int size);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int debugger_open_file(out IntPtr handle, string fileName);
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "close")]
-        public static extern void Close(IntPtr handle);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int debugger_close(IntPtr handle);
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debug")]
-        public static extern void Debug(IntPtr handle, out InstructionInfo instructionInfo);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool targets_64(IntPtr handle);
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "inspect_registers")]
-        public static extern void InspectRegisters(IntPtr handle, out RegisterInfo registerInfo);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void debug(IntPtr handle, out InstructionInfo ins_info);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void inspect_registers(IntPtr handle, out RegisterInfo reg_info);
     }
 }
 

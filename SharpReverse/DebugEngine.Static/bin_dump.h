@@ -1,3 +1,3 @@
 #pragma once
 
-std::vector<char> create_dump(std::string file_name);
+int create_dump(std::string file_name, std::vector<char>& bytes);

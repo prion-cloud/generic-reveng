@@ -1,19 +1,27 @@
 #include "stdafx.h"
 
-#include "loader.h"
+#include "pe_loader.h"
 
 #include "bin_dump.h"
 
 #define VISIT(var, member) visit([](auto x) { return x.member; }, var)
 #define VISIT_CAST(var, member, cast) visit([](auto x) { return static_cast<cast>(x.member); }, var)
 
+bool pe_header::targets_32() const
+{
+    return file_header.Machine == IMAGE_FILE_MACHINE_I386;
+}
+bool pe_header::targets_64() const
+{
+    return file_header.Machine == IMAGE_FILE_MACHINE_AMD64;
+}
+
 template <typename T>
 T mem_read(uc_engine* uc, const size_t address, const int offset)
 {
     T t;
     const auto size = sizeof(T);
-    if (uc_mem_read(uc, address + offset * size, &t, size))
-        throw;
+    C_VIT(uc_mem_read(uc, address + offset * size, &t, size));
     return t;
 }
 template <typename T>
@@ -26,8 +34,7 @@ template <typename T>
 void mem_write(uc_engine* uc, const size_t address, T t, const int offset)
 {
     const auto size = sizeof(T);
-    if (uc_mem_write(uc, address + offset * size, &t, size))
-        throw;
+    C_VIT(uc_mem_write(uc, address + offset * size, &t, size));
 }
 template <typename T>
 void mem_write(uc_engine* uc, const size_t address, T t)
@@ -38,11 +45,10 @@ void mem_write(uc_engine* uc, const size_t address, T t)
 template <typename T>
 void reg_write(uc_engine* uc, const int regid, const T value)
 {
-    if (uc_reg_write(uc, regid, &value))
-        throw;
+    C_VIT(uc_reg_write(uc, regid, &value));
 }
 
-std::string mem_read_string(uc_engine* uc, const size_t address)
+std::string mem_read_string_skip(uc_engine* uc, const size_t address)
 {
     auto end = false;
     std::vector<char> chars;
@@ -64,19 +70,19 @@ std::string mem_read_string(uc_engine* uc, const size_t address)
     return std::string(chars.begin(), chars.end());
 }
 
-int inspect_pe(const std::vector<char> bytes, pe_header& header)
+int inspect_header(const std::vector<char> bytes, pe_header& header)
 {
     size_t cursor = 0;
 
     header.dos_header = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
 
     if (header.dos_header.e_magic != 0x5A4D)
-        return -1;
+        return F_FAILURE;
 
     const auto pe_id = *reinterpret_cast<const DWORD*>(&bytes[cursor += header.dos_header.e_lfanew]);
 
     if (pe_id != 0x4550)
-        return -1;
+        return F_FAILURE;
 
     header.file_header = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
 
@@ -91,7 +97,7 @@ int inspect_pe(const std::vector<char> bytes, pe_header& header)
         header.optional_header = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&bytes[cursor]);
         break;
     default:
-        return -1;
+        return F_FAILURE;
     }
 
     cursor += header.file_header.SizeOfOptionalHeader;
@@ -100,27 +106,9 @@ int inspect_pe(const std::vector<char> bytes, pe_header& header)
     for (auto i = 0; i < header.section_headers.size(); ++i)
         header.section_headers[i] = *reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]);
 
-    return 0;
+    return F_SUCCESS;
 }
 
-void init_registers(uc_engine* uc, const target_machine target, const size_t stack_pointer, const size_t entry_point)
-{
-    switch (target)
-    {
-    case machine_x86_32:
-        reg_write(uc, UC_X86_REG_ESP, stack_pointer);
-        reg_write(uc, UC_X86_REG_EBP, stack_pointer);
-        reg_write(uc, UC_X86_REG_EIP, entry_point);
-        break;
-    case machine_x86_64:
-        reg_write(uc, UC_X86_REG_RSP, stack_pointer);
-        reg_write(uc, UC_X86_REG_RBP, stack_pointer);
-        reg_write(uc, UC_X86_REG_RIP, entry_point);
-        break;
-    default:
-        throw;
-    }
-}
 void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t address)
 {
     if (bytes.size() == 0)
@@ -132,13 +120,9 @@ void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t add
     if (bytes.size() % alignment > 0)
         size += alignment;
 
-    if (uc_mem_map(uc, address, size, UC_PROT_ALL))
-        throw;
-
-    if (uc_mem_write(uc, address, &bytes[0], bytes.size()))
-        throw;
+    C_VIT(uc_mem_map(uc, address, size, UC_PROT_ALL));
+    C_VIT(uc_mem_write(uc, address, &bytes[0], bytes.size()));
 }
-
 void init_imports(uc_engine* uc, const size_t image_base, const size_t import_table_address)
 {
     for (auto i = 0;; ++i)
@@ -148,15 +132,15 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
         if (descriptor.Name == 0x0)
             break;
 
-        const auto dll_name = mem_read_string(uc, image_base + descriptor.Name);
+        const auto dll_name = mem_read_string_skip(uc, image_base + descriptor.Name);
         const auto dll_handle = GetModuleHandleA(dll_name.c_str());   // TODO: GetModuleHandle?
         const auto dll_base = reinterpret_cast<size_t>(dll_handle); //
 
-        const auto dll_bytes = create_dump("C:\\Windows\\System32\\" + dll_name); // TODO: Replace with %windir%, etc. / Search dll file
+        std::vector<char> dll_bytes;
+        C_VIT(create_dump("C:\\Windows\\System32\\" + dll_name, dll_bytes)); // TODO: Replace with %windir%, etc. / Search dll file
         
         auto dll_header = pe_header();
-        if (inspect_pe(dll_bytes, dll_header))
-            throw;
+        C_VIT(inspect_header(dll_bytes, dll_header));
 
         const auto dll_reloc = VISIT(dll_header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
         
@@ -201,86 +185,72 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
                 break;
 
             mem_write(uc, image_base + descriptor.FirstThunk,
-                GetProcAddress(dll_handle, mem_read_string(uc, image_base + proc_name_address).c_str()), j); // TODO: GetProcAddress?
+                GetProcAddress(dll_handle, mem_read_string_skip(uc, image_base + proc_name_address).c_str()), j); // TODO: GetProcAddress?
         }
     }
 }
 
-target_machine load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
+int load_pe(const std::vector<char> bytes, pe_header& header, csh& cs, uc_engine*& uc)
 {
-    target_machine target;
-
-    size_t entry_point;
-
+    size_t stack_pointer; // End of address space; TODO: Change?
     size_t stack_size;
 
-    auto header = pe_header();
-    if (inspect_pe(bytes, header))
+    if (inspect_header(bytes, header))
     {
-        target = machine_x86_32;
+        // TODO: Move this somewhere else -> FAILURE
 
         cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
         uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Arch and mode?
 
-        entry_point = 0x0;
-
-        init_section(uc, bytes, entry_point);
-
+        init_section(uc, bytes, 0x0);
+        
+        stack_pointer = 0xffffffff;
         stack_size = 0x1000;
+
+        reg_write(uc, UC_X86_REG_ESP, stack_pointer);
+        reg_write(uc, UC_X86_REG_EBP, stack_pointer);
+        reg_write(uc, UC_X86_REG_EIP, 0x0);
     }
     else
     {
-        cs_mode cs_mode;
-        uc_mode uc_mode;
-
-        switch (header.file_header.Machine)
-        {
-        case IMAGE_FILE_MACHINE_I386:
-            target = machine_x86_32;
-            cs_mode = CS_MODE_32;
-            uc_mode = UC_MODE_32;
-            break;
-#ifdef _WIN64
-        case IMAGE_FILE_MACHINE_AMD64:
-            target = machine_x86_64;
-            cs_mode = CS_MODE_64;
-            uc_mode = UC_MODE_64;
-            break;
-#endif
-        default:
-            throw;
-        }
-
-        cs_open(CS_ARCH_X86, cs_mode, &cs);
-        uc_open(UC_ARCH_X86, uc_mode, &uc);
-
         const auto image_base = VISIT_CAST(header.optional_header, ImageBase, size_t);
+        const auto entry_point = image_base + VISIT_CAST(header.optional_header, AddressOfEntryPoint, size_t);
+
+        if (header.targets_32())
+        {
+            cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
+            uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
+            
+            stack_pointer = 0xffffffff;
+
+            reg_write(uc, UC_X86_REG_ESP, stack_pointer);
+            reg_write(uc, UC_X86_REG_EBP, stack_pointer);
+            reg_write(uc, UC_X86_REG_EIP, entry_point);
+        }
+#ifdef _WIN64
+        else if (header.targets_64())
+        {
+            cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
+            uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
+
+            stack_pointer = 0xffffffffffffffff;
+
+            reg_write(uc, UC_X86_REG_RSP, stack_pointer);
+            reg_write(uc, UC_X86_REG_RBP, stack_pointer);
+            reg_write(uc, UC_X86_REG_RIP, entry_point);
+        }
+#endif
+        else E_THROW;
 
         for (auto s_h : header.section_headers)
             init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
 
         init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-        entry_point = image_base + VISIT(header.optional_header, AddressOfEntryPoint);
-
         stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
-    }
-    
-    size_t stack_pointer; // End of address space; TODO: Change?
-    switch (target)
-    {
-    case machine_x86_32:
-        stack_pointer = 0xffffffff;
-        break;
-    case machine_x86_64:
-        stack_pointer = 0xffffffffffffffff;
-        break;
-    default:
-        throw;
     }
 
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
-    init_registers(uc, target, stack_pointer, entry_point);
 
-    return target;
+    return F_SUCCESS;
 }

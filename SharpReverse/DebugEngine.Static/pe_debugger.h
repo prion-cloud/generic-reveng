@@ -1,6 +1,6 @@
 #pragma once
 
-#include "loader.h"
+#include "pe_loader.h"
 
 struct instruction_info
 {
@@ -20,19 +20,21 @@ struct register_info
     uint64_t registers[9];
 };
 
-class debugger
+class pe_debugger
 {
-    target_machine target_ { };
+    pe_header header_ { };
 
     csh cs_ { };
     uc_engine* uc_ { };
 
 public:
 
-    target_machine open(std::vector<char> bytes);
-    void close();
+    int open(std::vector<char> bytes);
+    int close();
 
-    instruction_info debug() const;
+    pe_header header() const;
 
-    register_info inspect_registers() const;
+    int debug(instruction_info& ins_info) const;
+
+    int inspect_registers(register_info& reg_info) const;
 };
