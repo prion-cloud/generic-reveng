@@ -1,26 +1,34 @@
-﻿namespace SharpReverse.Api.Test
+﻿using System;
+
+namespace SharpReverse.Api.Test
 {
-    public class DebuggerTestCase
+    public abstract class DebuggerTestCase
     {
         #region Properties
 
-        public Debugger Debugger { get; }
+        public TargetMachine Target { get; }
 
         public (IInstructionInfo, IRegisterInfo)[] DebugInfos { get; }
 
         #endregion
 
-        private DebuggerTestCase(Debugger debugger, (IInstructionInfo, IRegisterInfo)[] debugInfos)
+        protected DebuggerTestCase(
+            TargetMachine target,
+            (IInstructionInfo, IRegisterInfo)[] debugInfos)
         {
-            Debugger = debugger;
+            Target = target;
 
             DebugInfos = debugInfos;
         }
 
-        public static DebuggerTestCase GetTestCase1()
+        public static DebuggerTestCase<byte[]> GetTestCase32_Bytes1()
         {
-            return new DebuggerTestCase(
-                new Debugger(new byte[] { 0x41, 0x4a }), 
+            // http://www.unicorn-engine.org/docs/tutorial.html
+            
+            return new DebuggerTestCase<byte[]>(
+                t => new Debugger(t),
+                new byte[] { 0x41, 0x4a },
+                TargetMachine.x86_32,
                 new (IInstructionInfo, IRegisterInfo)[]
                 {
                     (
@@ -51,10 +59,12 @@
                     )
                 });
         }
-        public static DebuggerTestCase GetTestCase2()
+        public static DebuggerTestCase<string> GetTestCase32_File1()
         {
-            return new DebuggerTestCase(
-                new Debugger(Deploy.FILE_TEST_EXE), 
+            return new DebuggerTestCase<string>(
+                t => new Debugger(t),
+                TestDeploy.FILE_TEST_EXE,
+                TargetMachine.x86_32,
                 new (IInstructionInfo, IRegisterInfo)[]
                 {
                     (
@@ -229,6 +239,68 @@
                 });
         }
 
+        public static DebuggerTestCase<byte[]> GetTestCase64_Bytes1()
+        {
+            // http://www.capstone-engine.org/lang_c.html
+
+            return new DebuggerTestCase<byte[]>(
+                t => new Debugger(t),
+                new byte[] { 0x55, 0x48, 0x8b, 0x05, 0xb8, 0x13, 0x00, 0x00 },
+                TargetMachine.x86_64,
+                new (IInstructionInfo, IRegisterInfo)[]
+                {
+                    (
+                        new TestInstructionInfo
+                        {
+                            Id = 0x244,
+                            Address = 0x0,
+                            Bytes = new byte[] { 0x55 },
+                            Instruction = "push rbp"
+                        },
+                        new TestRegisterInfo
+                        {
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffffffffff7, 0xffffffffffffffff, 0x0, 0x0, 0x1 }
+                        }
+                    ),
+                    (
+                        new TestInstructionInfo
+                        {
+                            Id = 0x1ba,
+                            Address = 0x1,
+                            Bytes = new byte[] { 0x48, 0x8b, 0x05, 0xb8, 0x13, 0x00, 0x00 },
+                            Instruction = "mov rax, qword ptr [rip + 0x13b8]"
+                        },
+                        new TestRegisterInfo
+                        {
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffffffffffff7, 0xffffffffffffffff, 0x0, 0x0, 0x8 }
+                        }
+                    )
+                });
+        }
+        public static DebuggerTestCase<string> GetTestCase64_File1()
+        {
+            return new DebuggerTestCase<string>(
+                t => new Debugger(t),
+                TestDeploy.FILE_HELLOWORLD64_EXE,
+                TargetMachine.x86_64,
+                new (IInstructionInfo, IRegisterInfo)[]
+                {
+                    (
+                        new TestInstructionInfo
+                        {
+                            Id = 0x146,
+                            Address = 0x401500,
+                            Bytes = new byte[] { 0x48, 0x83, 0xec, 0x28 },
+                            Instruction = "sub rsp, 0x28"
+                        },
+                        new TestRegisterInfo
+                        {
+                            Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffffffffffd7, 0xffffffffffffffff, 0x0, 0x0, 0x401504 }
+                        }
+                    )
+                });
+        }
+
         private struct TestInstructionInfo : IInstructionInfo
         {
             public uint Id { get; set; }
@@ -239,6 +311,29 @@
         private struct TestRegisterInfo : IRegisterInfo
         {
             public ulong[] Registers { get; set; }
+        }
+    }
+
+    public class DebuggerTestCase<T> : DebuggerTestCase
+    {
+        #region Properties
+
+        public Func<T, Debugger> DebuggerConstructor { get; }
+
+        public T Data { get; }
+
+        #endregion
+
+        public DebuggerTestCase(
+            Func<T, Debugger> debuggerConstructor,
+            T data,
+            TargetMachine target,
+            (IInstructionInfo, IRegisterInfo)[] debugInfos)
+            : base(target, debugInfos)
+        {
+            DebuggerConstructor = debuggerConstructor;
+
+            Data = data;
         }
     }
 }
