@@ -8,15 +8,15 @@ namespace SharpReverse.Api
     {
         private readonly IntPtr _handle;
 
-        public TargetMachine TargetMachine { get; }
+        public TargetMachine Target { get; }
         
         public Debugger(byte[] bytes)
         {
-            TargetMachine = Interop.Open(out _handle, bytes, bytes.Length);
+            Target = Interop.Open(out _handle, bytes, bytes.Length);
         }
         public Debugger(string fileName)
         {
-            TargetMachine = Interop.OpenFile(out _handle, fileName);
+            Target = Interop.OpenFile(out _handle, fileName);
         }
 
         ~Debugger()

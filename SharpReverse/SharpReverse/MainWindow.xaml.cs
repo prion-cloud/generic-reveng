@@ -53,7 +53,7 @@ namespace SharpReverse
 
             var addrStr = string.Empty;
 
-            switch (_debugger.TargetMachine)
+            switch (_debugger.Target)
             {
                 case TargetMachine.x86_32:
                     addrStr = instruction.Address.ToString("x8");
@@ -82,7 +82,7 @@ namespace SharpReverse
             var regState = _debugger.InspectRegisters();
 
             string format;
-            switch (_debugger.TargetMachine)
+            switch (_debugger.Target)
             {
                 case TargetMachine.x86_32:
                     format = "x8";
