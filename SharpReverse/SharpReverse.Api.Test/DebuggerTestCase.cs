@@ -158,6 +158,7 @@ namespace SharpReverse.Api.Test
                             Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x41518c }
                         }
                     ),
+                    /*
                     (
                         new TestInstructionInfo
                         {
@@ -236,6 +237,7 @@ namespace SharpReverse.Api.Test
                             Registers = new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x0009323e }
                         }
                     )
+                    */
                 });
         }
 
