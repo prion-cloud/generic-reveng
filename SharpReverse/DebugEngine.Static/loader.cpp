@@ -103,15 +103,29 @@ int inspect_pe(const std::vector<char> bytes, pe_header& header)
     return 0;
 }
 
-void init_registers(uc_engine* uc, const size_t stack_pointer, const size_t entry_point)
+void init_registers(uc_engine* uc, const target_machine target, const size_t stack_pointer, const size_t entry_point)
 {
-    reg_write(uc, UC_X86_REG_ESP, stack_pointer);
-    reg_write(uc, UC_X86_REG_EBP, stack_pointer);
-
-    reg_write(uc, UC_X86_REG_EIP, entry_point);
+    switch (target)
+    {
+    case machine_x86_32:
+        reg_write(uc, UC_X86_REG_ESP, stack_pointer);
+        reg_write(uc, UC_X86_REG_EBP, stack_pointer);
+        reg_write(uc, UC_X86_REG_EIP, entry_point);
+        break;
+    case machine_x86_64:
+        reg_write(uc, UC_X86_REG_RSP, stack_pointer);
+        reg_write(uc, UC_X86_REG_RBP, stack_pointer);
+        reg_write(uc, UC_X86_REG_RIP, entry_point);
+        break;
+    default:
+        throw;
+    }
 }
 void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t address)
 {
+    if (bytes.size() == 0)
+        return;
+
     const auto alignment = 0x1000;
 
     auto size = alignment * (bytes.size() / alignment);
@@ -198,7 +212,6 @@ target_machine load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 
     size_t entry_point;
 
-    size_t stack_pointer;
     size_t stack_size;
 
     auto header = pe_header();
@@ -206,14 +219,13 @@ target_machine load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     {
         target = machine_x86_32;
 
-        cs_open(CS_ARCH_X86, CS_MODE_32, &cs);  //
+        cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
         uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Arch and mode?
 
         entry_point = 0x0;
 
         init_section(uc, bytes, entry_point);
 
-        stack_pointer = 0xffffffff;
         stack_size = 0x1000;
     }
     else
@@ -251,12 +263,24 @@ target_machine load_x86(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 
         entry_point = image_base + VISIT(header.optional_header, AddressOfEntryPoint);
 
-        stack_pointer = 0xffffffff; // End of address space; TODO: Change?
         stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
+    }
+    
+    size_t stack_pointer; // End of address space; TODO: Change?
+    switch (target)
+    {
+    case machine_x86_32:
+        stack_pointer = 0xffffffff;
+        break;
+    case machine_x86_64:
+        stack_pointer = 0xffffffffffffffff;
+        break;
+    default:
+        throw;
     }
 
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
-    init_registers(uc, stack_pointer, entry_point);
+    init_registers(uc, target, stack_pointer, entry_point);
 
     return target;
 }

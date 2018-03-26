@@ -4,11 +4,11 @@
 
 target_machine debugger::open(const std::vector<char> bytes)
 {
-    const auto target = load_x86(bytes, cs_, uc_);
+    target_ = load_x86(bytes, cs_, uc_);
 
     cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
 
-    return target;
+    return target_;
 }
 void debugger::close()
 {
@@ -73,18 +73,39 @@ register_info debugger::inspect_registers() const
 {
     auto result = register_info();
 
-    uc_reg_read(uc_, X86_REG_EAX, &result.eax);
-    uc_reg_read(uc_, X86_REG_EBX, &result.ebx);
-    uc_reg_read(uc_, X86_REG_ECX, &result.ecx);
-    uc_reg_read(uc_, X86_REG_EDX, &result.edx);
+    switch (target_)
+    {
+    case machine_x86_32:
+        uc_reg_read(uc_, X86_REG_EAX, &result.registers[0]);
+        uc_reg_read(uc_, X86_REG_EBX, &result.registers[1]);
+        uc_reg_read(uc_, X86_REG_ECX, &result.registers[2]);
+        uc_reg_read(uc_, X86_REG_EDX, &result.registers[3]);
 
-    uc_reg_read(uc_, X86_REG_ESP, &result.esp);
-    uc_reg_read(uc_, X86_REG_EBP, &result.ebp);
+        uc_reg_read(uc_, X86_REG_ESP, &result.registers[4]);
+        uc_reg_read(uc_, X86_REG_EBP, &result.registers[5]);
 
-    uc_reg_read(uc_, X86_REG_ESI, &result.esi);
-    uc_reg_read(uc_, X86_REG_EDI, &result.edi);
+        uc_reg_read(uc_, X86_REG_ESI, &result.registers[6]);
+        uc_reg_read(uc_, X86_REG_EDI, &result.registers[7]);
 
-    uc_reg_read(uc_, X86_REG_EIP, &result.eip);
+        uc_reg_read(uc_, X86_REG_EIP, &result.registers[8]);
+        break;
+    case machine_x86_64:
+        uc_reg_read(uc_, X86_REG_RAX, &result.registers[0]);
+        uc_reg_read(uc_, X86_REG_RBX, &result.registers[1]);
+        uc_reg_read(uc_, X86_REG_RCX, &result.registers[2]);
+        uc_reg_read(uc_, X86_REG_RDX, &result.registers[3]);
+
+        uc_reg_read(uc_, X86_REG_RSP, &result.registers[4]);
+        uc_reg_read(uc_, X86_REG_RBP, &result.registers[5]);
+
+        uc_reg_read(uc_, X86_REG_RSI, &result.registers[6]);
+        uc_reg_read(uc_, X86_REG_RDI, &result.registers[7]);
+
+        uc_reg_read(uc_, X86_REG_RIP, &result.registers[8]);
+        break;
+    default:
+        throw;
+    }
 
     return result;
 }

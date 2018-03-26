@@ -17,11 +17,13 @@ struct instruction_info
 };
 struct register_info
 {
-    uint64_t eax, ebx, ecx, edx, esp, ebp, esi, edi, eip;
+    uint64_t registers[9];
 };
 
 class debugger
 {
+    target_machine target_ { };
+
     csh cs_ { };
     uc_engine* uc_ { };
 

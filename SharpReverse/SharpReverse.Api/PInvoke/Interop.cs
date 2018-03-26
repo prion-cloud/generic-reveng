@@ -53,6 +53,7 @@ namespace SharpReverse.Api.PInvoke.Struct
 
     internal partial struct RegisterInfo
     {
-        public ulong Eax_, Ebx_, Ecx_, Edx_, Esp_, Ebp_, Esi_, Edi_, Eip_;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)]
+        public ulong[] Registers_;
     }
 }
