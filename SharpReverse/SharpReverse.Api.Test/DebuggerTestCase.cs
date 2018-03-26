@@ -6,17 +6,17 @@ namespace SharpReverse.Api.Test
     {
         #region Properties
 
-        public TargetMachine Target { get; }
+        public bool Mode64 { get; }
 
         public (IInstructionInfo, IRegisterInfo)[] DebugInfos { get; }
 
         #endregion
 
         protected DebuggerTestCase(
-            TargetMachine target,
+            bool mode64,
             (IInstructionInfo, IRegisterInfo)[] debugInfos)
         {
-            Target = target;
+            Mode64 = mode64;
 
             DebugInfos = debugInfos;
         }
@@ -28,7 +28,7 @@ namespace SharpReverse.Api.Test
             return new DebuggerTestCase<byte[]>(
                 t => new Debugger(t),
                 new byte[] { 0x41, 0x4a },
-                TargetMachine.x86_32,
+                false,
                 new (IInstructionInfo, IRegisterInfo)[]
                 {
                     (
@@ -64,7 +64,7 @@ namespace SharpReverse.Api.Test
             return new DebuggerTestCase<string>(
                 t => new Debugger(t),
                 TestDeploy.FILE_TEST_EXE,
-                TargetMachine.x86_32,
+                false,
                 new (IInstructionInfo, IRegisterInfo)[]
                 {
                     (
@@ -248,7 +248,7 @@ namespace SharpReverse.Api.Test
             return new DebuggerTestCase<byte[]>(
                 t => new Debugger(t),
                 new byte[] { 0x55, 0x48, 0x8b, 0x05, 0xb8, 0x13, 0x00, 0x00 },
-                TargetMachine.x86_64,
+                true,
                 new (IInstructionInfo, IRegisterInfo)[]
                 {
                     (
@@ -284,7 +284,7 @@ namespace SharpReverse.Api.Test
             return new DebuggerTestCase<string>(
                 t => new Debugger(t),
                 TestDeploy.FILE_HELLOWORLD64_EXE,
-                TargetMachine.x86_64,
+                true,
                 new (IInstructionInfo, IRegisterInfo)[]
                 {
                     (
@@ -329,9 +329,9 @@ namespace SharpReverse.Api.Test
         public DebuggerTestCase(
             Func<T, Debugger> debuggerConstructor,
             T data,
-            TargetMachine target,
+            bool mode64,
             (IInstructionInfo, IRegisterInfo)[] debugInfos)
-            : base(target, debugInfos)
+            : base(mode64, debugInfos)
         {
             DebuggerConstructor = debuggerConstructor;
 

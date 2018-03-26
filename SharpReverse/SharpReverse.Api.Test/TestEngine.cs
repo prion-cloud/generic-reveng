@@ -10,10 +10,10 @@ namespace SharpReverse.Api.Test
     {
         public static void _Debugger_Debug<T>(DebuggerTestCase<T> @case)
         {
-            var target = @case.Target;
+            var mode64 = @case.Mode64;
 
 #if !WIN64
-            if (target == TargetMachine.x86_64)
+            if (mode64)
                 Assert.Inconclusive("Expected x64 as target platform.");
 #endif
             
@@ -22,24 +22,11 @@ namespace SharpReverse.Api.Test
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
-                Assert.AreEqual(target, debugger.Target);
-
-                string format;
-                switch (@case.Target)
-                {
-                    case TargetMachine.x86_32:
-                        format = "x8";
-                        break;
-                    case TargetMachine.x86_64:
-                        format = "x16";
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                Assert.AreEqual(mode64, debugger.Is64BitMode);
 
                 foreach (var debug in @case.DebugInfos)
                 {
-                    Console.WriteLine($"0x{debug.Item1.Address.ToString(format)} | {debug.Item1.Instruction}");
+                    Console.WriteLine($"0x{debug.Item1.Address.ToString(mode64 ? "x16" : "x8")} | {debug.Item1.Instruction}");
                     AssertEqual(debug, (debugger.Debug(), debugger.InspectRegisters()));
                 }
             }

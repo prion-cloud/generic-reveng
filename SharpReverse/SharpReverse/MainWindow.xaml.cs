@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +13,8 @@ namespace SharpReverse
     public partial class MainWindow
     {
         private Debugger _debugger;
+
+        private string Format => _debugger.Is64BitMode ? "x16" : "x8";
 
         public MainWindow()
         {
@@ -50,19 +51,7 @@ namespace SharpReverse
                 return;
 
             var instruction = _debugger.Debug();
-
-            var addrStr = string.Empty;
-
-            switch (_debugger.Target)
-            {
-                case TargetMachine.x86_32:
-                    addrStr = instruction.Address.ToString("x8");
-                    break;
-                case TargetMachine.x86_64:
-                    addrStr = instruction.Address.ToString("x16");
-                    break;
-            }
-
+            
             var byteStr = string.Empty;
             for (var i = 0; i < instruction.Bytes.Length; i++)
             {
@@ -72,7 +61,7 @@ namespace SharpReverse
                 byteStr += $"{instruction.Bytes[i]:x2}";
             }
 
-            TextBox.Text += $"{addrStr} {instruction.Instruction} ({byteStr})\r\n";
+            TextBox.Text += $"{instruction.Address.ToString(Format)} {instruction.Instruction} ({byteStr})\r\n";
 
             UpdateRegisterState();
         }
@@ -80,26 +69,13 @@ namespace SharpReverse
         private void UpdateRegisterState()
         {
             var regState = _debugger.InspectRegisters();
-
-            string format;
-            switch (_debugger.Target)
-            {
-                case TargetMachine.x86_32:
-                    format = "x8";
-                    break;
-                case TargetMachine.x86_64:
-                    format = "x16";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
+            
             var tbs = TbGrid.Children.OfType<TextBox>().ToArray();
 
             for (var i = 0; i < tbs.Length; i++)
             {
                 var prev = tbs[i].Text;
-                var cur = regState.Registers[i].ToString(format);
+                var cur = regState.Registers[i].ToString(Format);
 
                 if (prev != string.Empty && cur != prev)
                     tbs[i].Foreground = new SolidColorBrush(Colors.Red);

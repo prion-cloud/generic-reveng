@@ -8,15 +8,24 @@ namespace SharpReverse.Api
     {
         private readonly IntPtr _handle;
 
-        public TargetMachine Target { get; }
-        
+        public bool Is64BitMode
+        {
+            get
+            {
+                if (_handle == IntPtr.Zero)
+                    throw new InvalidOperationException();
+
+                return Interop.targets_64(_handle);
+            }
+        }
+
         public Debugger(byte[] bytes)
         {
-            Target = Interop.Open(out _handle, bytes, bytes.Length);
+            Interop.debugger_open(out _handle, bytes, bytes.Length);
         }
         public Debugger(string fileName)
         {
-            Target = Interop.OpenFile(out _handle, fileName);
+            Interop.debugger_open_file(out _handle, fileName);
         }
 
         ~Debugger()
@@ -33,18 +42,18 @@ namespace SharpReverse.Api
 
         private void ReleaseUnmanagedResources()
         {
-            Interop.Close(_handle);
+            Interop.debugger_close(_handle);
         }
 
         public IInstructionInfo Debug()
         {
-            Interop.Debug(_handle, out var instruction);
+            Interop.debug(_handle, out var instruction);
             return instruction;
         }
 
         public IRegisterInfo InspectRegisters()
         {
-            Interop.InspectRegisters(_handle, out var registerState);
+            Interop.inspect_registers(_handle, out var registerState);
             return registerState;
         }
     }
