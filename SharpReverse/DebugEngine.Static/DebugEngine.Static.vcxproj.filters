@@ -25,10 +25,10 @@
     <ClInclude Include="bin_dump.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pe_loader.h">
+    <ClInclude Include="debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pe_debugger.h">
+    <ClInclude Include="loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,10 +39,10 @@
     <ClCompile Include="bin_dump.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pe_loader.cpp">
+    <ClCompile Include="debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pe_debugger.cpp">
+    <ClCompile Include="loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

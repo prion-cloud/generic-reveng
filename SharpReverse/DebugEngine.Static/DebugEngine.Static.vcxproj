@@ -154,14 +154,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="bin_dump.h" />
-    <ClInclude Include="pe_debugger.h" />
-    <ClInclude Include="pe_loader.h" />
+    <ClInclude Include="debugger.h" />
+    <ClInclude Include="loader.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bin_dump.cpp" />
-    <ClCompile Include="pe_debugger.cpp" />
-    <ClCompile Include="pe_loader.cpp" />
+    <ClCompile Include="debugger.cpp" />
+    <ClCompile Include="loader.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -6,26 +6,26 @@ namespace SharpReverse.Api
 {
     public class Debugger : IDisposable
     {
+        #region Fields
+
         private readonly IntPtr _handle;
+        private readonly ulong _scale;
 
-        public bool Is64BitMode
-        {
-            get
-            {
-                if (_handle == IntPtr.Zero)
-                    throw new InvalidOperationException();
+        #endregion
 
-                return Interop.targets_64(_handle);
-            }
-        }
+        #region Properties
+
+        public bool Amd64 => _scale == ulong.MaxValue;
+
+        #endregion
 
         public Debugger(byte[] bytes)
         {
-            Interop.debugger_open(out _handle, bytes, bytes.Length);
+            throw new NotImplementedException();
         }
         public Debugger(string fileName)
         {
-            Interop.debugger_open_file(out _handle, fileName);
+            Interop.debugger_load_file(out _handle, out _scale, fileName);
         }
 
         ~Debugger()
@@ -35,25 +35,25 @@ namespace SharpReverse.Api
 
         public void Dispose()
         {
-            // TODO: Verify dispose pattern.
+            // TODO: Verify this dispose pattern.
             ReleaseUnmanagedResources();
             GC.SuppressFinalize(this);
         }
 
         private void ReleaseUnmanagedResources()
         {
-            Interop.debugger_close(_handle);
+            Interop.debugger_unload(_handle);
         }
 
         public IInstructionInfo Debug()
         {
-            Interop.debug(_handle, out var instruction);
+            Interop.debugger_step(_handle, out var instruction);
             return instruction;
         }
 
         public IRegisterInfo InspectRegisters()
         {
-            Interop.inspect_registers(_handle, out var registerState);
+            Interop.debugger_reg(_handle, out var registerState);
             return registerState;
         }
     }

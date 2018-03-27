@@ -18,6 +18,10 @@ namespace SharpReverse.Api.Test
             TestEngine._Debugger_Debug(DebuggerTestCase.GetTestCase32_File1());
         }
         
+        [TestMethod] public void Debug_Case64_Bytes1()
+        {
+            TestEngine._Debugger_Debug(DebuggerTestCase.GetTestCase64_Bytes1());
+        }
         [TestMethod] public void Debug_Case64_File1()
         {
             TestEngine._Debugger_Debug(DebuggerTestCase.GetTestCase64_File1());

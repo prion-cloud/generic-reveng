@@ -6,19 +6,17 @@ namespace SharpReverse.Api.Test
     {
         #region Properties
 
-        public bool Mode64 { get; }
+        public bool Amd64 { get; }
 
-        public (IInstructionInfo, IRegisterInfo)[] DebugInfos { get; }
+        public (IInstructionInfo, IRegisterInfo)[] DebugResults { get; }
 
         #endregion
 
-        protected DebuggerTestCase(
-            bool mode64,
-            (IInstructionInfo, IRegisterInfo)[] debugInfos)
+        protected DebuggerTestCase(bool amd64, (IInstructionInfo, IRegisterInfo)[] debugResults)
         {
-            Mode64 = mode64;
+            Amd64 = amd64;
 
-            DebugInfos = debugInfos;
+            DebugResults = debugResults;
         }
 
         public static DebuggerTestCase<byte[]> GetTestCase32_Bytes1()
@@ -326,12 +324,9 @@ namespace SharpReverse.Api.Test
 
         #endregion
 
-        public DebuggerTestCase(
-            Func<T, Debugger> debuggerConstructor,
-            T data,
-            bool mode64,
-            (IInstructionInfo, IRegisterInfo)[] debugInfos)
-            : base(mode64, debugInfos)
+        public DebuggerTestCase(Func<T, Debugger> debuggerConstructor, T data, bool amd64,
+            (IInstructionInfo, IRegisterInfo)[] debugResults)
+            : base(amd64, debugResults)
         {
             DebuggerConstructor = debuggerConstructor;
 

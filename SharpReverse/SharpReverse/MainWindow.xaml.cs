@@ -14,7 +14,7 @@ namespace SharpReverse
     {
         private Debugger _debugger;
 
-        private string Format => _debugger.Is64BitMode ? "x16" : "x8";
+        private string Format => _debugger.Amd64 ? "x16" : "x8";
 
         public MainWindow()
         {

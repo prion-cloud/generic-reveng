@@ -17,21 +17,18 @@ namespace SharpReverse.Api.PInvoke
 #endif
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int debugger_open(out IntPtr handle, byte[] bytes, int size);
+        public static extern int debugger_load(out IntPtr handle, ulong scale, byte[] bytes, int size);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int debugger_open_file(out IntPtr handle, string fileName);
+        public static extern int debugger_load_file(out IntPtr handle, out ulong scale, string fileName);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int debugger_close(IntPtr handle);
+        public static extern int debugger_unload(IntPtr handle);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool targets_64(IntPtr handle);
+        public static extern int debugger_step(IntPtr handle, out InstructionInfo ins_info);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void debug(IntPtr handle, out InstructionInfo ins_info);
-
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void inspect_registers(IntPtr handle, out RegisterInfo reg_info);
+        public static extern int debugger_reg(IntPtr handle, out RegisterInfo reg_info);
     }
 }
 

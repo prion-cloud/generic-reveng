@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "pe_loader.h"
+#include "loader.h"
 
 #include "bin_dump.h"
 
@@ -190,67 +190,60 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
     }
 }
 
-int load_pe(const std::vector<char> bytes, pe_header& header, csh& cs, uc_engine*& uc)
+int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::array<int, 9>& regs) const
 {
-    size_t stack_pointer; // End of address space; TODO: Change?
-    size_t stack_size;
+    pe_header header;
+    C_IMP(inspect_header(bytes, header));
 
-    if (inspect_header(bytes, header))
+    const auto image_base = VISIT_CAST(header.optional_header, ImageBase, size_t);
+    const auto entry_point = image_base + VISIT_CAST(header.optional_header, AddressOfEntryPoint, size_t);
+    
+    if (header.targets_32())
     {
-        // TODO: Move this somewhere else -> FAILURE
+        cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
+        uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
 
-        cs_open(CS_ARCH_X86, CS_MODE_32, &cs); //
-        uc_open(UC_ARCH_X86, UC_MODE_32, &uc); // TODO: Arch and mode?
+        scale = 0xffffffff;
 
-        init_section(uc, bytes, 0x0);
-        
-        stack_pointer = 0xffffffff;
-        stack_size = 0x1000;
-
-        reg_write(uc, UC_X86_REG_ESP, stack_pointer);
-        reg_write(uc, UC_X86_REG_EBP, stack_pointer);
-        reg_write(uc, UC_X86_REG_EIP, 0x0);
-    }
-    else
-    {
-        const auto image_base = VISIT_CAST(header.optional_header, ImageBase, size_t);
-        const auto entry_point = image_base + VISIT_CAST(header.optional_header, AddressOfEntryPoint, size_t);
-
-        if (header.targets_32())
+        regs =
         {
-            cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
-            uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
-            
-            stack_pointer = 0xffffffff;
-
-            reg_write(uc, UC_X86_REG_ESP, stack_pointer);
-            reg_write(uc, UC_X86_REG_EBP, stack_pointer);
-            reg_write(uc, UC_X86_REG_EIP, entry_point);
-        }
+            UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_ECX, UC_X86_REG_EDX,
+            UC_X86_REG_ESP, UC_X86_REG_EBP,
+            UC_X86_REG_ESI, UC_X86_REG_EDI,
+            UC_X86_REG_EIP
+        };
+    }
 #ifdef _WIN64
-        else if (header.targets_64())
+    else if (header.targets_64())
+    {
+        cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
+        uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
+
+        scale = 0xffffffffffffffff;
+
+        regs =
         {
-            cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
-            uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
-
-            stack_pointer = 0xffffffffffffffff;
-
-            reg_write(uc, UC_X86_REG_RSP, stack_pointer);
-            reg_write(uc, UC_X86_REG_RBP, stack_pointer);
-            reg_write(uc, UC_X86_REG_RIP, entry_point);
-        }
-#endif
-        else E_THROW;
-
-        for (auto s_h : header.section_headers)
-            init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
-
-        init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-
-        stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
+            UC_X86_REG_RAX, UC_X86_REG_RBX, UC_X86_REG_RCX, UC_X86_REG_RDX,
+            UC_X86_REG_RSP, UC_X86_REG_RBP,
+            UC_X86_REG_RSI, UC_X86_REG_RDI,
+            UC_X86_REG_RIP
+        };
     }
+#endif
+    else E_THROW;
 
+    for (auto s_h : header.section_headers)
+        init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
+
+    init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+
+    const auto stack_pointer = scale; // End of address space; TODO: Change?
+    const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
+
+    reg_write(uc, regs[4], stack_pointer);
+    reg_write(uc, regs[5], stack_pointer);
+    reg_write(uc, regs[8], entry_point);
 
     return F_SUCCESS;
 }

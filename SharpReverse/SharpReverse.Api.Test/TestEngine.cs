@@ -10,7 +10,7 @@ namespace SharpReverse.Api.Test
     {
         public static void _Debugger_Debug<T>(DebuggerTestCase<T> @case)
         {
-            var mode64 = @case.Mode64;
+            var amd64 = @case.Amd64;
 
 #if !WIN64
             if (mode64)
@@ -22,11 +22,11 @@ namespace SharpReverse.Api.Test
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
-                Assert.AreEqual(mode64, debugger.Is64BitMode);
+                Assert.AreEqual(amd64, debugger.Amd64);
 
-                foreach (var debug in @case.DebugInfos)
+                foreach (var debug in @case.DebugResults)
                 {
-                    Console.WriteLine($"0x{debug.Item1.Address.ToString(mode64 ? "x16" : "x8")} | {debug.Item1.Instruction}");
+                    Console.WriteLine($"0x{debug.Item1.Address.ToString(amd64 ? "x16" : "x8")} | {debug.Item1.Instruction}");
                     AssertEqual(debug, (debugger.Debug(), debugger.InspectRegisters()));
                 }
             }
