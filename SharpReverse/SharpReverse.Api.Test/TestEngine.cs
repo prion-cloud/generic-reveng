@@ -13,33 +13,76 @@ namespace SharpReverse.Api.Test
             var amd64 = @case.Amd64;
 
 #if !WIN64
-            if (mode64)
-                Assert.Inconclusive("Expected x64 as target platform.");
+            if (amd64)
+                Inconclusive("Expected platform configuration x64.");
 #endif
             
             if (@case.Data is string path && !File.Exists(path))
-                Assert.Inconclusive($"File \"{path}\" not found.");
+                Inconclusive($"Apparent test file \"{path}\" not found.");
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
-                Assert.AreEqual(amd64, debugger.Amd64);
+                // ReSharper disable ConditionIsAlwaysTrueOrFalse
 
-                foreach (var debug in @case.DebugResults)
-                {
-                    Console.WriteLine($"0x{debug.Item1.Address.ToString(amd64 ? "x16" : "x8")} | {debug.Item1.Instruction}");
-                    AssertEqual(debug, (debugger.Debug(), debugger.InspectRegisters()));
-                }
+                AssertEqual(amd64, debugger.Amd64, $"{nameof(Debugger)}.{nameof(debugger.Amd64)}");
+
+                foreach (var expected in @case.DebugResults)
+                    AssertEqual(expected, (debugger.Debug(), debugger.InspectRegisters()), amd64);
+
+                // ReSharper restore ConditionIsAlwaysTrueOrFalse
             }
         }
         
-        private static void AssertEqual((IInstructionInfo, IRegisterInfo) expected, (IInstructionInfo, IRegisterInfo) actual)
+        private static void Inconclusive(string message)
         {
-            Assert.AreEqual(expected.Item1.Id, actual.Item1.Id, nameof(actual.Item1.Id));
-            Assert.AreEqual(expected.Item1.Address, actual.Item1.Address, nameof(actual.Item1.Address));
-            Assert.IsTrue(actual.Item1.Bytes.SequenceEqual(expected.Item1.Bytes), nameof(actual.Item1.Bytes));
-            Assert.AreEqual(expected.Item1.Instruction, actual.Item1.Instruction, nameof(actual.Item1.Instruction));
+            throw new AssertInconclusiveException(message);
+        }
+        
+        private static void AssertEqual((TestInstructionInfo, TestRegisterInfo) expected, (IInstructionInfo, IRegisterInfo) actual, bool amd64)
+        {
+            Console.WriteLine($"0x{actual.Item1.Address.ToString(amd64 ? "x16" : "x8")} | {actual.Item1.Instruction}");
 
-            Assert.IsTrue(actual.Item2.Registers.SequenceEqual(expected.Item2.Registers), nameof(actual.Item2.Registers));
+            AssertEqual(expected.Item1.Id, actual.Item1.Id,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}",
+                i => $"0x{i:x}");
+
+            AssertEqual(expected.Item1.Address, actual.Item1.Address,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}",
+                i => $"0x{i.ToString(amd64 ? "x16" : "x8")}");
+
+            AssertEqual<byte>(expected.Item1.Bytes, actual.Item1.Bytes,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Bytes)}",
+                i => $"0x{i:x2}");
+
+            AssertEqual(expected.Item1.Instruction, actual.Item1.Instruction,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Instruction)}");
+
+            AssertEqual(expected.Item2.Registers, actual.Item2.Registers.Select((a, i) =>
+                {
+                    if (expected.Item2.Masks.Select(m => m.Item1).Contains(i))
+                        return a & expected.Item2.Masks.First(m => m.Item1 == i).Item2;
+                    return a;
+                }).ToArray(),
+                $"{nameof(IRegisterInfo)}.{nameof(actual.Item2.Registers)}",
+                i => $"0x{i.ToString(amd64 ? "x16" : "x8")}");
+        }
+
+        private static void AssertEqual<T>(T expected, T actual, string name)
+        {
+            AssertEqual(expected, actual, name, t => t.ToString());
+        }
+        private static void AssertEqual<T>(T expected, T actual, string name, Func<T, string> toString)
+        {
+            if (!Equals(expected, actual))
+                throw new AssertFailedException($"{name}: '{toString(actual)}' / '{toString(expected)}'\n");
+        }
+        
+        private static void AssertEqual<T>(T[] expected, T[] actual, string name, Func<T, string> toString)
+        {
+            AssertEqual(expected.Length, actual.Length, $"{name}.{nameof(actual.Length)}", i => i.ToString());
+
+            for (var i = 0; i < expected.Length; i++)
+                AssertEqual(expected[i], actual[i], $"{name}[{i}]", toString);
         }
     }
 }
