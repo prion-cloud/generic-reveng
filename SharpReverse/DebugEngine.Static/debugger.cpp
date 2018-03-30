@@ -93,7 +93,7 @@ int debugger::mem(std::vector<memory_info>& mem_info_vec) const
         auto mem_info = memory_info();
 
         mem_info.begin = regions[i].begin;
-        mem_info.size = regions[i].end - regions[i].begin;
+        mem_info.size = regions[i].end - regions[i].begin + 1;
 
         mem_info.permissions = regions[i].perms;
 

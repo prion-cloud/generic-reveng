@@ -43,12 +43,13 @@ API int debugger_reg(debugger* handle, register_info& reg_info)
     return handle->reg(reg_info);
 }
 
-API int debugger_mem(debugger* handle, memory_info*& mem_infos)
+API int debugger_mem(debugger* handle, memory_info*& mem_infos, int32_t& count)
 {
     std::vector<memory_info> mem_info_vec;
     C_IMP(handle->mem(mem_info_vec));
 
     mem_infos = &mem_info_vec[0];
+    count = mem_info_vec.size();
 
     return F_SUCCESS;
 }

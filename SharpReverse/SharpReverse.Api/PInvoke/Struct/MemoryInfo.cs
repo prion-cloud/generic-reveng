@@ -10,7 +10,7 @@
         public ulong Size_;
 
         public uint Permissions_;
-        
+
         // ReSharper restore All
 
         #endregion

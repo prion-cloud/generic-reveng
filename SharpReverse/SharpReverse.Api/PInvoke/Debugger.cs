@@ -71,7 +71,14 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
 
         public IMemoryInfo[] InspectMemory()
         {
-            throw new NotImplementedException();
+            Mem(_handle, out var mem, out var count);
+            
+            var result = new IMemoryInfo[count];
+            
+            for (var i = 0; i < count; i++)
+                result[i] = mem[i];
+
+            return result;
         }
         
         #region DllImports
