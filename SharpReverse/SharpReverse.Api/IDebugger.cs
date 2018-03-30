@@ -9,6 +9,6 @@ namespace Superbr4in.SharpReverse.Api
         IInstructionInfo Debug();
 
         IRegisterInfo InspectRegisters();
-        IMemoryInfo InspectMemory();
+        IMemoryInfo[] InspectMemory();
     }
 }
