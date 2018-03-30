@@ -16,60 +16,6 @@ bool pe_header::targets_64() const
     return file_header.Machine == IMAGE_FILE_MACHINE_AMD64;
 }
 
-template <typename T>
-T mem_read(uc_engine* uc, const size_t address, const int offset)
-{
-    T t;
-    const auto size = sizeof(T);
-    C_VIT(uc_mem_read(uc, address + offset * size, &t, size));
-    return t;
-}
-template <typename T>
-T mem_read(uc_engine* uc, const size_t address)
-{
-    return mem_read<T>(uc, address, 0);
-}
-
-template <typename T>
-void mem_write(uc_engine* uc, const size_t address, T t, const int offset)
-{
-    const auto size = sizeof(T);
-    C_VIT(uc_mem_write(uc, address + offset * size, &t, size));
-}
-template <typename T>
-void mem_write(uc_engine* uc, const size_t address, T t)
-{
-    mem_write<T>(uc, address, t, 0);
-}
-
-template <typename T>
-void reg_write(uc_engine* uc, const int regid, const T value)
-{
-    C_VIT(uc_reg_write(uc, regid, &value));
-}
-
-std::string mem_read_string_skip(uc_engine* uc, const size_t address)
-{
-    auto end = false;
-    std::vector<char> chars;
-    for (auto j = 0;; ++j)
-    {
-        auto c = mem_read<char>(uc, address, j);
-
-        if (c != '\0')
-            end = true;
-        else if (!end)
-            continue;
-
-        chars.push_back(c);
-
-        if (c == '\0' && end)
-            break;
-    }
-
-    return std::string(chars.begin(), chars.end());
-}
-
 int inspect_header(const std::vector<char> bytes, pe_header& header)
 {
     size_t cursor = 0;
@@ -127,12 +73,13 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
 {
     for (auto i = 0;; ++i)
     {
-        const auto descriptor = mem_read<IMAGE_IMPORT_DESCRIPTOR>(uc, image_base + import_table_address, i);
+        IMAGE_IMPORT_DESCRIPTOR descriptor;
+        C_VIT(uc_ext_mem_read<IMAGE_IMPORT_DESCRIPTOR>(uc, image_base + import_table_address, descriptor, i));
 
         if (descriptor.Name == 0x0)
             break;
 
-        const auto dll_name = mem_read_string_skip(uc, image_base + descriptor.Name);
+        const auto dll_name = uc_ext_mem_read_string_skip(uc, image_base + descriptor.Name);
         const auto dll_handle = GetModuleHandleA(dll_name.c_str()); // TODO: GetModuleHandle?
         const auto dll_base = reinterpret_cast<size_t>(dll_handle); //
 
@@ -150,7 +97,8 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
         auto offset = 0;
         while (true)
         {
-            const auto reloc = mem_read<IMAGE_BASE_RELOCATION>(uc, dll_base + dll_reloc + offset);
+            IMAGE_BASE_RELOCATION reloc;
+            C_VIT(uc_ext_mem_read(uc, dll_base + dll_reloc + offset, reloc));
 
             if (!reloc.VirtualAddress)
                 break;
@@ -158,7 +106,8 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
             const int count = (reloc.SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
             for (auto j = 0; j < count; ++j)
             {
-                auto w = mem_read<WORD>(uc, dll_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), j);
+                WORD w;
+                C_VIT(uc_ext_mem_read(uc, dll_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), w, j));
 
                 const auto type = (w & 0xf000) >> 12;
                 w &= 0xfff;
@@ -168,9 +117,10 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
                     const auto address = dll_base + reloc.VirtualAddress + w;
                     const auto delta = dll_base - std::visit([](auto x) { return static_cast<uint64_t>(x.ImageBase); }, dll_header.optional_header);
 
-                    const auto value = mem_read<DWORD>(uc, address);
+                    DWORD value;
+                    C_VIT(uc_ext_mem_read(uc, address, value));
 
-                    mem_write(uc, address, value + delta);
+                    C_VIT(uc_ext_mem_write(uc, address, value + delta));
                 }
             }
 
@@ -179,13 +129,14 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
 
         for (auto j = 0;; ++j)
         {
-            const auto proc_name_address = mem_read<DWORD>(uc, image_base + descriptor.FirstThunk, j);
+            DWORD proc_name_address;
+            C_VIT(uc_ext_mem_read(uc, image_base + descriptor.FirstThunk, proc_name_address, j));
 
             if (!proc_name_address)
                 break;
 
-            mem_write(uc, image_base + descriptor.FirstThunk,
-                GetProcAddress(dll_handle, mem_read_string_skip(uc, image_base + proc_name_address).c_str()), j); // TODO: GetProcAddress?
+            C_VIT(uc_ext_mem_write(uc, image_base + descriptor.FirstThunk,
+                GetProcAddress(dll_handle, uc_ext_mem_read_string_skip(uc, image_base + proc_name_address).c_str()), j)); // TODO: GetProcAddress?
         }
     }
 }
@@ -241,9 +192,9 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
 
-    reg_write(uc, regs[4], stack_pointer);
-    reg_write(uc, regs[5], stack_pointer);
-    reg_write(uc, regs[8], entry_point);
+    uc_ext_reg_write(uc, regs[4], stack_pointer);
+    uc_ext_reg_write(uc, regs[5], stack_pointer);
+    uc_ext_reg_write(uc, regs[8], entry_point);
 
     return F_SUCCESS;
 }

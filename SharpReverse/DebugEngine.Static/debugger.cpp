@@ -2,14 +2,6 @@
 
 #include "debugger.h"
 
-uint64_t reg_read(uc_engine* uc, const int regid, const uint64_t scale)
-{
-    uint64_t value;
-    C_VIT(uc_reg_read(uc, regid, &value));
-
-    return value & scale;
-}
-
 int debugger::load(const loader& l, const std::vector<char> bytes)
 {
     C_IMP(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_));
@@ -32,7 +24,7 @@ uint64_t debugger::scale() const
 int debugger::step(instruction_info& ins_info) const
 {
     const auto size = 16;
-    const auto cur_addr = reg_read(uc_, regs_[8], scale_);
+    const auto cur_addr = uc_ext_reg_read(uc_, regs_[8], scale_);
 
     uint8_t bytes[size];
     C_VIT(uc_mem_read(uc_, cur_addr, bytes, size));
@@ -83,7 +75,7 @@ int debugger::step(instruction_info& ins_info) const
 int debugger::reg(register_info& reg_info) const
 {
     for (auto i = 0; i < regs_.size(); ++i)
-        reg_info.registers[i] = reg_read(uc_, regs_[i], scale_);
+        reg_info.registers[i] = uc_ext_reg_read(uc_, regs_[i], scale_);
 
     return F_SUCCESS; // TODO: F_FAILURE
 }
