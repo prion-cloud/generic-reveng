@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 
+using Superbr4in.SharpReverse.Api.Factory;
+
 namespace Superbr4in.SharpReverse.Api.Test
 {
     public abstract class DebuggerTestCase
@@ -25,7 +27,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             // http://www.unicorn-engine.org/docs/tutorial.html
             
             return new DebuggerTestCase<byte[]>(
-                t => new Debugger(t),
+                t => DebuggerFactory.CreateNew(t, false),
                 new byte[] { 0x41, 0x4a },
                 false,
                 new[]
@@ -43,7 +45,7 @@ namespace Superbr4in.SharpReverse.Api.Test
         public static DebuggerTestCase<string> GetTestCase32_File1()
         {
             return new DebuggerTestCase<string>(
-                t => new Debugger(t),
+                DebuggerFactory.CreateNew,
                 TestDeploy.FILE_TEST_EXE,
                 false,
                 new[]
@@ -109,7 +111,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             // http://www.capstone-engine.org/lang_c.html
 
             return new DebuggerTestCase<byte[]>(
-                t => new Debugger(t),
+                t => DebuggerFactory.CreateNew(t, true),
                 new byte[] { 0x55, 0x48, 0x8b, 0x05, 0xb8, 0x13, 0x00, 0x00 },
                 true,
                 new[]
@@ -127,7 +129,7 @@ namespace Superbr4in.SharpReverse.Api.Test
         public static DebuggerTestCase<string> GetTestCase64_File1()
         {
             return new DebuggerTestCase<string>(
-                t => new Debugger(t),
+                DebuggerFactory.CreateNew,
                 TestDeploy.FILE_HELLOWORLD64_EXE,
                 true,
                 new[]
@@ -144,13 +146,13 @@ namespace Superbr4in.SharpReverse.Api.Test
     {
         #region Properties
 
-        public Func<T, Debugger> DebuggerConstructor { get; }
+        public Func<T, IDebugger> DebuggerConstructor { get; }
 
         public T Data { get; }
 
         #endregion
 
-        public DebuggerTestCase(Func<T, Debugger> debuggerConstructor, T data, bool amd64,
+        public DebuggerTestCase(Func<T, IDebugger> debuggerConstructor, T data, bool amd64,
             (TestInstructionInfo, TestRegisterInfo)[] debugResults)
             : base(amd64, debugResults)
         {
@@ -162,10 +164,14 @@ namespace Superbr4in.SharpReverse.Api.Test
 
     public struct TestInstructionInfo
     {
+        #region Fields
+
         public readonly uint Id;
         public readonly (ulong, ulong?) Address;
         public readonly byte[] Bytes;
         public readonly string Instruction;
+
+        #endregion
 
         public TestInstructionInfo(uint id, ulong address, byte[] bytes, string instruction, ulong? addressMask = null)
         {
@@ -177,7 +183,11 @@ namespace Superbr4in.SharpReverse.Api.Test
     }
     public struct TestRegisterInfo
     {
+        #region Fields
+
         public readonly (ulong, ulong?)[] Registers;
+
+        #endregion
 
         public TestRegisterInfo(ulong[] registers, params (int, ulong)[] registerMasks)
         {

@@ -5,7 +5,7 @@ using Superbr4in.SharpReverse.Api.PInvoke;
 namespace Superbr4in.SharpReverse.Api.Test
 {
     [TestClass]
-    [DeploymentItem(Interop.DLL_NAME)]
+    [DeploymentItem(Debugger.DLL_NAME)]
     [DeploymentItem(TestDeploy.FOLDER)]
     public class DebuggerTest
     {

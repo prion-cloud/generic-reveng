@@ -1,7 +1,20 @@
 ﻿namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
 {
-    internal partial struct MemoryInfo : IMemoryInfo
+    internal struct MemoryInfo : IMemoryInfo
     {
+        #region Fields
+        
+        // ReSharper disable All
+
+        public ulong Begin_;
+        public ulong Size_;
+
+        public uint Permissions_;
+        
+        // ReSharper restore All
+
+        #endregion
+
         public ulong Begin => Begin_;
         public ulong Size => Size_;
 

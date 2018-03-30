@@ -7,12 +7,13 @@ using System.Windows.Media;
 using Microsoft.Win32;
 
 using Superbr4in.SharpReverse.Api;
+using Superbr4in.SharpReverse.Api.Factory;
 
 namespace Superbr4in.SharpReverse
 {
     public partial class MainWindow
     {
-        private Debugger _debugger;
+        private IDebugger _debugger;
 
         private string Format => _debugger.Amd64 ? "x16" : "x8";
 
@@ -40,7 +41,7 @@ namespace Superbr4in.SharpReverse
 
             TextBox.Text = string.Empty;
 
-            _debugger = new Debugger(dialog.FileName);
+            _debugger = DebuggerFactory.CreateNew(dialog.FileName);
 
             UpdateRegisterState();
         }

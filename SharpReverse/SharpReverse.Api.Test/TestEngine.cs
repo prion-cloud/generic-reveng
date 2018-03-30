@@ -24,7 +24,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             {
                 // ReSharper disable ConditionIsAlwaysTrueOrFalse
 
-                AssertEqual(amd64, debugger.Amd64, $"{nameof(Debugger)}.{nameof(debugger.Amd64)}");
+                AssertEqual(amd64, debugger.Amd64, $"{nameof(IDebugger)}.{nameof(debugger.Amd64)}");
 
                 foreach (var expected in @case.DebugResults)
                     AssertEqual(expected, (debugger.Debug(), debugger.InspectRegisters()), amd64);
