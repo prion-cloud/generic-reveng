@@ -3,9 +3,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-using SharpReverse.Api.PInvoke.Struct;
+using Superbr4in.SharpReverse.Api.PInvoke.Struct;
 
-namespace SharpReverse.Api.PInvoke
+namespace Superbr4in.SharpReverse.Api.PInvoke
 {
     internal static class Interop
     {
@@ -32,7 +32,7 @@ namespace SharpReverse.Api.PInvoke
     }
 }
 
-namespace SharpReverse.Api.PInvoke.Struct
+namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
 {
     internal partial struct InstructionInfo
     {

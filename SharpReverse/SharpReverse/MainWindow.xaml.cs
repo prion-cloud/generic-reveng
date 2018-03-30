@@ -6,9 +6,9 @@ using System.Windows.Media;
 
 using Microsoft.Win32;
 
-using SharpReverse.Api;
+using Superbr4in.SharpReverse.Api;
 
-namespace SharpReverse
+namespace Superbr4in.SharpReverse
 {
     public partial class MainWindow
     {

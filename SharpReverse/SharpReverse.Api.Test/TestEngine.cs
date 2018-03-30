@@ -4,7 +4,7 @@ using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace SharpReverse.Api.Test
+namespace Superbr4in.SharpReverse.Api.Test
 {
     public static class TestEngine
     {

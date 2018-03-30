@@ -1,4 +1,4 @@
-﻿namespace SharpReverse.Api.Test
+﻿namespace Superbr4in.SharpReverse.Api.Test
 {
     public static class TestDeploy
     {

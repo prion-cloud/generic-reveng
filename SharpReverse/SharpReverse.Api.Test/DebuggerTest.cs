@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-using SharpReverse.Api.PInvoke;
+using Superbr4in.SharpReverse.Api.PInvoke;
 
-namespace SharpReverse.Api.Test
+namespace Superbr4in.SharpReverse.Api.Test
 {
     [TestClass]
     [DeploymentItem(Interop.DLL_NAME)]

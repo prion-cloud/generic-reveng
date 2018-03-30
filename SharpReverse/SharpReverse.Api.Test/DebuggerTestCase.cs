@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace SharpReverse.Api.Test
+namespace Superbr4in.SharpReverse.Api.Test
 {
     public abstract class DebuggerTestCase
     {

@@ -1,8 +1,8 @@
 ﻿using System;
 
-using SharpReverse.Api.PInvoke;
+using Superbr4in.SharpReverse.Api.PInvoke;
 
-namespace SharpReverse.Api
+namespace Superbr4in.SharpReverse.Api
 {
     public class Debugger : IDisposable
     {

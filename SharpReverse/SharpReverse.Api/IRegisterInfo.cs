@@ -1,4 +1,4 @@
-﻿namespace SharpReverse.Api
+﻿namespace Superbr4in.SharpReverse.Api
 {
     public interface IRegisterInfo
     {

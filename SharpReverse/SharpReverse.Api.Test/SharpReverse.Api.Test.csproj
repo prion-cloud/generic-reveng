@@ -7,7 +7,7 @@
     <ProjectGuid>{46F58ED2-DD8E-435B-BC30-02A94311C9F4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpReverse.Api.Test</RootNamespace>
+    <RootNamespace>Superbr4in.SharpReverse.Api.Test</RootNamespace>
     <AssemblyName>SharpReverse.Api.Test</AssemblyName>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
