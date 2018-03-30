@@ -14,7 +14,7 @@ namespace Superbr4in.SharpReverse.Api.Test
 
 #if !WIN64
             if (amd64)
-                Inconclusive("Expected platform configuration x64.");
+                AssertInconclusive("Expected platform configuration x64.");
 #endif
             
             if (@case.Data is string path && !File.Exists(path))
