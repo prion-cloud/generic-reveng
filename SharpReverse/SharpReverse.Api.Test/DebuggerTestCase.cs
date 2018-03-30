@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace SharpReverse.Api.Test
 {
@@ -80,25 +81,26 @@ namespace SharpReverse.Api.Test
                         new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x4fb0 }, (8, 0xffff) )
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, 0x77554fb0/*TODO*/, new byte[] { 0x8b, 0xff }, "mov edi, edi"),
-                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb2 })
+                        new TestInstructionInfo(0x1ba, 0x4fb0, new byte[] { 0x8b, 0xff }, "mov edi, edi", 0xffff),
+                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x4fb2 }, (8, 0xffff))
                     ),
                     (
-                        new TestInstructionInfo(0x244, 0x77554fb2, new byte[] { 0x55 }, "push ebp"),
-                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffff, 0x0, 0x0, 0x77554fb3 })
+                        new TestInstructionInfo(0x244, 0x4fb2, new byte[] { 0x55 }, "push ebp", 0xffff),
+                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffff, 0x0, 0x0, 0x4fb3 }, (8, 0xffff))
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, 0x77554fb3, new byte[] { 0x8b, 0xec }, "mov ebp, esp"),
-                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffef, 0x0, 0x0, 0x77554fb5 })
+                        new TestInstructionInfo(0x1ba, 0x4fb3, new byte[] { 0x8b, 0xec }, "mov ebp, esp", 0xffff),
+                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xffffffef, 0xffffffef, 0x0, 0x0, 0x4fb5 }, (8, 0xffff))
                     ),
                     (
-                        new TestInstructionInfo(0x22e, 0x77554fb5, new byte[] { 0x5d }, "pop ebp"),
-                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x77554fb6 })
-                    ),
+                        new TestInstructionInfo(0x22e, 0x4fb5, new byte[] { 0x5d }, "pop ebp", 0xffff),
+                        new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x4fb6 }, (8, 0xffff))
+                    )/*,
                     (
-                        new TestInstructionInfo(0x10a, 0x77554fb6, new byte[] { 0xff, 0x25, 0xa0, 0x10, 0x5b, 0x77 }, "jmp dword ptr [0x775b10a0]"),
+                        new TestInstructionInfo(0x10a, 0x4fb6, new byte[] { 0xff, 0x25, 0xa0, 0x10, 0x5b, 0x77 }, "jmp dword ptr [0x775b10a0]", 0xffff),
                         new TestRegisterInfo(new ulong[] { 0x0, 0x0, 0x0, 0x0, 0xfffffff3, 0xffffffff, 0x0, 0x0, 0x0009323e })
                     )
+                    */
                 });
         }
 
@@ -161,27 +163,27 @@ namespace SharpReverse.Api.Test
     public struct TestInstructionInfo
     {
         public readonly uint Id;
-        public readonly ulong Address;
+        public readonly (ulong, ulong?) Address;
         public readonly byte[] Bytes;
         public readonly string Instruction;
 
-        public TestInstructionInfo(uint id, ulong address, byte[] bytes, string instruction)
+        public TestInstructionInfo(uint id, ulong address, byte[] bytes, string instruction, ulong? addressMask = null)
         {
             Id = id;
-            Address = address;
+            Address = (address, addressMask);
             Bytes = bytes;
             Instruction = instruction;
         }
     }
     public struct TestRegisterInfo
     {
-        public readonly ulong[] Registers;
-        public readonly (int, ulong)[] Masks;
+        public readonly (ulong, ulong?)[] Registers;
 
-        public TestRegisterInfo(ulong[] registers, params (int, ulong)[] masks)
+        public TestRegisterInfo(ulong[] registers, params (int, ulong)[] registerMasks)
         {
-            Registers = registers;
-            Masks = masks;
+            Registers = registers.Select<ulong, (ulong, ulong?)>(r => (r, null)).ToArray();
+            foreach (var m in registerMasks)
+                Registers[m.Item1].Item2 = m.Item2;
         }
     }
 }
