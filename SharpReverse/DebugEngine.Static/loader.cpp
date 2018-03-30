@@ -133,7 +133,7 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
             break;
 
         const auto dll_name = mem_read_string_skip(uc, image_base + descriptor.Name);
-        const auto dll_handle = GetModuleHandleA(dll_name.c_str());   // TODO: GetModuleHandle?
+        const auto dll_handle = GetModuleHandleA(dll_name.c_str()); // TODO: GetModuleHandle?
         const auto dll_base = reinterpret_cast<size_t>(dll_handle); //
 
         std::vector<char> dll_bytes;

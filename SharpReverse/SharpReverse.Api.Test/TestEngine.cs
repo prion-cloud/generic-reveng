@@ -18,7 +18,7 @@ namespace Superbr4in.SharpReverse.Api.Test
 #endif
             
             if (@case.Data is string path && !File.Exists(path))
-                Inconclusive($"Apparent test file \"{path}\" not found.");
+                AssertInconclusive($"Apparent test file \"{path}\" not found.");
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
@@ -33,7 +33,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             }
         }
         
-        private static void Inconclusive(string message)
+        private static void AssertInconclusive(string message)
         {
             throw new AssertInconclusiveException(message);
         }
@@ -50,7 +50,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             AssertEqual(expected.Item1.Address, actual.Item1.Address,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}", format);
 
-            AssertArrayEqual<byte>(expected.Item1.Bytes, actual.Item1.Bytes,
+            AssertArrayEqual(expected.Item1.Bytes, actual.Item1.Bytes,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Bytes)}", i => $"0x{i:x2}");
 
             AssertEqual(expected.Item1.Instruction, actual.Item1.Instruction,
