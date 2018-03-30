@@ -49,5 +49,5 @@ public:
 
     int reg(register_info& reg_info) const;
 
-    int mem(std::vector<memory_info>& mem_info_vec) const;
+    int mem(memory_info*& mem_infos, int32_t& count) const;
 };

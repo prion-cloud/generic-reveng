@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Superbr4in.SharpReverse.Api
 {
@@ -9,6 +10,6 @@ namespace Superbr4in.SharpReverse.Api
         IInstructionInfo Debug();
 
         IRegisterInfo InspectRegisters();
-        IMemoryInfo[] InspectMemory();
+        IEnumerable<IMemoryInfo> InspectMemory();
     }
 }

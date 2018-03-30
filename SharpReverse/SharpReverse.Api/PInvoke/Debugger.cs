@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using Superbr4in.SharpReverse.Api.PInvoke.Struct;
@@ -69,16 +70,16 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
             return reg;
         }
 
-        public IMemoryInfo[] InspectMemory()
+        public IEnumerable<IMemoryInfo> InspectMemory()
         {
-            Mem(_handle, out var mem, out var count);
+            Mem(_handle, out var memPtr, out var count);
             
             var result = new IMemoryInfo[count];
             
             for (var i = 0; i < count; i++)
-                result[i] = mem[i];
+                result[i] = memPtr[i];
 
-            return result;
+            return null;
         }
         
         #region DllImports
@@ -92,13 +93,13 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         private static extern int Unload(void* handle);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_ins")]
-        private static extern int Ins(void* handle, out InstructionInfo info);
+        private static extern int Ins(void* handle, out InstructionInfo ins);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_reg")]
-        private static extern int Reg(void* handle, out RegisterInfo info);
+        private static extern int Reg(void* handle, out RegisterInfo reg);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_mem")]
-        private static extern int Mem(void* handle, out MemoryInfo* info, out int count);
+        private static extern int Mem(void* handle, out MemoryInfo* memPtr, out int count);
 
         #endregion
     }

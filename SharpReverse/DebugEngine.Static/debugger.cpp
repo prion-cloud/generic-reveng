@@ -80,24 +80,19 @@ int debugger::reg(register_info& reg_info) const
     return F_SUCCESS; // TODO: F_FAILURE
 }
 
-int debugger::mem(std::vector<memory_info>& mem_info_vec) const
+int debugger::mem(memory_info*& mem_infos, int32_t& count) const
 {
     uc_mem_region* regions;
-    uint32_t count;
-    C_IMP(uc_mem_regions(uc_, &regions, &count));
+    C_IMP(uc_mem_regions(uc_, &regions, reinterpret_cast<uint32_t*>(&count)));
 
-    mem_info_vec = std::vector<memory_info>();
+    mem_infos = static_cast<memory_info*>(malloc(sizeof(memory_info) * count));
 
     for (auto i = 0; i < count; ++i)
     {
-        auto mem_info = memory_info();
+        mem_infos[i].begin = regions[i].begin;
+        mem_infos[i].size = regions[i].end - regions[i].begin + 1;
 
-        mem_info.begin = regions[i].begin;
-        mem_info.size = regions[i].end - regions[i].begin + 1;
-
-        mem_info.permissions = regions[i].perms;
-
-        mem_info_vec.push_back(mem_info);
+        mem_infos[i].permissions = regions[i].perms;
     }
 
     return F_SUCCESS;
