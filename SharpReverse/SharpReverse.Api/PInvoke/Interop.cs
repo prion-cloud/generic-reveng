@@ -19,16 +19,19 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int debugger_load(out IntPtr handle, ulong scale, byte[] bytes, int size);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int debugger_load_file(out IntPtr handle, out ulong scale, string fileName);
+        public static extern int debugger_load_file(out IntPtr handle, out ulong scale, string file_name);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int debugger_unload(IntPtr handle);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int debugger_step(IntPtr handle, out InstructionInfo ins_info);
+        public static extern int debugger_ins(IntPtr handle, out InstructionInfo ins_info);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int debugger_reg(IntPtr handle, out RegisterInfo reg_info);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int debugger_mem(IntPtr handle, out MemoryInfo[] mem_infos);
     }
 }
 
@@ -55,5 +58,13 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)]
         public ulong[] Registers_;
+    }
+
+    internal partial struct MemoryInfo
+    {
+        public ulong Begin_;
+        public ulong Size_;
+
+        public uint Permissions_;
     }
 }

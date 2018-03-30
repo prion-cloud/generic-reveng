@@ -21,7 +21,7 @@ uint64_t debugger::scale() const
     return scale_;
 }
 
-int debugger::step(instruction_info& ins_info) const
+int debugger::ins(instruction_info& ins_info) const
 {
     const auto size = 16;
     const auto cur_addr = uc_ext_reg_read(uc_, regs_[8], scale_);
@@ -78,4 +78,27 @@ int debugger::reg(register_info& reg_info) const
         reg_info.registers[i] = uc_ext_reg_read(uc_, regs_[i], scale_);
 
     return F_SUCCESS; // TODO: F_FAILURE
+}
+
+int debugger::mem(std::vector<memory_info>& mem_info_vec) const
+{
+    uc_mem_region* regions;
+    uint32_t count;
+    C_IMP(uc_mem_regions(uc_, &regions, &count));
+
+    mem_info_vec = std::vector<memory_info>();
+
+    for (auto i = 0; i < count; ++i)
+    {
+        auto mem_info = memory_info();
+
+        mem_info.begin = regions[i].begin;
+        mem_info.size = regions[i].end - regions[i].begin;
+
+        mem_info.permissions = regions[i].perms;
+
+        mem_info_vec.push_back(mem_info);
+    }
+
+    return F_SUCCESS;
 }

@@ -33,12 +33,22 @@ API int debugger_unload(debugger* handle)
     return res;
 }
 
-API int debugger_step(debugger* handle, instruction_info& ins_info)
+API int debugger_ins(debugger* handle, instruction_info& ins_info)
 {
-    return handle->step(ins_info);
+    return handle->ins(ins_info);
 }
 
 API int debugger_reg(debugger* handle, register_info& reg_info)
 {
     return handle->reg(reg_info);
+}
+
+API int debugger_mem(debugger* handle, memory_info*& mem_infos)
+{
+    std::vector<memory_info> mem_info_vec;
+    C_IMP(handle->mem(mem_info_vec));
+
+    mem_infos = &mem_info_vec[0];
+
+    return F_SUCCESS;
 }

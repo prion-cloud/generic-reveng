@@ -21,6 +21,14 @@ struct register_info
     uint64_t registers[9];
 };
 
+struct memory_info
+{
+    uint64_t begin;
+    uint64_t size;
+
+    uint32_t permissions;
+};
+
 class debugger
 {
     csh cs_ { };
@@ -37,7 +45,9 @@ public:
 
     uint64_t scale() const;
 
-    int step(instruction_info& ins_info) const;
+    int ins(instruction_info& ins_info) const;
 
     int reg(register_info& reg_info) const;
+
+    int mem(std::vector<memory_info>& mem_info_vec) const;
 };

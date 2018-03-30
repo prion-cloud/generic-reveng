@@ -53,11 +53,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IMemoryInfo.cs" />
     <Compile Include="IRegisterInfo.cs" />
     <Compile Include="Debugger.cs" />
     <Compile Include="IInstructionInfo.cs" />
     <Compile Include="PInvoke\Interop.cs" />
     <Compile Include="PInvoke\Struct\InstructionInfo.cs" />
+    <Compile Include="PInvoke\Struct\MemoryInfo.cs" />
     <Compile Include="PInvoke\Struct\RegisterInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

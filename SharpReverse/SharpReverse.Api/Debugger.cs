@@ -47,7 +47,7 @@ namespace Superbr4in.SharpReverse.Api
 
         public IInstructionInfo Debug()
         {
-            Interop.debugger_step(_handle, out var instruction);
+            Interop.debugger_ins(_handle, out var instruction);
             return instruction;
         }
 
