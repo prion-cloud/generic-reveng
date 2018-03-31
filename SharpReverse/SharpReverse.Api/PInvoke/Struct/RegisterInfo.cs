@@ -8,13 +8,16 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         
         // ReSharper disable All
         
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)]
-        public ulong[] Registers_;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
+        public string Name_;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 19)]
+        public string Value_;
 
         // ReSharper restore All
 
         #endregion
 
-        public ulong[] Registers => Registers_;
+        public string Name => Name_;
+        public string Value => Value_;
     }
 }

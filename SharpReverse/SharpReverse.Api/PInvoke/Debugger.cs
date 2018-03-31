@@ -64,10 +64,10 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
             return ins;
         }
 
-        public IRegisterInfo InspectRegisters()
+        public IEnumerable<IRegisterInfo> InspectRegisters()
         {
-            Reg(_handle, out var reg);
-            return reg;
+            while (Reg(_handle, out var reg) == 0)
+                yield return reg;
         }
 
         public IEnumerable<IMemoryInfo> InspectMemory()

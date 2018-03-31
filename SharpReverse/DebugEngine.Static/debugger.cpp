@@ -4,6 +4,7 @@
 
 debugger::debugger()
 {
+    reg_index_ = 0;
     mem_index_ = 0;
 }
 
@@ -80,15 +81,25 @@ int debugger::ins(instruction_info& ins_info) const
     return F_SUCCESS; // TODO: F_FAILURE
 }
 
-int debugger::reg(register_info& reg_info) const
+int debugger::reg(register_info& reg_info)
 {
-    for (auto i = 0; i < regs_.size(); ++i)
+    reg_info = register_info();
+
+    if (reg_index_ >= regs_.size())
     {
-        C_VIT(uc_reg_read(uc_, regs_[i], &reg_info.registers[i]));
-        reg_info.registers[i] &= scale_;
+        reg_index_ = 0;
+        return F_FAILURE;
     }
 
-    return F_SUCCESS; // TODO: F_FAILURE
+    uint64_t value;
+    C_VIT(uc_reg_read(uc_, regs_[reg_index_], &value));
+    
+    sprintf_s(reg_info.name, cs_reg_name(cs_, regs_[reg_index_]));
+    sprintf_s(reg_info.value, "0x%08llx", value & scale_);
+
+    ++reg_index_;
+
+    return F_SUCCESS;
 }
 
 int debugger::mem(memory_info& mem_info)

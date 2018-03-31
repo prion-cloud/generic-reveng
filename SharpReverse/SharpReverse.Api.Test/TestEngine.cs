@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -38,7 +39,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             throw new AssertInconclusiveException(message);
         }
         
-        private static void AssertEqual((TestInstructionInfo, TestRegisterInfo) expected, (IInstructionInfo, IRegisterInfo) actual, bool amd64)
+        private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual, bool amd64)
         {
             var format = amd64 ? "x16" : "x8";
 
@@ -48,7 +49,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");
 
             AssertEqual(expected.Item1.Address, actual.Item1.Address,
-                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}", format);
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}");
 
             AssertArrayEqual(expected.Item1.Bytes, actual.Item1.Bytes,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Bytes)}", i => $"0x{i:x2}");
@@ -56,8 +57,22 @@ namespace Superbr4in.SharpReverse.Api.Test
             AssertEqual(expected.Item1.Instruction, actual.Item1.Instruction,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Instruction)}");
 
-            AssertArrayEqual(expected.Item2.Registers, actual.Item2.Registers,
-                $"{nameof(IRegisterInfo)}.{nameof(actual.Item2.Registers)}", format);
+            var exp = expected.Item2;
+            var act = actual.Item2.ToArray();
+
+            if (exp.Length != act.Length)
+                Assert.Fail("Length"); // TODO
+
+            for (var i = 0; i < exp.Length; i++)
+            {
+                var e = exp[i];
+                var a = act[i];
+
+                AssertEqual(e.Name, a.Name,
+                    $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Name)}");
+                AssertEqual(e.Value, a.Value,
+                    $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Value)}");
+            }
         }
 
         private static void AssertEqual<T>(T expected, T actual, string description)
@@ -69,14 +84,6 @@ namespace Superbr4in.SharpReverse.Api.Test
             if (!Equals(expected, actual))
                 throw new AssertFailedException($"{description}: '{toString(actual)}' / '{toString(expected)}'\n");
         }
-        private static void AssertEqual((ulong, ulong?) expected, ulong actual, string description, string format)
-        {
-            AssertEqual(
-                expected.Item1,
-                actual & (expected.Item2 ?? actual),
-                description,
-                ul => ul.ToString(format));
-        }
         
         private static void AssertArrayEqual<T>(T[] expected, T[] actual, string name, Func<T, string> toString)
         {
@@ -84,14 +91,6 @@ namespace Superbr4in.SharpReverse.Api.Test
 
             for (var i = 0; i < expected.Length; i++)
                 AssertEqual(expected[i], actual[i], $"{name}[{i}]", toString);
-        }
-        private static void AssertArrayEqual((ulong, ulong?)[] expected, ulong[] actual, string name, string format)
-        {
-            AssertArrayEqual(
-                expected.Select(e => e.Item1).ToArray(),
-                actual.Select((a, i) => a & (expected[i].Item2 ?? a)).ToArray(),
-                name,
-                ul => ul.ToString(format));
         }
     }
 }

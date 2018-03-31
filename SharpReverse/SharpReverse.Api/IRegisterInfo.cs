@@ -2,6 +2,7 @@
 {
     public interface IRegisterInfo
     {
-        ulong[] Registers { get; }
+        string Name { get; }
+        string Value { get; }
     }
 }

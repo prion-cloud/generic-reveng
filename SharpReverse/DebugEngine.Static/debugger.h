@@ -18,7 +18,8 @@ struct instruction_info
 
 struct register_info
 {
-    uint64_t registers[9];
+    char name[4];
+    char value[19];
 };
 
 struct memory_info
@@ -38,6 +39,7 @@ class debugger
 
     std::array<int, 9> regs_ { }; // TODO: Constantly 9 registers?
 
+    int reg_index_;
     int mem_index_;
 
 public:
@@ -51,7 +53,7 @@ public:
 
     int ins(instruction_info& ins_info) const;
 
-    int reg(register_info& reg_info) const;
+    int reg(register_info& reg_info);
 
     int mem(memory_info& mem_info);
 };
