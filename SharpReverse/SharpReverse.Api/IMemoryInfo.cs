@@ -2,9 +2,9 @@
 {
     public interface IMemoryInfo
     {
-        ulong Begin { get; }
-        ulong Size { get; }
+        string Begin { get; }
+        string Size { get; }
 
-        uint Permissions { get; }
+        string Permissions { get; }
     }
 }

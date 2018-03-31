@@ -6,7 +6,7 @@ using Superbr4in.SharpReverse.Api.PInvoke.Struct;
 
 namespace Superbr4in.SharpReverse.Api.PInvoke
 {
-    internal unsafe class Debugger : IDebugger
+    internal class Debugger : IDebugger
     {
         #region Constants
 
@@ -21,7 +21,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         
         #region Fields
 
-        private readonly void* _handle;
+        private readonly IntPtr _handle;
         private readonly ulong _scale;
 
         #endregion
@@ -72,34 +72,28 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
 
         public IEnumerable<IMemoryInfo> InspectMemory()
         {
-            Mem(_handle, out var memPtr, out var count);
-            
-            var result = new IMemoryInfo[count];
-            
-            for (var i = 0; i < count; i++)
-                result[i] = memPtr[i];
-
-            return null;
+            while (Mem(_handle, out var mem) == 0)
+                yield return mem;
         }
         
         #region DllImports
         
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_load")]
-        private static extern int Load(out void* handle, ulong scale, byte[] bytes, int size);
+        private static extern int Load(out IntPtr handle, ulong scale, byte[] bytes, int size);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_load_file")]
-        private static extern int LoadFile(out void* handle, out ulong scale, string fileName);
+        private static extern int LoadFile(out IntPtr handle, out ulong scale, string fileName);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_unload")]
-        private static extern int Unload(void* handle);
+        private static extern int Unload(IntPtr handle);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_ins")]
-        private static extern int Ins(void* handle, out InstructionInfo ins);
+        private static extern int Ins(IntPtr handle, out InstructionInfo ins);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_reg")]
-        private static extern int Reg(void* handle, out RegisterInfo reg);
+        private static extern int Reg(IntPtr handle, out RegisterInfo reg);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_mem")]
-        private static extern int Mem(void* handle, out MemoryInfo* memPtr, out int count);
+        private static extern int Mem(IntPtr handle, out MemoryInfo mem);
 
         #endregion
     }

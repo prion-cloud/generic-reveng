@@ -2,6 +2,11 @@
 
 #include "debugger.h"
 
+debugger::debugger()
+{
+    mem_index_ = 0;
+}
+
 int debugger::load(const loader& l, const std::vector<char> bytes)
 {
     C_IMP(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_));
@@ -80,20 +85,32 @@ int debugger::reg(register_info& reg_info) const
     return F_SUCCESS; // TODO: F_FAILURE
 }
 
-int debugger::mem(memory_info*& mem_infos, int32_t& count) const
+int debugger::mem(memory_info& mem_info)
 {
     uc_mem_region* regions;
-    C_IMP(uc_mem_regions(uc_, &regions, reinterpret_cast<uint32_t*>(&count)));
+    uint32_t count;
+    C_IMP(uc_mem_regions(uc_, &regions, &count));
 
-    mem_infos = static_cast<memory_info*>(malloc(sizeof(memory_info) * count));
+    mem_info = memory_info();
 
-    for (auto i = 0; i < count; ++i)
+    if (mem_index_ >= count)
     {
-        mem_infos[i].begin = regions[i].begin;
-        mem_infos[i].size = regions[i].end - regions[i].begin + 1;
-
-        mem_infos[i].permissions = regions[i].perms;
+        mem_index_ = 0;
+        return F_FAILURE;
     }
+
+    const auto b = regions[mem_index_].begin;
+    const auto e = regions[mem_index_].end;
+    const auto p = regions[mem_index_].perms;
+
+    sprintf_s(mem_info.begin, "0x%016llx", b);
+    sprintf_s(mem_info.size, "0x%016llx", e - b + 1);
+
+    mem_info.permissions[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
+    mem_info.permissions[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';
+    mem_info.permissions[2] = (p & UC_PROT_EXEC) == UC_PROT_EXEC ? 'E' : ' ';
+
+    ++mem_index_;
 
     return F_SUCCESS;
 }

@@ -23,10 +23,10 @@ struct register_info
 
 struct memory_info
 {
-    uint64_t begin;
-    uint64_t size;
+    char begin[19];
+    char size[19];
 
-    uint32_t permissions;
+    char permissions[4];
 };
 
 class debugger
@@ -38,7 +38,11 @@ class debugger
 
     std::array<int, 9> regs_ { }; // TODO: Constantly 9 registers?
 
+    int mem_index_;
+
 public:
+
+    debugger();
     
     int load(const loader& l, std::vector<char> bytes);
     int unload();
@@ -49,5 +53,5 @@ public:
 
     int reg(register_info& reg_info) const;
 
-    int mem(memory_info*& mem_infos, int32_t& count) const;
+    int mem(memory_info& mem_info);
 };

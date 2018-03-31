@@ -43,7 +43,7 @@ API int debugger_reg(debugger* handle, register_info& reg_info)
     return handle->reg(reg_info);
 }
 
-API int debugger_mem(debugger* handle, memory_info*& mem_infos, int32_t& count)
+API int debugger_mem(debugger* handle, memory_info& mem_info)
 {
-    return handle->mem(mem_infos, count);
+    return handle->mem(mem_info);
 }
