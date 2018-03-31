@@ -22,13 +22,6 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         #region Fields
 
         private readonly IntPtr _handle;
-        private readonly ulong _scale;
-
-        #endregion
-
-        #region Properties
-
-        public bool Amd64 => _scale == ulong.MaxValue;
 
         #endregion
 
@@ -38,7 +31,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         }
         public Debugger(string fileName)
         {
-            LoadFile(out _handle, out _scale, fileName);
+            LoadFile(out _handle, fileName);
         }
 
         ~Debugger()
@@ -81,7 +74,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_load")]
         private static extern int Load(out IntPtr handle, ulong scale, byte[] bytes, int size);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_load_file")]
-        private static extern int LoadFile(out IntPtr handle, out ulong scale, string fileName);
+        private static extern int LoadFile(out IntPtr handle, string fileName);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_unload")]
         private static extern int Unload(IntPtr handle);

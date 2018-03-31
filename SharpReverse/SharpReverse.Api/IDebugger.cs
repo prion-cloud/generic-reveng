@@ -5,8 +5,6 @@ namespace Superbr4in.SharpReverse.Api
 {
     public interface IDebugger : IDisposable
     {
-        bool Amd64 { get; }
-
         IInstructionInfo Debug();
 
         IEnumerable<IRegisterInfo> InspectRegisters();

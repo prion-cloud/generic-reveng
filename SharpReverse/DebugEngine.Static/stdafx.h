@@ -2,6 +2,7 @@
 
 #include <array>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>

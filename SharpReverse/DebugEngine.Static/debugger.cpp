@@ -13,6 +13,22 @@ int debugger::load(const loader& l, const std::vector<char> bytes)
     C_IMP(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_));
     C_IMP(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 
+    auto s = scale_;
+    auto x = 0;
+
+    for (auto i = 0;; ++i)
+    {
+        if (s == 0x0)
+            break;
+
+        ++x;
+        s = s >> 4;
+    }
+
+    std::ostringstream stream;
+    stream << "0x%0" << x << "llx";
+    format_ = stream.str();
+
     return F_SUCCESS;
 }
 int debugger::unload()
@@ -20,11 +36,6 @@ int debugger::unload()
     C_IMP(cs_close(&cs_) || uc_close(uc_));
 
     return F_SUCCESS;
-}
-
-uint64_t debugger::scale() const
-{
-    return scale_;
 }
 
 int debugger::ins(instruction_info& ins_info) const
@@ -95,7 +106,7 @@ int debugger::reg(register_info& reg_info)
     C_VIT(uc_reg_read(uc_, regs_[reg_index_], &value));
     
     sprintf_s(reg_info.name, cs_reg_name(cs_, regs_[reg_index_]));
-    sprintf_s(reg_info.value, "0x%08llx", value & scale_);
+    sprintf_s(reg_info.value, format_.c_str(), value & scale_);
 
     ++reg_index_;
 
@@ -120,8 +131,8 @@ int debugger::mem(memory_info& mem_info)
     const auto e = regions[mem_index_].end;
     const auto p = regions[mem_index_].perms;
 
-    sprintf_s(mem_info.begin, "0x%016llx", b);
-    sprintf_s(mem_info.size, "0x%016llx", e - b + 1);
+    sprintf_s(mem_info.begin, format_.c_str(), b);
+    sprintf_s(mem_info.size, format_.c_str(), e - b + 1);
 
     mem_info.permissions[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
     mem_info.permissions[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';

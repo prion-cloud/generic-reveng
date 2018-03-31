@@ -11,7 +11,7 @@ API int debugger_load(debugger*& handle, uint64_t scale, const char* bytes, cons
     // TODO: another loader
     return -1;
 }
-API int debugger_load_file(debugger*& handle, uint64_t& scale, const char* file_name)
+API int debugger_load_file(debugger*& handle, const char* file_name)
 {
     std::vector<char> bytes;
     create_dump(file_name, bytes);
@@ -19,8 +19,6 @@ API int debugger_load_file(debugger*& handle, uint64_t& scale, const char* file_
     handle = new debugger();
 
     C_IMP(handle->load(pe_loader(), bytes));
-
-    scale = handle->scale();
 
     return F_SUCCESS;
 }

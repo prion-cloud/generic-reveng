@@ -39,6 +39,8 @@ class debugger
 
     std::array<int, 9> regs_ { }; // TODO: Constantly 9 registers?
 
+    std::string format_ { };
+
     int reg_index_;
     int mem_index_;
 
@@ -48,8 +50,6 @@ public:
     
     int load(const loader& l, std::vector<char> bytes);
     int unload();
-
-    uint64_t scale() const;
 
     int ins(instruction_info& ins_info) const;
 

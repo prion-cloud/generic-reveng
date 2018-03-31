@@ -11,10 +11,8 @@ namespace Superbr4in.SharpReverse.Api.Test
     {
         public static void _Debugger_Debug<T>(DebuggerTestCase<T> @case)
         {
-            var amd64 = @case.Amd64;
-
 #if !WIN64
-            if (amd64)
+            if (@case.Amd64)
                 AssertInconclusive("Expected platform configuration x64.");
 #endif
             
@@ -23,14 +21,8 @@ namespace Superbr4in.SharpReverse.Api.Test
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
-                // ReSharper disable ConditionIsAlwaysTrueOrFalse
-
-                AssertEqual(amd64, debugger.Amd64, $"{nameof(IDebugger)}.{nameof(debugger.Amd64)}");
-
                 foreach (var expected in @case.DebugResults)
-                    AssertEqual(expected, (debugger.Debug(), debugger.InspectRegisters()), amd64);
-
-                // ReSharper restore ConditionIsAlwaysTrueOrFalse
+                    AssertEqual(expected, (debugger.Debug(), debugger.InspectRegisters()));
             }
         }
         
@@ -39,11 +31,9 @@ namespace Superbr4in.SharpReverse.Api.Test
             throw new AssertInconclusiveException(message);
         }
         
-        private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual, bool amd64)
+        private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual)
         {
-            var format = amd64 ? "x16" : "x8";
-
-            Console.WriteLine($"0x{actual.Item1.Address.ToString(format)} | {actual.Item1.Instruction}");
+            Console.WriteLine($"0x{actual.Item1.Address:x8} | {actual.Item1.Instruction}");
 
             AssertEqual(expected.Item1.Id, actual.Item1.Id,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");
