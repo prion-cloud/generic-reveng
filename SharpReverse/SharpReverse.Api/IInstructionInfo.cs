@@ -4,7 +4,7 @@
     {
         uint Id { get; }
 
-        ulong Address { get; }
+        string Address { get; }
 
         byte[] Bytes { get; }
 

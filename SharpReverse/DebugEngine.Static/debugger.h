@@ -6,7 +6,7 @@ struct instruction_info
 {
     uint32_t id;
 
-    uint64_t address;
+    char address[19];
 
     uint16_t size;
     

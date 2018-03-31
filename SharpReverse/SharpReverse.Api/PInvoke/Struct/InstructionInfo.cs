@@ -10,8 +10,9 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         // ReSharper disable All
 
         public uint Id_;
-
-        public ulong Address_;
+        
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 19)]
+        public string Address_;
 
         public ushort Size_;
 
@@ -29,7 +30,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
 
         public uint Id => Id_;
 
-        public ulong Address => Address_;
+        public string Address => Address_;
 
         public byte[] Bytes => Bytes_.Take(Size_).ToArray();
 

@@ -33,7 +33,7 @@ namespace Superbr4in.SharpReverse.Api.Test
         
         private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual)
         {
-            Console.WriteLine($"0x{actual.Item1.Address:x8} | {actual.Item1.Instruction}");
+            Console.WriteLine($"{actual.Item1.Address} | {actual.Item1.Instruction}");
 
             AssertEqual(expected.Item1.Id, actual.Item1.Id,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");

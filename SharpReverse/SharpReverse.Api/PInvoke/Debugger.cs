@@ -53,7 +53,8 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
 
         public IInstructionInfo Debug()
         {
-            Ins(_handle, out var ins);
+            if (Ins(_handle, out var ins) != 0)
+                throw new NotImplementedException();
             return ins;
         }
 

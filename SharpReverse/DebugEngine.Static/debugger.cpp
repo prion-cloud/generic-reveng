@@ -52,7 +52,7 @@ int debugger::ins(instruction_info& ins_info) const
     cs_insn* instruction;
     C_VIT(!cs_disasm(cs_, bytes, size, cur_addr, 1, &instruction));
 
-    C_VIT(uc_emu_start(uc_, cur_addr, -1, 0, 1));
+    C_IMP(uc_emu_start(uc_, cur_addr, -1, 0, 1));
 
     auto incr = true;
 
@@ -80,7 +80,7 @@ int debugger::ins(instruction_info& ins_info) const
 
     ins_info.id = instruction->id;
 
-    ins_info.address = instruction->address;
+    sprintf_s(ins_info.address, format_.c_str(), instruction->address);
 
     ins_info.size = instruction->size;
 
@@ -89,7 +89,7 @@ int debugger::ins(instruction_info& ins_info) const
     memcpy(ins_info.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
     memcpy(ins_info.operands, instruction->op_str, strlen(instruction->op_str));
 
-    return F_SUCCESS; // TODO: F_FAILURE
+    return F_SUCCESS;
 }
 
 int debugger::reg(register_info& reg_info)
