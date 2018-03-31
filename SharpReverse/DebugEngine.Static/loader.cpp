@@ -192,9 +192,9 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
 
-    uc_ext_reg_write(uc, regs[4], stack_pointer);
-    uc_ext_reg_write(uc, regs[5], stack_pointer);
-    uc_ext_reg_write(uc, regs[8], entry_point);
+    C_VIT(uc_reg_write(uc, regs[4], &stack_pointer));
+    C_VIT(uc_reg_write(uc, regs[5], &stack_pointer));
+    C_VIT(uc_reg_write(uc, regs[8], &entry_point));
 
     return F_SUCCESS;
 }

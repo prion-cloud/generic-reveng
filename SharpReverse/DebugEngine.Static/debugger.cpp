@@ -29,7 +29,10 @@ uint64_t debugger::scale() const
 int debugger::ins(instruction_info& ins_info) const
 {
     const auto size = 16;
-    const auto cur_addr = uc_ext_reg_read(uc_, regs_[8], scale_);
+
+    uint64_t cur_addr;
+    C_VIT(uc_reg_read(uc_, regs_[8], &cur_addr));
+    cur_addr &= scale_;
 
     uint8_t bytes[size];
     C_VIT(uc_mem_read(uc_, cur_addr, bytes, size));
@@ -80,7 +83,10 @@ int debugger::ins(instruction_info& ins_info) const
 int debugger::reg(register_info& reg_info) const
 {
     for (auto i = 0; i < regs_.size(); ++i)
-        reg_info.registers[i] = uc_ext_reg_read(uc_, regs_[i], scale_);
+    {
+        C_VIT(uc_reg_read(uc_, regs_[i], &reg_info.registers[i]));
+        reg_info.registers[i] &= scale_;
+    }
 
     return F_SUCCESS; // TODO: F_FAILURE
 }
@@ -89,7 +95,7 @@ int debugger::mem(memory_info& mem_info)
 {
     uc_mem_region* regions;
     uint32_t count;
-    C_IMP(uc_mem_regions(uc_, &regions, &count));
+    C_VIT(uc_mem_regions(uc_, &regions, &count));
 
     mem_info = memory_info();
 

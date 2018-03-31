@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-std::string uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address)
+std::string uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address) // TODO: Return 'uc_err'
 {
     auto end = false;
     std::vector<char> chars;
@@ -21,16 +21,4 @@ std::string uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address)
     }
 
     return std::string(chars.begin(), chars.end());
-}
-
-uint64_t uc_ext_reg_read(uc_engine* uc, const int regid, const uint64_t scale)
-{
-    uint64_t value;
-    C_VIT(uc_reg_read(uc, regid, &value));
-
-    return value & scale;
-}
-void uc_ext_reg_write(uc_engine* uc, const int regid, const uint64_t value)
-{
-    C_VIT(uc_reg_write(uc, regid, &value));
 }
