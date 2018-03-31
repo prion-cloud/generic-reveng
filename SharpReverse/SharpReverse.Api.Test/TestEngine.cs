@@ -9,6 +9,11 @@ namespace Superbr4in.SharpReverse.Api.Test
 {
     public static class TestEngine
     {
+        /// <summary>
+        /// Placeholder for characters to be ignored in string comparison.
+        /// </summary>
+        public const char PH = unchecked ((char)-1);
+
         public static void _Debugger_Debug<T>(DebuggerTestCase<T> @case)
         {
 #if !WIN64
@@ -26,11 +31,15 @@ namespace Superbr4in.SharpReverse.Api.Test
             }
         }
         
+        private static void AssertFail(string expected, string actual, string description)
+        {
+            throw new AssertFailedException($"{description} '{actual}' / '{expected}'\n");
+        }
         private static void AssertInconclusive(string message)
         {
             throw new AssertInconclusiveException(message);
         }
-        
+
         private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual)
         {
             Console.WriteLine($"{actual.Item1.Address} | {actual.Item1.Instruction}");
@@ -38,7 +47,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             AssertEqual(expected.Item1.Id, actual.Item1.Id,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");
 
-            AssertEqual(expected.Item1.Address, actual.Item1.Address,
+            AssertStringEqual(expected.Item1.Address, actual.Item1.Address,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}");
 
             AssertArrayEqual(expected.Item1.Bytes, actual.Item1.Bytes,
@@ -60,7 +69,7 @@ namespace Superbr4in.SharpReverse.Api.Test
 
                 AssertEqual(e.Name, a.Name,
                     $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Name)}");
-                AssertEqual(e.Value, a.Value,
+                AssertStringEqual(e.Value, a.Value,
                     $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Value)}");
             }
         }
@@ -72,7 +81,7 @@ namespace Superbr4in.SharpReverse.Api.Test
         private static void AssertEqual<T>(T expected, T actual, string description, Func<T, string> toString)
         {
             if (!Equals(expected, actual))
-                throw new AssertFailedException($"{description}: '{toString(actual)}' / '{toString(expected)}'\n");
+                AssertFail(toString(expected), toString(actual), description);
         }
         
         private static void AssertArrayEqual<T>(T[] expected, T[] actual, string name, Func<T, string> toString)
@@ -81,6 +90,20 @@ namespace Superbr4in.SharpReverse.Api.Test
 
             for (var i = 0; i < expected.Length; i++)
                 AssertEqual(expected[i], actual[i], $"{name}[{i}]", toString);
+        }
+
+        private static void AssertStringEqual(string expected, string actual, string name)
+        {
+            AssertEqual(expected.Length, actual.Length, $"{name}.{nameof(actual.Length)}");
+
+            for (var i = 0; i < expected.Length; i++)
+            {
+                if (expected[i] == PH)
+                    continue;
+
+                if (expected[i] != actual[i])
+                    AssertFail(expected, actual, name);
+            }
         }
     }
 }
