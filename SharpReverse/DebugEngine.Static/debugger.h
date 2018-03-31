@@ -37,7 +37,8 @@ class debugger
 
     uint64_t scale_ { };
 
-    std::array<int, 9> regs_ { }; // TODO: Constantly 9 registers?
+    std::vector<int> regs_ { };
+    int ip_index_ { };
 
     std::string format_ { };
 

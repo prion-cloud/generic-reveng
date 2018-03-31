@@ -10,7 +10,7 @@ debugger::debugger()
 
 int debugger::load(const loader& l, const std::vector<char> bytes)
 {
-    C_IMP(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_));
+    C_IMP(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_, ip_index_));
     C_IMP(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 
     auto s = scale_;
@@ -43,7 +43,7 @@ int debugger::ins(instruction_info& ins_info) const
     const auto size = 16;
 
     uint64_t cur_addr;
-    C_VIT(uc_reg_read(uc_, regs_[8], &cur_addr));
+    C_VIT(uc_reg_read(uc_, regs_[ip_index_], &cur_addr));
     cur_addr &= scale_;
 
     uint8_t bytes[size];
@@ -73,7 +73,7 @@ int debugger::ins(instruction_info& ins_info) const
     if (incr)
     {
         auto next_addr = cur_addr + instruction->size;
-        uc_reg_write(uc_, regs_[8], &next_addr);
+        uc_reg_write(uc_, regs_[ip_index_], &next_addr);
     }
 
     ins_info = instruction_info();

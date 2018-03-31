@@ -6,7 +6,7 @@ public:
 
     virtual ~loader() = default;
 
-    virtual int load(std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::array<int, 9>& regs) const = 0;
+    virtual int load(std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const = 0;
 };
 
 struct pe_header
@@ -26,5 +26,5 @@ class pe_loader : public loader
 {
 public:
 
-    int load(std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::array<int, 9>& regs) const override;
+    int load(std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const override;
 };

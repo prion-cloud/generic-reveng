@@ -141,7 +141,7 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
     }
 }
 
-int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::array<int, 9>& regs) const
+int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const
 {
     pe_header header;
     C_IMP(inspect_header(bytes, header));
@@ -158,11 +158,12 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
 
         regs =
         {
-            UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_ECX, UC_X86_REG_EDX,
-            UC_X86_REG_ESP, UC_X86_REG_EBP,
-            UC_X86_REG_ESI, UC_X86_REG_EDI,
-            UC_X86_REG_EIP
+            X86_REG_EAX, X86_REG_EBX, X86_REG_ECX, X86_REG_EDX,
+            X86_REG_ESP, X86_REG_EBP,
+            X86_REG_ESI, X86_REG_EDI,
+            X86_REG_EIP
         };
+        ip_index = 8;
     }
 #ifdef _WIN64
     else if (header.targets_64())
@@ -174,11 +175,12 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
 
         regs =
         {
-            UC_X86_REG_RAX, UC_X86_REG_RBX, UC_X86_REG_RCX, UC_X86_REG_RDX,
-            UC_X86_REG_RSP, UC_X86_REG_RBP,
-            UC_X86_REG_RSI, UC_X86_REG_RDI,
-            UC_X86_REG_RIP
+            X86_REG_RAX, X86_REG_RBX, X86_REG_RCX, X86_REG_RDX,
+            X86_REG_RSP, X86_REG_RBP,
+            X86_REG_RSI, X86_REG_RDI,
+            X86_REG_RIP
         };
+        ip_index = 8;
     }
 #endif
     else E_THROW;
