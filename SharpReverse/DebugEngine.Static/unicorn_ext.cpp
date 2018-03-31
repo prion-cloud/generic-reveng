@@ -1,13 +1,15 @@
 #include "stdafx.h"
 
-std::string uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address) // TODO: Return 'uc_err'
+uc_err uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address, std::string& value)
 {
     auto end = false;
     std::vector<char> chars;
     for (auto j = 0;; ++j)
     {
         char c;
-        C_VIT(uc_ext_mem_read<char>(uc, address, c, j));
+        const auto err = uc_ext_mem_read<char>(uc, address, c, j);
+        if (err)
+            return err;
 
         if (c != '\0')
             end = true;
@@ -20,5 +22,7 @@ std::string uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address) // 
             break;
     }
 
-    return std::string(chars.begin(), chars.end());
+    value = std::string(chars.begin(), chars.end());
+
+    return UC_ERR_OK;
 }

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "macro.h"
 
 #include "loader.h"
 
@@ -79,7 +80,9 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
         if (descriptor.Name == 0x0)
             break;
 
-        const auto dll_name = uc_ext_mem_read_string_skip(uc, image_base + descriptor.Name);
+        std::string dll_name;
+        C_VIT(uc_ext_mem_read_string_skip(uc, image_base + descriptor.Name, dll_name));
+
         const auto dll_handle = GetModuleHandleA(dll_name.c_str()); // TODO: GetModuleHandle?
         const auto dll_base = reinterpret_cast<size_t>(dll_handle); //
 
@@ -135,8 +138,11 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
             if (!proc_name_address)
                 break;
 
+            std::string proc_name;
+            C_VIT(uc_ext_mem_read_string_skip(uc, image_base + proc_name_address, proc_name));
+
             C_VIT(uc_ext_mem_write(uc, image_base + descriptor.FirstThunk,
-                GetProcAddress(dll_handle, uc_ext_mem_read_string_skip(uc, image_base + proc_name_address).c_str()), j)); // TODO: GetProcAddress?
+                GetProcAddress(dll_handle, proc_name.c_str()), j)); // TODO: GetProcAddress?
         }
     }
 }

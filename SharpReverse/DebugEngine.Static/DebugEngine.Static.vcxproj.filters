@@ -37,6 +37,9 @@
     <ClInclude Include="unicorn_ext_t.cpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="macro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

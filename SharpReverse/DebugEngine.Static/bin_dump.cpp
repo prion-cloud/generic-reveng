@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "macro.h"
 
 #include "bin_dump.h"
 

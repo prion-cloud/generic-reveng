@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "../DebugEngine.Static/stdafx.h"
+
+#include "macro.h"
 
 #include "bin_dump.h"
 #include "debugger.h"
