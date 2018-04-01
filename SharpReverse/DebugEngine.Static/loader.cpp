@@ -8,6 +8,31 @@
 #define VISIT(var, member) visit([](auto x) { return x.member; }, var)
 #define VISIT_CAST(var, member, cast) visit([](auto x) { return static_cast<cast>(x.member); }, var)
 
+int binary_search(const std::function<std::string(int)> f, const std::string s, int l, int r)
+{
+    while (true)
+    {
+        if (l > r)
+            return -1;
+
+        const auto m = (l + r) / 2;
+
+        if (f(m).compare(s) < 0)
+        {
+            l = m + 1;
+            continue;
+        }
+
+        if (f(m).compare(s) > 0)
+        {
+            r = m - 1;
+            continue;
+        }
+
+        return m;
+    }
+}
+
 int inspect_header(const std::vector<char> bytes, pe_header& header)
 {
     size_t cursor = 0;
@@ -146,22 +171,22 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
 
             DWORD dll_export_proc_address = 0x0;
 
-            for (auto k = 0; k < dll_export_directory.NumberOfNames; ++k) // TODO: Start @ Hint ?
+            const std::function<std::string(int)> f = [uc, dll_image_base, dll_export_directory](int k)
             {
-                // TODO: Binary search (alphabetic)
-
                 DWORD dll_export_proc_name_address;
                 C_VIT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, k));
                 
                 std::string dll_export_proc_name;
                 C_VIT(uc_ext_mem_read_string(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
 
-                if (dll_export_proc_name.compare(dll_import_proc_name) == 0)
-                {
-                    C_VIT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, k));
-                    break;
-                }
-            }
+                return dll_export_proc_name;
+            };
+
+            const auto dll_export_proc_index = binary_search(f, dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1);
+
+            C_VIT(dll_export_proc_index < 0);
+
+            C_VIT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, dll_export_proc_index));
 
             if (dll_export_proc_address == 0x0)
                 continue; // TODO: Error ?
