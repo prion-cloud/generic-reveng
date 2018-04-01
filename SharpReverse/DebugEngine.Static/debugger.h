@@ -42,8 +42,8 @@ class debugger
 
     std::string format_ { };
 
-    int reg_index_;
-    int mem_index_;
+    unsigned reg_index_;
+    unsigned mem_index_;
 
 public:
 

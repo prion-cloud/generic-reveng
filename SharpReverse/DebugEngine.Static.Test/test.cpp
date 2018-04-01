@@ -13,6 +13,6 @@ TEST(bin_dump, create_dump)
 
     EXPECT_EQ(expected.size(), actual.size());
 
-    for (auto i = 0; i < expected.size(); ++i)
+    for (unsigned i = 0; i < expected.size(); ++i)
         EXPECT_EQ(expected[i], actual[i]);
 }

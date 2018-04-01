@@ -42,7 +42,7 @@ std::vector<char> dump_dll(const std::string dll_name, const WORD machine)
     C_FAT(!IsWow64Process(GetCurrentProcess(), &wow64));
     
 #ifdef _WIN64
-    wow64 = wow64 || machine == IMAGE_FILE_MACHINE_I386;
+    wow64 |= machine == IMAGE_FILE_MACHINE_I386;
 #endif
 
     file_name << (wow64 ? "SysWOW64" : "System32") << "\\" << dll_name;
@@ -59,13 +59,11 @@ int inspect_header(const std::vector<char> bytes, pe_header& header)
 
     header.dos_header = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
 
-    if (header.dos_header.e_magic != 0x5A4D)
-        return F_FAILURE;
+    C_ERR(header.dos_header.e_magic != 0x5A4D);
 
     const auto pe_id = *reinterpret_cast<const DWORD*>(&bytes[cursor += header.dos_header.e_lfanew]);
 
-    if (pe_id != 0x4550)
-        return F_FAILURE;
+    C_ERR(pe_id != 0x4550);
 
     header.file_header = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
 
@@ -86,7 +84,7 @@ int inspect_header(const std::vector<char> bytes, pe_header& header)
     cursor += header.file_header.SizeOfOptionalHeader;
 
     header.section_headers = std::vector<IMAGE_SECTION_HEADER>(header.file_header.NumberOfSections);
-    for (auto i = 0; i < header.section_headers.size(); ++i)
+    for (unsigned i = 0; i < header.section_headers.size(); ++i)
         header.section_headers[i] = *reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]);
 
     return F_SUCCESS;
@@ -110,7 +108,7 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
 }
 void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t imports_address, const WORD machine)
 {
-    uint64_t dll_image_base = 0x70000000; // TODO: Make bitness-dependent.
+    uint64_t dll_image_base = 0x70000000;
 
     for (auto i = 0;; ++i)
     {
@@ -210,7 +208,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
             if (dll_export_proc_address == 0x0)
                 continue; // TODO: Error ?
             
-            C_FAT(uc_ext_mem_write<DWORD>(uc, image_base + import_descriptor.FirstThunk, dll_image_base + dll_export_proc_address, j));
+            C_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
         }
 
         dll_image_base = dll_end;
