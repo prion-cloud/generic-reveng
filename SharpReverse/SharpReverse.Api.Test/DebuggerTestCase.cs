@@ -288,8 +288,8 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("rbx", "0000000000000000"),
                             new TestRegisterInfo("rcx", "0000000000000000"),
                             new TestRegisterInfo("rdx", "0000000000000000"),
-                            new TestRegisterInfo("rsp", "fffffffffffffff7"),
-                            new TestRegisterInfo("rbp", "ffffffffffffffff"),
+                            new TestRegisterInfo("rsp", "00000000fffffff7"),
+                            new TestRegisterInfo("rbp", "00000000ffffffff"),
                             new TestRegisterInfo("rsi", "0000000000000000"),
                             new TestRegisterInfo("rdi", "0000000000000000"),
                             new TestRegisterInfo("rip", "0000000000000001")
@@ -303,8 +303,8 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("rbx", "0000000000000000"),
                             new TestRegisterInfo("rcx", "0000000000000000"),
                             new TestRegisterInfo("rdx", "0000000000000000"),
-                            new TestRegisterInfo("rsp", "fffffffffffffff7"),
-                            new TestRegisterInfo("rbp", "ffffffffffffffff"),
+                            new TestRegisterInfo("rsp", "00000000fffffff7"),
+                            new TestRegisterInfo("rbp", "00000000ffffffff"),
                             new TestRegisterInfo("rsi", "0000000000000000"),
                             new TestRegisterInfo("rdi", "0000000000000000"),
                             new TestRegisterInfo("rip", "0000000000000008")
@@ -328,8 +328,8 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("rbx", "0000000000000000"),
                             new TestRegisterInfo("rcx", "0000000000000000"),
                             new TestRegisterInfo("rdx", "0000000000000000"),
-                            new TestRegisterInfo("rsp", "ffffffffffffffd7"),
-                            new TestRegisterInfo("rbp", "ffffffffffffffff"),
+                            new TestRegisterInfo("rsp", "00000000ffffffd7"),
+                            new TestRegisterInfo("rbp", "00000000ffffffff"),
                             new TestRegisterInfo("rsi", "0000000000000000"),
                             new TestRegisterInfo("rdi", "0000000000000000"),
                             new TestRegisterInfo("rip", "0000000000401504")

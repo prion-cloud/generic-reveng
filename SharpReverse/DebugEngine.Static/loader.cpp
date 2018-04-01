@@ -35,6 +35,8 @@ int binary_search(const std::function<std::string(int)> f, const std::string s, 
 
 std::vector<char> dump_dll(const std::string dll_name, const WORD machine)
 {
+    // TODO: Look for DLL in application folder.
+
     auto file_name = std::ostringstream();
     file_name << getenv("windir") << "\\";
     
@@ -206,7 +208,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
             C_FAT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, dll_export_proc_index));
 
             if (dll_export_proc_address == 0x0)
-                continue; // TODO: Error ?
+                continue;
             
             C_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
         }
@@ -264,8 +266,8 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
 
     init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress, header.file_header.Machine);
 
-    const auto stack_pointer = scale; // End of address space; TODO: Change?
-    const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
+    const uint64_t stack_pointer = 0xffffffff;
+    const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, uint64_t);
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
 
     C_FAT(uc_reg_write(uc, regs[4], &stack_pointer));
