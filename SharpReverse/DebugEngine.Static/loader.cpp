@@ -33,6 +33,26 @@ int binary_search(const std::function<std::string(int)> f, const std::string s, 
     }
 }
 
+std::vector<char> dump_dll(const std::string dll_name, const WORD machine)
+{
+    auto file_name = std::ostringstream();
+    file_name << getenv("windir") << "\\";
+    
+    auto wow64 = FALSE;
+    C_VIT(!IsWow64Process(GetCurrentProcess(), &wow64));
+    
+#ifdef _WIN64
+    wow64 = wow64 || machine == IMAGE_FILE_MACHINE_I386;
+#endif
+
+    file_name << (wow64 ? "SysWOW64" : "System32") << "\\" << dll_name;
+
+    std::vector<char> dll_bytes;
+    C_VIT(create_dump(file_name.str(), dll_bytes));
+
+    return dll_bytes;
+}
+
 int inspect_header(const std::vector<char> bytes, pe_header& header)
 {
     size_t cursor = 0;
@@ -88,7 +108,7 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
 
     return size;
 }
-void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t imports_address)
+void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t imports_address, const WORD machine)
 {
     uint64_t dll_image_base = 0x70000000; // TODO: Make bitness-dependent.
 
@@ -103,8 +123,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
         std::string dll_name;
         C_VIT(uc_ext_mem_read_string(uc, image_base + import_descriptor.Name, dll_name));
 
-        std::vector<char> dll_bytes;
-        C_VIT(create_dump(R"(C:\Windows\SysWOW64\)" + dll_name, dll_bytes)); // TODO: Replace with %windir% / Search dll file also in app folder
+        const auto dll_bytes = dump_dll(dll_name, machine);
         
         auto dll_header = pe_header();
         C_VIT(inspect_header(dll_bytes, dll_header));
@@ -245,7 +264,7 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     for (auto s_h : header.section_headers)
         init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
 
-    init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+    init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress, header.file_header.Machine);
 
     const auto stack_pointer = scale; // End of address space; TODO: Change?
     const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);

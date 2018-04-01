@@ -26,9 +26,9 @@ int debugger::load(const loader& l, const std::vector<char> bytes)
         s = s >> 4;
     }
 
-    std::ostringstream stream;
-    stream << "%0" << x << "llx";
-    format_ = stream.str();
+    auto format = std::ostringstream();
+    format << "%0" << x << "llx";
+    format_ = format.str();
 
     return F_SUCCESS;
 }
