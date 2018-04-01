@@ -21,7 +21,7 @@ API int debugger_load_file(debugger*& handle, const char* file_name)
     
     handle = new debugger();
 
-    C_IMP(handle->load(pe_loader(), bytes));
+    C_ERR(handle->load(pe_loader(), bytes));
 
     return F_SUCCESS;
 }
