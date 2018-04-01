@@ -79,7 +79,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
         C_VIT(uc_ext_mem_read_string_skip(uc, image_base + import_descriptor.Name, dll_name));
 
         std::vector<char> dll_bytes;
-        C_VIT(create_dump("C:\\Windows\\System32\\" + dll_name, dll_bytes)); // TODO: Replace with %windir%, etc. / Search dll file
+        C_VIT(create_dump(R"(C:\Windows\SysWOW64\)" + dll_name, dll_bytes)); // TODO: Replace with %windir% / Search dll file also in app folder
         
         auto dll_header = pe_header();
         C_VIT(inspect_header(dll_bytes, dll_header));
