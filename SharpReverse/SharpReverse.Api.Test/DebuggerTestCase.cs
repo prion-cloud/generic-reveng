@@ -65,8 +65,6 @@ namespace Superbr4in.SharpReverse.Api.Test
         }
         public static DebuggerTestCase<string> GetTestCase32_File1()
         {
-            const char S = TestEngine.PH;
-
             return new DebuggerTestCase<string>(
                 DebuggerFactory.CreateNew,
                 TestDeploy.FILE_TEST_EXE,
@@ -190,11 +188,11 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("ebp", "ffffffff"),
                             new TestRegisterInfo("esi", "00000000"),
                             new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", $"{S}{S}{S}{S}4fb0")
+                            new TestRegisterInfo("eip", TestEngine.PH)
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, $"{S}{S}{S}{S}4fb0", new byte[] { 0x8b, 0xff }, "mov edi, edi"),
+                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi"),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -205,11 +203,11 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("ebp", "ffffffff"),
                             new TestRegisterInfo("esi", "00000000"),
                             new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", $"{S}{S}{S}{S}4fb2")
+                            new TestRegisterInfo("eip", TestEngine.PH)
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x244, $"{S}{S}{S}{S}4fb2", new byte[] { 0x55 }, "push ebp"),
+                        new TestInstructionInfo(0x244, TestEngine.PH, new byte[] { 0x55 }, "push ebp"),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -220,11 +218,11 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("ebp", "ffffffff"),
                             new TestRegisterInfo("esi", "00000000"),
                             new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", $"{S}{S}{S}{S}4fb3")
+                            new TestRegisterInfo("eip", TestEngine.PH)
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, $"{S}{S}{S}{S}4fb3", new byte[] { 0x8b, 0xec }, "mov ebp, esp"),
+                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xec }, "mov ebp, esp"),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -235,11 +233,11 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("ebp", "ffffffef"),
                             new TestRegisterInfo("esi", "00000000"),
                             new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", $"{S}{S}{S}{S}4fb5")
+                            new TestRegisterInfo("eip", TestEngine.PH)
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x22e, $"{S}{S}{S}{S}4fb5", new byte[] { 0x5d }, "pop ebp"),
+                        new TestInstructionInfo(0x22e, TestEngine.PH, new byte[] { 0x5d }, "pop ebp"),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -250,11 +248,11 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("ebp", "ffffffff"),
                             new TestRegisterInfo("esi", "00000000"),
                             new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", $"{S}{S}{S}{S}4fb6")
+                            new TestRegisterInfo("eip", TestEngine.PH)
                         }
                     )/*,
                     (
-                        new TestInstructionInfo(0x10a, $"{s}{s}{s}{s}4fb6", new byte[] { 0xff, 0x25, 0xa0, 0x10, 0x5b, 0x77 }, "jmp dword ptr [0x775b10a0]"),
+                        new TestInstructionInfo(0x10a, TestEngine.PH, new byte[] { 0xff, 0x25, 0xa0, 0x10, 0x5b, 0x77 }, "jmp dword ptr [0x775b10a0]"),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),

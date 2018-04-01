@@ -12,7 +12,7 @@ namespace Superbr4in.SharpReverse.Api.Test
         /// <summary>
         /// Placeholder for characters to be ignored in string comparison.
         /// </summary>
-        public const char PH = unchecked ((char)-1);
+        public const string PH = "\uffff";
 
         public static void _Debugger_Debug<T>(DebuggerTestCase<T> @case)
         {
@@ -94,16 +94,12 @@ namespace Superbr4in.SharpReverse.Api.Test
 
         private static void AssertStringEqual(string expected, string actual, string name)
         {
+            if (expected == PH)
+                return;
+
             AssertEqual(expected.Length, actual.Length, $"{name}.{nameof(actual.Length)}");
 
-            for (var i = 0; i < expected.Length; i++)
-            {
-                if (expected[i] == PH)
-                    continue;
-
-                if (expected[i] != actual[i])
-                    AssertFail(expected, actual, name);
-            }
+            AssertEqual(expected, actual, name);
         }
     }
 }
