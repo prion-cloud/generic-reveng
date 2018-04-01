@@ -76,7 +76,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
             break;
 
         std::string dll_name;
-        C_VIT(uc_ext_mem_read_string_skip(uc, image_base + import_descriptor.Name, dll_name));
+        C_VIT(uc_ext_mem_read_string(uc, image_base + import_descriptor.Name, dll_name));
 
         std::vector<char> dll_bytes;
         C_VIT(create_dump(R"(C:\Windows\SysWOW64\)" + dll_name, dll_bytes)); // TODO: Replace with %windir% / Search dll file also in app folder
@@ -128,14 +128,16 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
 
         for (auto j = 0;; ++j)
         {
-            DWORD dll_import_proc_name_address; // TODO: IMAGE_IMPORT_BY_NAME -- get rid of 'string_skip' method
+            DWORD dll_import_proc_name_address;
             C_VIT(uc_ext_mem_read(uc, image_base + import_descriptor.FirstThunk, dll_import_proc_name_address, j));
 
-            if (!dll_import_proc_name_address)
+            if (dll_import_proc_name_address == 0x0)
                 break;
 
+            dll_import_proc_name_address += sizeof(WORD);
+
             std::string dll_import_proc_name;
-            C_VIT(uc_ext_mem_read_string_skip(uc, image_base + dll_import_proc_name_address, dll_import_proc_name));
+            C_VIT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address, dll_import_proc_name));
 
             const uint64_t dll_exports_address = VISIT(dll_header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
 
@@ -152,7 +154,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
                 C_VIT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, k));
                 
                 std::string dll_export_proc_name;
-                C_VIT(uc_ext_mem_read_string_skip(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
+                C_VIT(uc_ext_mem_read_string(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
 
                 if (dll_export_proc_name.compare(dll_import_proc_name) == 0)
                 {

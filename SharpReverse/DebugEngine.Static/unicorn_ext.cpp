@@ -1,8 +1,7 @@
 #include "stdafx.h"
 
-uc_err uc_ext_mem_read_string_skip(uc_engine* uc, const uint64_t address, std::string& value)
+uc_err uc_ext_mem_read_string(uc_engine* uc, const uint64_t address, std::string& value)
 {
-    auto end = false;
     std::vector<char> chars;
     for (auto j = 0;; ++j)
     {
@@ -11,14 +10,9 @@ uc_err uc_ext_mem_read_string_skip(uc_engine* uc, const uint64_t address, std::s
         if (err)
             return err;
 
-        if (c != '\0')
-            end = true;
-        else if (!end)
-            continue;
-
         chars.push_back(c);
 
-        if (c == '\0' && end)
+        if (c == '\0')
             break;
     }
 
