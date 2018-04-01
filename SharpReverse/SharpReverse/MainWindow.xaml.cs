@@ -1,8 +1,5 @@
 ﻿using System.ComponentModel;
-using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 using Microsoft.Win32;
 
@@ -14,8 +11,6 @@ namespace Superbr4in.SharpReverse
     public partial class MainWindow
     {
         private IDebugger _debugger;
-
-        private string Format => _debugger.Amd64 ? "x16" : "x8";
 
         public MainWindow()
         {
@@ -39,51 +34,37 @@ namespace Superbr4in.SharpReverse
             if (!dialog.ShowDialog(this).Value)
                 return;
 
-            TextBox.Text = string.Empty;
+            TextBoxIns.Text = string.Empty;
 
             _debugger = DebuggerFactory.CreateNew(dialog.FileName);
 
             UpdateRegisterState();
         }
-
         private void Button_Step_Click(object sender, RoutedEventArgs e)
         {
             if (_debugger == null)
                 return;
 
-            var instruction = _debugger.Debug();
+            var ins = _debugger.Debug();
             
-            var byteStr = string.Empty;
-            for (var i = 0; i < instruction.Bytes.Length; i++)
-            {
-                if (i > 0)
-                    byteStr += " ";
-
-                byteStr += $"{instruction.Bytes[i]:x2}";
-            }
-
-            TextBox.Text += $"{instruction.Address.ToString(Format)} {instruction.Instruction} ({byteStr})\r\n";
+            TextBoxIns.Text += $"0x{ins.Address}  {ins.Instruction}\r\n";
 
             UpdateRegisterState();
+        }
+        private void Button_Memory_Click(object sender, RoutedEventArgs e)
+        {
+            if (_debugger == null)
+                return;
+
+            new MemoryWindow(_debugger.InspectMemory()).ShowDialog();
         }
 
         private void UpdateRegisterState()
         {
-            var regState = _debugger.InspectRegisters();
-            
-            var tbs = TbGrid.Children.OfType<TextBox>().ToArray();
+            TextBoxReg.Clear();
 
-            for (var i = 0; i < tbs.Length; i++)
-            {
-                var prev = tbs[i].Text;
-                var cur = regState.Registers[i].ToString(Format);
-
-                if (prev != string.Empty && cur != prev)
-                    tbs[i].Foreground = new SolidColorBrush(Colors.Red);
-                else tbs[i].Foreground = new SolidColorBrush(Colors.Black);
-
-                tbs[i].Text = cur;
-            }
+            foreach (var reg in _debugger.InspectRegisters())
+                TextBoxReg.Text += $"{reg.Name.ToUpper()}: {reg.Value}\n";
         }
     }
 }
