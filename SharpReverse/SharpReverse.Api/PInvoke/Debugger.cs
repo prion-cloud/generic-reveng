@@ -31,7 +31,8 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         }
         public Debugger(string fileName)
         {
-            LoadFile(out _handle, fileName);
+            if (LoadFile(out _handle, fileName) != 0)
+                throw new NotImplementedException();
         }
 
         ~Debugger()

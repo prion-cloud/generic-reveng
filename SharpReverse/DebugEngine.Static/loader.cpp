@@ -257,7 +257,7 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
         ip_index = 8;
     }
 #endif
-    else E_THROW;
+    else return F_FAILURE;
 
     for (auto s_h : header.section_headers)
         init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
