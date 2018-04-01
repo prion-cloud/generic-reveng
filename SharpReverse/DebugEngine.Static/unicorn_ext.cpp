@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-uc_err uc_ext_mem_read_string_skip(uc_engine* uc, const size_t address, std::string& value)
+uc_err uc_ext_mem_read_string_skip(uc_engine* uc, const uint64_t address, std::string& value)
 {
     auto end = false;
     std::vector<char> chars;

@@ -17,9 +17,6 @@ struct pe_header
     std::variant<IMAGE_OPTIONAL_HEADER32, IMAGE_OPTIONAL_HEADER64> optional_header;
 
     std::vector<IMAGE_SECTION_HEADER> section_headers;
-    
-    bool targets_32() const;
-    bool targets_64() const;
 };
 
 class pe_loader : public loader

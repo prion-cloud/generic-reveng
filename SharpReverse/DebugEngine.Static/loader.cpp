@@ -8,15 +8,6 @@
 #define VISIT(var, member) visit([](auto x) { return x.member; }, var)
 #define VISIT_CAST(var, member, cast) visit([](auto x) { return static_cast<cast>(x.member); }, var)
 
-bool pe_header::targets_32() const
-{
-    return file_header.Machine == IMAGE_FILE_MACHINE_I386;
-}
-bool pe_header::targets_64() const
-{
-    return file_header.Machine == IMAGE_FILE_MACHINE_AMD64;
-}
-
 int inspect_header(const std::vector<char> bytes, pe_header& header)
 {
     size_t cursor = 0;
@@ -56,35 +47,36 @@ int inspect_header(const std::vector<char> bytes, pe_header& header)
     return F_SUCCESS;
 }
 
-void init_section(uc_engine* uc, const std::vector<char> bytes, const size_t address)
+uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t address)
 {
     if (bytes.size() == 0)
-        return;
-
-    const auto alignment = 0x1000;
+        return 0;
+    
+    const uint64_t alignment = 0x1000;
 
     auto size = alignment * (bytes.size() / alignment);
     if (bytes.size() % alignment > 0)
         size += alignment;
 
-    C_VIT(uc_mem_map(uc, address, size, UC_PROT_ALL));
+    C_VIT(uc_mem_map(uc, address, static_cast<size_t>(size), UC_PROT_ALL));
     C_VIT(uc_mem_write(uc, address, &bytes[0], bytes.size()));
+
+    return size;
 }
-void init_imports(uc_engine* uc, const size_t image_base, const size_t import_table_address)
+void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t imports_address)
 {
+    uint64_t dll_image_base = 0x70000000; // TODO: Make bitness-dependent.
+
     for (auto i = 0;; ++i)
     {
-        IMAGE_IMPORT_DESCRIPTOR descriptor;
-        C_VIT(uc_ext_mem_read<IMAGE_IMPORT_DESCRIPTOR>(uc, image_base + import_table_address, descriptor, i));
+        IMAGE_IMPORT_DESCRIPTOR import_descriptor;
+        C_VIT(uc_ext_mem_read(uc, image_base + imports_address, import_descriptor, i));
 
-        if (descriptor.Name == 0x0)
+        if (import_descriptor.Name == 0x0)
             break;
 
         std::string dll_name;
-        C_VIT(uc_ext_mem_read_string_skip(uc, image_base + descriptor.Name, dll_name));
-
-        const auto dll_handle = GetModuleHandleA(dll_name.c_str()); // TODO: GetModuleHandle?
-        const auto dll_base = reinterpret_cast<size_t>(dll_handle); //
+        C_VIT(uc_ext_mem_read_string_skip(uc, image_base + import_descriptor.Name, dll_name));
 
         std::vector<char> dll_bytes;
         C_VIT(create_dump("C:\\Windows\\System32\\" + dll_name, dll_bytes)); // TODO: Replace with %windir%, etc. / Search dll file
@@ -94,14 +86,18 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
 
         const auto dll_reloc = VISIT(dll_header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
         
+        uint64_t dll_end = 0;
         for (auto s_h : dll_header.section_headers)
-            init_section(uc, std::vector<char>(dll_bytes.begin() + s_h.PointerToRawData, dll_bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_base + s_h.VirtualAddress);
+        {
+            dll_end = dll_image_base + s_h.VirtualAddress;
+            dll_end += init_section(uc, std::vector<char>(dll_bytes.begin() + s_h.PointerToRawData, dll_bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_end);
+        }
 
         auto offset = 0;
         while (true)
         {
             IMAGE_BASE_RELOCATION reloc;
-            C_VIT(uc_ext_mem_read(uc, dll_base + dll_reloc + offset, reloc));
+            C_VIT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset, reloc));
 
             if (!reloc.VirtualAddress)
                 break;
@@ -110,15 +106,15 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
             for (auto j = 0; j < count; ++j)
             {
                 WORD w;
-                C_VIT(uc_ext_mem_read(uc, dll_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), w, j));
+                C_VIT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), w, j));
 
                 const auto type = (w & 0xf000) >> 12;
                 w &= 0xfff;
 
                 if (type == IMAGE_REL_BASED_HIGHLOW)
                 {
-                    const auto address = dll_base + reloc.VirtualAddress + w;
-                    const auto delta = dll_base - std::visit([](auto x) { return static_cast<uint64_t>(x.ImageBase); }, dll_header.optional_header);
+                    const auto address = dll_image_base + reloc.VirtualAddress + w;
+                    const auto delta = dll_image_base - std::visit([](auto x) { return static_cast<uint64_t>(x.ImageBase); }, dll_header.optional_header);
 
                     DWORD value;
                     C_VIT(uc_ext_mem_read(uc, address, value));
@@ -132,18 +128,46 @@ void init_imports(uc_engine* uc, const size_t image_base, const size_t import_ta
 
         for (auto j = 0;; ++j)
         {
-            DWORD proc_name_address;
-            C_VIT(uc_ext_mem_read(uc, image_base + descriptor.FirstThunk, proc_name_address, j));
+            DWORD dll_import_proc_name_address; // TODO: IMAGE_IMPORT_BY_NAME -- get rid of 'string_skip' method
+            C_VIT(uc_ext_mem_read(uc, image_base + import_descriptor.FirstThunk, dll_import_proc_name_address, j));
 
-            if (!proc_name_address)
+            if (!dll_import_proc_name_address)
                 break;
 
-            std::string proc_name;
-            C_VIT(uc_ext_mem_read_string_skip(uc, image_base + proc_name_address, proc_name));
+            std::string dll_import_proc_name;
+            C_VIT(uc_ext_mem_read_string_skip(uc, image_base + dll_import_proc_name_address, dll_import_proc_name));
 
-            C_VIT(uc_ext_mem_write(uc, image_base + descriptor.FirstThunk,
-                GetProcAddress(dll_handle, proc_name.c_str()), j)); // TODO: GetProcAddress?
+            const uint64_t dll_exports_address = VISIT(dll_header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+
+            IMAGE_EXPORT_DIRECTORY dll_export_directory;
+            C_VIT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
+
+            DWORD dll_export_proc_address = 0x0;
+
+            for (auto k = 0; k < dll_export_directory.NumberOfNames; ++k) // TODO: Start @ Hint ?
+            {
+                // TODO: Binary search (alphabetic)
+
+                DWORD dll_export_proc_name_address;
+                C_VIT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, k));
+                
+                std::string dll_export_proc_name;
+                C_VIT(uc_ext_mem_read_string_skip(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
+
+                if (dll_export_proc_name.compare(dll_import_proc_name) == 0)
+                {
+                    C_VIT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, k));
+                    break;
+                }
+            }
+
+            if (dll_export_proc_address == 0x0)
+                continue; // TODO: Error ?
+            
+            C_VIT(uc_ext_mem_write<DWORD>(uc, image_base + import_descriptor.FirstThunk, dll_image_base + dll_export_proc_address, j));
         }
+
+        dll_image_base = dll_end;
     }
 }
 
@@ -155,7 +179,7 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     const auto image_base = VISIT_CAST(header.optional_header, ImageBase, size_t);
     const auto entry_point = image_base + VISIT_CAST(header.optional_header, AddressOfEntryPoint, size_t);
     
-    if (header.targets_32())
+    if (header.file_header.Machine == IMAGE_FILE_MACHINE_I386)
     {
         cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
         uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
@@ -172,7 +196,7 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
         ip_index = 8;
     }
 #ifdef _WIN64
-    else if (header.targets_64())
+    else if (header.file_header.Machine == IMAGE_FILE_MACHINE_AMD64)
     {
         cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
         uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
