@@ -108,9 +108,10 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
 
     return size;
 }
-void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t imports_address, const WORD machine)
+uint64_t init_imports(uc_engine* uc, const pe_header header, uint64_t dll_image_base)
 {
-    uint64_t dll_image_base = 0x70000000;
+    const auto image_base = VISIT_CAST(header.optional_header, ImageBase, uint64_t);
+    const auto imports_address = VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
 
     for (auto i = 0;; ++i)
     {
@@ -123,7 +124,7 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
         std::string dll_name;
         C_FAT(uc_ext_mem_read_string(uc, image_base + import_descriptor.Name, dll_name));
 
-        const auto dll_bytes = dump_dll(dll_name, machine);
+        const auto dll_bytes = dump_dll(dll_name, header.file_header.Machine);
         
         auto dll_header = pe_header();
         C_FAT(inspect_header(dll_bytes, dll_header));
@@ -215,6 +216,8 @@ void init_imports(uc_engine* uc, const uint64_t image_base, const uint64_t impor
 
         dll_image_base = dll_end;
     }
+
+    return dll_image_base;
 }
 
 int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const
@@ -222,8 +225,8 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     pe_header header;
     C_ERR(inspect_header(bytes, header));
 
-    const auto image_base = VISIT_CAST(header.optional_header, ImageBase, size_t);
-    const auto entry_point = image_base + VISIT_CAST(header.optional_header, AddressOfEntryPoint, size_t);
+    const auto image_base = VISIT_CAST(header.optional_header, ImageBase, uint64_t);
+    const auto entry_point = image_base + VISIT_CAST(header.optional_header, AddressOfEntryPoint, uint64_t);
     
     if (header.file_header.Machine == IMAGE_FILE_MACHINE_I386)
     {
@@ -264,10 +267,10 @@ int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     for (auto s_h : header.section_headers)
         init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
 
-    init_imports(uc, image_base, VISIT(header.optional_header, DataDirectory)[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress, header.file_header.Machine);
+    init_imports(uc, header, 0x70000000);
 
     const uint64_t stack_pointer = 0xffffffff;
-    const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, uint64_t);
+    const auto stack_size = VISIT_CAST(header.optional_header, SizeOfStackCommit, size_t);
     init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
 
     C_FAT(uc_reg_write(uc, regs[4], &stack_pointer));
