@@ -5,7 +5,7 @@
 
 #include "bin_dump.h"
 #include "debugger.h"
-#include "loader.h"
+#include "loader_pe.h"
 
 #define API extern "C" __declspec(dllexport)
 
@@ -21,7 +21,7 @@ API int debugger_load_file(debugger*& handle, const char* file_name)
     
     handle = new debugger();
 
-    C_ERR(handle->load(pe_loader(), bytes));
+    C_ERR(handle->load(loader_pe(), bytes));
 
     return F_SUCCESS;
 }

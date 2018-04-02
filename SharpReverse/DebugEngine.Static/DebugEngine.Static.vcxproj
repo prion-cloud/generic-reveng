@@ -156,6 +156,7 @@
     <ClInclude Include="bin_dump.h" />
     <ClInclude Include="debugger.h" />
     <ClInclude Include="loader.h" />
+    <ClInclude Include="loader_pe.h" />
     <ClInclude Include="macro.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="unicorn_ext.h" />
@@ -163,7 +164,7 @@
   <ItemGroup>
     <ClCompile Include="bin_dump.cpp" />
     <ClCompile Include="debugger.cpp" />
-    <ClCompile Include="loader.cpp" />
+    <ClCompile Include="loader_pe.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

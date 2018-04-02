@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "macro.h"
 
-#include "loader.h"
+#include "loader_pe.h"
 
 #include "bin_dump.h"
 
@@ -78,7 +78,7 @@ std::vector<char> dump_dll(const std::string dll_name, const WORD machine)
     return dll_bytes;
 }
 
-int inspect_header(const std::vector<char> bytes, pe_header& header)
+int inspect_header(const std::vector<char> bytes, header_pe& header)
 {
     size_t cursor = 0;
 
@@ -131,7 +131,7 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
 
     return size;
 }
-uint64_t init_imports(uc_engine* uc, const pe_header header, uint64_t dll_image_base)
+uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_base)
 {
     TAKE_OPT(image_base, header, ImageBase);
     TAKE_OPT(imports_address, header, DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -152,7 +152,7 @@ uint64_t init_imports(uc_engine* uc, const pe_header header, uint64_t dll_image_
 
         const auto dll_bytes = dump_dll(dll_name, header.file_header.Machine);
         
-        auto dll_header = pe_header();
+        auto dll_header = header_pe();
         C_FAT(inspect_header(dll_bytes, dll_header));
 
         TAKE_OPT(old_dll_image_base, dll_header, ImageBase);
@@ -249,9 +249,9 @@ uint64_t init_imports(uc_engine* uc, const pe_header header, uint64_t dll_image_
     return dll_image_base;
 }
 
-int pe_loader::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const
+int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const
 {
-    pe_header header;
+    header_pe header;
     C_ERR(inspect_header(bytes, header));
 
     TAKE_OPT(image_base, header, ImageBase);
