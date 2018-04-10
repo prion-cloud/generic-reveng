@@ -279,7 +279,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
         imports.emplace(dll_name, std::make_tuple(dll_image_base, dll_exports_address));
 
         // Increase base for next DLL
-        dll_image_base = dll_end;
+        dll_image_base = init_imports(uc, dll_header, dll_end);
     }
     // <--
 
