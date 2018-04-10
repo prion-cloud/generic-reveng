@@ -5,6 +5,10 @@
 
 int create_dump(std::string file_name, std::vector<char>& bytes)
 {
+    struct stat buf;
+    if (stat(file_name.c_str(), &buf))
+        return F_FAILURE;
+
     const auto file = fopen(file_name.c_str(), "rb");
 
     fseek(file, 0, SEEK_END);
