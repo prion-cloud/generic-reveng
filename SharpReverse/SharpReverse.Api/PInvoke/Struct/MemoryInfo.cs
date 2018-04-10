@@ -9,20 +9,25 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         // ReSharper disable All
         
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 19)]
-        public string Begin_;
+        public string Address_;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 19)]
         public string Size_;
         
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
-        public string Permissions_;
+        public string Section_;
+        
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
+        public string Access_;
 
         // ReSharper restore All
 
         #endregion
 
-        public string Begin => Begin_;
+        public string Address => Address_;
         public string Size => Size_;
 
-        public string Permissions => Permissions_;
+        public string Section => Section_;
+
+        public string Access => Access_;
     }
 }

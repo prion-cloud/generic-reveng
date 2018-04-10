@@ -24,10 +24,12 @@ struct register_info
 
 struct memory_info
 {
-    char begin[19];
+    char address[19];
     char size[19];
 
-    char permissions[4];
+    char section[IMAGE_SIZEOF_SHORT_NAME];
+
+    char access[4];
 };
 
 class debugger
@@ -39,6 +41,8 @@ class debugger
 
     std::vector<int> regs_ { };
     int ip_index_ { };
+
+    std::map<uint64_t, std::string> secs_ { };
 
     std::string format_ { };
 

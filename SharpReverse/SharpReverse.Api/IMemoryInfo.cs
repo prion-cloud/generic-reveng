@@ -2,9 +2,11 @@
 {
     public interface IMemoryInfo
     {
-        string Begin { get; }
+        string Address { get; }
         string Size { get; }
 
-        string Permissions { get; }
+        string Section { get; }
+
+        string Access { get; }
     }
 }

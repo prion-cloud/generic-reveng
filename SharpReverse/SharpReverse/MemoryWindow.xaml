@@ -4,13 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Memory" Height="600" Width="660" WindowStyle="ToolWindow">
+        Title="Memory" Height="600" Width="500" WindowStyle="ToolWindow">
     <Grid>
         <ListView Name="ListView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Width="220" Header="Begin" DisplayMemberBinding="{Binding Begin}"/>
-                    <GridViewColumn Width="200" Header="Size" DisplayMemberBinding="{Binding Size}"/>
+                    <GridViewColumn Width="120" Header="Begin" DisplayMemberBinding="{Binding Begin}"/>
+                    <GridViewColumn Width="120" Header="Size" DisplayMemberBinding="{Binding Size}"/>
+                    <GridViewColumn Width="100" Header="Description" DisplayMemberBinding="{Binding Description}"/>
                     <GridViewColumn Width="80" Header="Permissions" DisplayMemberBinding="{Binding Permissions}"/>
                 </GridView>
             </ListView.View>

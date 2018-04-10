@@ -249,7 +249,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
     return dll_image_base;
 }
 
-int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index) const
+int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index, std::map<uint64_t, std::string>& secs) const
 {
     header_pe header;
     C_ERR(inspect_header(bytes, header));
@@ -294,8 +294,13 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
 #endif
     else return F_FAILURE;
 
-    for (auto s_h : header.section_headers)
-        init_section(uc, std::vector<char>(bytes.begin() + s_h.PointerToRawData, bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), image_base + s_h.VirtualAddress);
+    secs = std::map<uint64_t, std::string>();
+
+    for (auto sh : header.section_headers)
+    {
+        init_section(uc, std::vector<char>(bytes.begin() + sh.PointerToRawData, bytes.begin() + sh.PointerToRawData + sh.SizeOfRawData), image_base + sh.VirtualAddress);
+        secs.emplace(image_base + sh.VirtualAddress, std::string(reinterpret_cast<char*>(sh.Name)));
+    }
 
     init_imports(uc, header, 0x70000000);
 

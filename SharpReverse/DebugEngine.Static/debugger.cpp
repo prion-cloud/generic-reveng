@@ -11,7 +11,7 @@ debugger::debugger()
 
 int debugger::load(const loader& l, const std::vector<char> bytes)
 {
-    C_ERR(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_, ip_index_));
+    C_ERR(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_, ip_index_, secs_));
     C_ERR(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 
     auto s = scale_;
@@ -132,12 +132,16 @@ int debugger::mem(memory_info& mem_info)
     const auto e = regions[mem_index_].end;
     const auto p = regions[mem_index_].perms;
 
-    sprintf_s(mem_info.begin, format_.c_str(), b);
+    sprintf_s(mem_info.address, format_.c_str(), b);
     sprintf_s(mem_info.size, format_.c_str(), e - b + 1);
 
-    mem_info.permissions[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
-    mem_info.permissions[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';
-    mem_info.permissions[2] = (p & UC_PROT_EXEC) == UC_PROT_EXEC ? 'E' : ' ';
+    const auto s = secs_[b].c_str();
+
+    memcpy(mem_info.section, s, strlen(s));
+
+    mem_info.access[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
+    mem_info.access[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';
+    mem_info.access[2] = (p & UC_PROT_EXEC) == UC_PROT_EXEC ? 'E' : ' ';
 
     ++mem_index_;
 

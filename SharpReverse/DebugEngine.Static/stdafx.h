@@ -2,6 +2,7 @@
 
 #include <array>
 #include <functional>
+#include <map>
 #include <optional>
 #include <sstream>
 #include <string>
