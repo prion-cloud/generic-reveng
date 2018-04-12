@@ -9,10 +9,10 @@
         <ListView Name="ListView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Width="120" Header="Begin" DisplayMemberBinding="{Binding Begin}"/>
+                    <GridViewColumn Width="120" Header="Begin" DisplayMemberBinding="{Binding Address}"/>
                     <GridViewColumn Width="120" Header="Size" DisplayMemberBinding="{Binding Size}"/>
-                    <GridViewColumn Width="100" Header="Description" DisplayMemberBinding="{Binding Description}"/>
-                    <GridViewColumn Width="80" Header="Permissions" DisplayMemberBinding="{Binding Permissions}"/>
+                    <GridViewColumn Width="100" Header="Description" DisplayMemberBinding="{Binding Section}"/>
+                    <GridViewColumn Width="80" Header="Permissions" DisplayMemberBinding="{Binding Access}"/>
                 </GridView>
             </ListView.View>
         </ListView>

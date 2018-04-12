@@ -142,6 +142,7 @@ int debugger::mem(memory_info& mem_info)
     mem_info.access[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
     mem_info.access[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';
     mem_info.access[2] = (p & UC_PROT_EXEC) == UC_PROT_EXEC ? 'E' : ' ';
+    mem_info.access[3] = '\0';
 
     ++mem_index_;
 

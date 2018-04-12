@@ -13,7 +13,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 19)]
         public string Size_;
         
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]
         public string Section_;
         
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
