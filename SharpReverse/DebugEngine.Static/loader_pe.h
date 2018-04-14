@@ -4,16 +4,18 @@
 
 struct header_pe
 {
-    IMAGE_DOS_HEADER dos_header;
-    IMAGE_FILE_HEADER file_header;
+    WORD machine;
 
-    union
-    {
-        IMAGE_OPTIONAL_HEADER32 optional_header32;
-        IMAGE_OPTIONAL_HEADER64 optional_header64;
-    };
+    ULONGLONG image_base;
+    ULONGLONG stack_commit;
+
+    DWORD entry_point;
+
+    std::array<IMAGE_DATA_DIRECTORY, 16> data_directories;
 
     std::vector<IMAGE_SECTION_HEADER> section_headers;
+
+    int inspect(std::vector<char> bytes);
 };
 
 class loader_pe : public loader

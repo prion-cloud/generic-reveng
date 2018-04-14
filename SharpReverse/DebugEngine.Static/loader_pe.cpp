@@ -5,32 +5,6 @@
 
 #include "bin_dump.h"
 
-#define GIVE_OPT(in, header, member) \
-    switch (header.file_header.SizeOfOptionalHeader) \
-    { \
-    case sizeof(IMAGE_OPTIONAL_HEADER32): \
-        header.optional_header32.member = in; \
-        break; \
-    case sizeof(IMAGE_OPTIONAL_HEADER64): \
-        header.optional_header64.member = in; \
-        break; \
-    default: \
-        E_THROW; \
-    }
-#define TAKE_OPT(out, header, member) \
-    uint64_t out; \
-    switch (header.file_header.SizeOfOptionalHeader) \
-    { \
-    case sizeof(IMAGE_OPTIONAL_HEADER32): \
-        out = header.optional_header32.member; \
-        break; \
-    case sizeof(IMAGE_OPTIONAL_HEADER64): \
-        out = header.optional_header64.member; \
-        break; \
-    default: \
-        E_THROW; \
-    }
-
 std::map<std::string, std::tuple<uint64_t, uint64_t>> imports;
 
 int binary_search(const std::function<std::string(int)> f, const std::string s, int l, int r)
@@ -80,39 +54,63 @@ int dump_dll(const std::string dll_name, const WORD machine, std::vector<char>& 
     return F_SUCCESS;
 }
 
-int inspect_header(const std::vector<char> bytes, header_pe& header)
+int header_pe::inspect(std::vector<char> bytes)
 {
     size_t cursor = 0;
 
-    header.dos_header = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
+    const auto h_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
+    C_ERR(h_dos.e_magic != 0x5A4D);
 
-    C_ERR(header.dos_header.e_magic != 0x5A4D);
+    const auto pe_sig = *reinterpret_cast<const DWORD*>(&bytes[cursor += h_dos.e_lfanew]);
+    C_ERR(pe_sig != 0x4550);
 
-    const auto pe_id = *reinterpret_cast<const DWORD*>(&bytes[cursor += header.dos_header.e_lfanew]);
+    const auto h_fil = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
+    cursor += sizeof h_fil;
 
-    C_ERR(pe_id != 0x4550);
+    machine = h_fil.Machine;
 
-    header.file_header = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
+    data_directories = std::array<IMAGE_DATA_DIRECTORY, 16>();
 
-    cursor += sizeof(IMAGE_FILE_HEADER);
-
-    switch (header.file_header.SizeOfOptionalHeader)
+    switch (h_fil.SizeOfOptionalHeader)
     {
     case sizeof(IMAGE_OPTIONAL_HEADER32):
-        header.optional_header32 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER32*>(&bytes[cursor]);
+        const auto h_opt32 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER32*>(&bytes[cursor]);
+
+        image_base = h_opt32.ImageBase;
+        stack_commit = h_opt32.SizeOfStackCommit;
+
+        entry_point = h_opt32.AddressOfEntryPoint;
+
+        std::copy(
+            std::begin(h_opt32.DataDirectory),
+            std::end(h_opt32.DataDirectory),
+            std::begin(data_directories));
+
         break;
     case sizeof(IMAGE_OPTIONAL_HEADER64):
-        header.optional_header64 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&bytes[cursor]);
+    {
+        const auto h_opt64 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&bytes[cursor]);
+
+        image_base = h_opt64.ImageBase;
+        stack_commit = h_opt64.SizeOfStackCommit;
+
+        entry_point = h_opt64.AddressOfEntryPoint;
+
+        std::copy(
+            std::begin(h_opt64.DataDirectory),
+            std::end(h_opt64.DataDirectory),
+            std::begin(data_directories));
+
         break;
+    }
     default:
         return F_FAILURE;
     }
+    cursor += h_fil.SizeOfOptionalHeader;
 
-    cursor += header.file_header.SizeOfOptionalHeader;
-
-    header.section_headers = std::vector<IMAGE_SECTION_HEADER>(header.file_header.NumberOfSections);
-    for (unsigned i = 0; i < header.section_headers.size(); ++i)
-        header.section_headers[i] = *reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]);
+    section_headers = std::vector<IMAGE_SECTION_HEADER>();
+    for (unsigned i = 0; i < h_fil.NumberOfSections; ++i)
+        section_headers.push_back(*reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]));
 
     return F_SUCCESS;
 }
@@ -181,8 +179,7 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
 uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_base)
 {
     // --> Locate import table
-    TAKE_OPT(image_base, header, ImageBase);
-    TAKE_OPT(imports_address, header, DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+    const auto imports_address = header.data_directories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
 
     if (imports_address == 0x0)
         return dll_image_base; // NO IMPORTS
@@ -193,13 +190,13 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
     {
         // --> Inspect descriptor
         IMAGE_IMPORT_DESCRIPTOR import_descriptor;
-        C_FAT(uc_ext_mem_read(uc, image_base + imports_address, import_descriptor, i));
+        C_FAT(uc_ext_mem_read(uc, header.image_base + imports_address, import_descriptor, i));
 
         if (import_descriptor.Name == 0x0 || import_descriptor.Characteristics == 0x0) // TODO: Characteristics ?
             break; // END
 
         std::string dll_name;
-        C_FAT(uc_ext_mem_read_string(uc, image_base + import_descriptor.Name, dll_name));
+        C_FAT(uc_ext_mem_read_string(uc, header.image_base + import_descriptor.Name, dll_name));
         // <--
         
         if (imports.find(dll_name) != imports.end())
@@ -210,31 +207,33 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
             // - Continue without base increase
             
             auto info = imports[dll_name];
-            import_table(uc, image_base, import_descriptor, std::get<0>(info), std::get<1>(info));
+            import_table(uc, header.image_base, import_descriptor, std::get<0>(info), std::get<1>(info));
             continue;
         }
         
         // --> Load DLL
         std::vector<char> dll_bytes;
-        if (dump_dll(dll_name, header.file_header.Machine, dll_bytes))
+        if (dump_dll(dll_name, header.machine, dll_bytes))
             continue; // DLL not found
         
         auto dll_header = header_pe();
-        C_FAT(inspect_header(dll_bytes, dll_header));
+        C_FAT(dll_header.inspect(dll_bytes));
 
-        TAKE_OPT(old_dll_image_base, dll_header, ImageBase);
-        GIVE_OPT(dll_image_base, dll_header, ImageBase);
+        const auto old_dll_image_base = dll_header.image_base;
+        dll_header.image_base = dll_image_base;
         
         uint64_t dll_end = 0;
-        for (auto s_h : dll_header.section_headers)
+        for (auto h_sec : dll_header.section_headers)
         {
-            dll_end = dll_image_base + s_h.VirtualAddress;
-            dll_end += init_section(uc, std::vector<char>(dll_bytes.begin() + s_h.PointerToRawData, dll_bytes.begin() + s_h.PointerToRawData + s_h.SizeOfRawData), dll_end);
+            dll_end = dll_image_base + h_sec.VirtualAddress;
+
+            const auto begin = dll_bytes.begin() + h_sec.PointerToRawData;
+            dll_end += init_section(uc, std::vector<char>(begin, begin + h_sec.SizeOfRawData), dll_end);
         }
         // <--
 
         // --> DLL relocation
-        TAKE_OPT(dll_reloc, dll_header, DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+        const auto dll_reloc = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
 
         auto offset = 0;
         while (true)
@@ -271,8 +270,8 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
         // <--
 
         // --> Import table update
-        TAKE_OPT(dll_exports_address, dll_header, DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
-        import_table(uc, image_base, import_descriptor, dll_image_base, dll_exports_address);
+        const auto dll_exports_address = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+        import_table(uc, header.image_base, import_descriptor, dll_image_base, dll_exports_address);
         // <--
 
         // Mark DLL as load
@@ -289,14 +288,11 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
 int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index, std::map<uint64_t, std::string>& secs) const
 {
     header_pe header;
-    C_ERR(inspect_header(bytes, header));
+    C_ERR(header.inspect(bytes));
 
-    TAKE_OPT(image_base, header, ImageBase);
-    TAKE_OPT(entry_point, header, AddressOfEntryPoint);
-    entry_point += image_base;
-    
-    if (header.file_header.Machine == IMAGE_FILE_MACHINE_I386)
+    switch (header.machine)
     {
+    case IMAGE_FILE_MACHINE_I386:
         cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
         uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
 
@@ -310,10 +306,10 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
             X86_REG_EIP
         };
         ip_index = 8;
-    }
+
+        break;
 #ifdef _WIN64
-    else if (header.file_header.Machine == IMAGE_FILE_MACHINE_AMD64)
-    {
+    case IMAGE_FILE_MACHINE_AMD64:
         cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
         uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
 
@@ -327,29 +323,33 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
             X86_REG_RIP
         };
         ip_index = 8;
-    }
+
+        break;
 #endif
-    else return F_FAILURE;
+    default:
+        return F_FAILURE;
+    }
 
     secs = std::map<uint64_t, std::string>();
 
-    for (auto sh : header.section_headers)
+    for (auto h_sec : header.section_headers)
     {
-        init_section(uc, std::vector<char>(bytes.begin() + sh.PointerToRawData, bytes.begin() + sh.PointerToRawData + sh.SizeOfRawData), image_base + sh.VirtualAddress);
-        secs.emplace(image_base + sh.VirtualAddress, std::string(reinterpret_cast<char*>(sh.Name)));
+        const auto begin = bytes.begin() + h_sec.PointerToRawData;
+        init_section(uc, std::vector<char>(begin, begin + h_sec.SizeOfRawData), header.image_base + h_sec.VirtualAddress);
+        secs.emplace(header.image_base + h_sec.VirtualAddress, std::string(reinterpret_cast<char*>(h_sec.Name)));
     }
 
     imports = std::map<std::string, std::tuple<uint64_t, uint64_t>>();
     init_imports(uc, header, 0x70000000);
 
-    const uint64_t stack_pointer = 0xffffffff;
-    TAKE_OPT(stack_size, header, SizeOfStackCommit);
+    const uint64_t stack_ptr = 0xffffffff;
+    const auto instr_ptr = header.image_base + header.entry_point;
 
-    init_section(uc, std::vector<char>(stack_size), stack_pointer - stack_size + 1);
+    init_section(uc, std::vector<char>(header.stack_commit), stack_ptr - header.stack_commit + 1);
 
-    C_FAT(uc_reg_write(uc, regs[4], &stack_pointer));
-    C_FAT(uc_reg_write(uc, regs[5], &stack_pointer));
-    C_FAT(uc_reg_write(uc, regs[8], &entry_point));
+    C_FAT(uc_reg_write(uc, regs[4], &stack_ptr));
+    C_FAT(uc_reg_write(uc, regs[5], &stack_ptr));
+    C_FAT(uc_reg_write(uc, regs[8], &instr_ptr));
 
     return F_SUCCESS;
 }
