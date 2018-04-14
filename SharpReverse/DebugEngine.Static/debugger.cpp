@@ -11,8 +11,8 @@ debugger::debugger()
 
 int debugger::load(const loader& l, const std::vector<char> bytes)
 {
-    C_ERR(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_, ip_index_, secs_));
-    C_ERR(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
+    E_ERR(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_, ip_index_, secs_));
+    E_ERR(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 
     auto s = scale_;
     auto x = 0;
@@ -30,13 +30,13 @@ int debugger::load(const loader& l, const std::vector<char> bytes)
     format << "%0" << x << "llx";
     format_ = format.str();
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
 int debugger::unload()
 {
-    C_ERR(cs_close(&cs_) || uc_close(uc_));
+    E_ERR(cs_close(&cs_) || uc_close(uc_));
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
 
 int debugger::ins(instruction_info& ins_info) const
@@ -44,16 +44,16 @@ int debugger::ins(instruction_info& ins_info) const
     const auto size = 16;
 
     uint64_t cur_addr;
-    C_FAT(uc_reg_read(uc_, regs_[ip_index_], &cur_addr));
+    E_FAT(uc_reg_read(uc_, regs_[ip_index_], &cur_addr));
     cur_addr &= scale_;
 
     uint8_t bytes[size];
-    C_FAT(uc_mem_read(uc_, cur_addr, bytes, size));
+    E_FAT(uc_mem_read(uc_, cur_addr, bytes, size));
 
     cs_insn* instruction;
-    C_FAT(!cs_disasm(cs_, bytes, size, cur_addr, 1, &instruction));
+    E_FAT(!cs_disasm(cs_, bytes, size, cur_addr, 1, &instruction));
 
-    C_ERR(uc_emu_start(uc_, cur_addr, -1, 0, 1));
+    E_ERR(uc_emu_start(uc_, cur_addr, -1, 0, 1));
 
     auto incr = true;
 
@@ -90,7 +90,7 @@ int debugger::ins(instruction_info& ins_info) const
     memcpy(ins_info.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
     memcpy(ins_info.operands, instruction->op_str, strlen(instruction->op_str));
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
 
 int debugger::reg(register_info& reg_info)
@@ -100,32 +100,32 @@ int debugger::reg(register_info& reg_info)
     if (reg_index_ >= regs_.size())
     {
         reg_index_ = 0;
-        return F_FAILURE;
+        return R_FAILURE;
     }
 
     uint64_t value;
-    C_FAT(uc_reg_read(uc_, regs_[reg_index_], &value));
+    E_FAT(uc_reg_read(uc_, regs_[reg_index_], &value));
     
     sprintf_s(reg_info.name, cs_reg_name(cs_, regs_[reg_index_]));
     sprintf_s(reg_info.value, format_.c_str(), value & scale_);
 
     ++reg_index_;
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
 
 int debugger::mem(memory_info& mem_info)
 {
     uc_mem_region* regions;
     uint32_t count;
-    C_FAT(uc_mem_regions(uc_, &regions, &count));
+    E_FAT(uc_mem_regions(uc_, &regions, &count));
 
     mem_info = memory_info();
 
     if (mem_index_ >= count)
     {
         mem_index_ = 0;
-        return F_FAILURE;
+        return R_FAILURE;
     }
 
     const auto b = regions[mem_index_].begin;
@@ -146,5 +146,5 @@ int debugger::mem(memory_info& mem_info)
 
     ++mem_index_;
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }

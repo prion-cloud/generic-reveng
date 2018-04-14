@@ -40,7 +40,7 @@ int dump_dll(const std::string dll_name, const WORD machine, std::vector<char>& 
     file_name << getenv("windir") << "\\";
     
     auto wow64 = FALSE;
-    C_FAT(!IsWow64Process(GetCurrentProcess(), &wow64));
+    E_FAT(!IsWow64Process(GetCurrentProcess(), &wow64));
     
 #ifdef _WIN64
     wow64 |= machine == IMAGE_FILE_MACHINE_I386;
@@ -49,9 +49,9 @@ int dump_dll(const std::string dll_name, const WORD machine, std::vector<char>& 
     file_name << (wow64 ? "SysWOW64" : "System32") << "\\" << dll_name;
 
     if (create_filedump(file_name.str(), dll_bytes))
-        return F_FAILURE;
+        return R_FAILURE;
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
 
 int header_pe::inspect(std::vector<char> bytes)
@@ -59,10 +59,10 @@ int header_pe::inspect(std::vector<char> bytes)
     size_t cursor = 0;
 
     const auto h_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
-    C_ERR(h_dos.e_magic != 0x5A4D);
+    E_ERR(h_dos.e_magic != 0x5A4D);
 
     const auto pe_sig = *reinterpret_cast<const DWORD*>(&bytes[cursor += h_dos.e_lfanew]);
-    C_ERR(pe_sig != 0x4550);
+    E_ERR(pe_sig != 0x4550);
 
     const auto h_fil = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
     cursor += sizeof h_fil;
@@ -104,7 +104,7 @@ int header_pe::inspect(std::vector<char> bytes)
         break;
     }
     default:
-        return F_FAILURE;
+        return R_FAILURE;
     }
     cursor += h_fil.SizeOfOptionalHeader;
 
@@ -112,7 +112,7 @@ int header_pe::inspect(std::vector<char> bytes)
     for (unsigned i = 0; i < h_fil.NumberOfSections; ++i)
         section_headers.push_back(*reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]));
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
 
 uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t address)
@@ -126,8 +126,8 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
     if (bytes.size() % alignment > 0)
         size += alignment;
 
-    C_FAT(uc_mem_map(uc, address, static_cast<size_t>(size), UC_PROT_ALL));
-    C_FAT(uc_mem_write(uc, address, &bytes[0], bytes.size()));
+    E_FAT(uc_mem_map(uc, address, static_cast<size_t>(size), UC_PROT_ALL));
+    E_FAT(uc_mem_write(uc, address, &bytes[0], bytes.size()));
 
     return size;
 }
@@ -137,7 +137,7 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
     for (auto j = 0;; ++j)
     {
         DWORD dll_import_proc_name_address;
-        C_FAT(uc_ext_mem_read(uc, image_base + import_descriptor.FirstThunk, dll_import_proc_name_address, j));
+        E_FAT(uc_ext_mem_read(uc, image_base + import_descriptor.FirstThunk, dll_import_proc_name_address, j));
 
         if (dll_import_proc_name_address == 0x0)
             break; // END
@@ -145,34 +145,34 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
         dll_import_proc_name_address += sizeof(WORD);
 
         std::string dll_import_proc_name;
-        C_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address, dll_import_proc_name));
+        E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address, dll_import_proc_name));
 
         IMAGE_EXPORT_DIRECTORY dll_export_directory;
-        C_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
+        E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
 
         DWORD dll_export_proc_address = 0x0;
 
         const std::function<std::string(int)> f = [uc, dll_image_base, dll_export_directory](int k)
         {
             DWORD dll_export_proc_name_address;
-            C_FAT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, k));
+            E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, k));
                 
             std::string dll_export_proc_name;
-            C_FAT(uc_ext_mem_read_string(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
+            E_FAT(uc_ext_mem_read_string(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
 
             return dll_export_proc_name;
         };
 
         const auto dll_export_proc_index = binary_search(f, dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1);
 
-        C_FAT(dll_export_proc_index < 0);
+        E_FAT(dll_export_proc_index < 0);
 
-        C_FAT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, dll_export_proc_index));
+        E_FAT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, dll_export_proc_index));
 
         if (dll_export_proc_address == 0x0)
             continue; // Export not found
             
-        C_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
+        E_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
     }
 }
 
@@ -190,13 +190,13 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
     {
         // --> Inspect descriptor
         IMAGE_IMPORT_DESCRIPTOR import_descriptor;
-        C_FAT(uc_ext_mem_read(uc, header.image_base + imports_address, import_descriptor, i));
+        E_FAT(uc_ext_mem_read(uc, header.image_base + imports_address, import_descriptor, i));
 
         if (import_descriptor.Name == 0x0 || import_descriptor.Characteristics == 0x0) // TODO: Characteristics ?
             break; // END
 
         std::string dll_name;
-        C_FAT(uc_ext_mem_read_string(uc, header.image_base + import_descriptor.Name, dll_name));
+        E_FAT(uc_ext_mem_read_string(uc, header.image_base + import_descriptor.Name, dll_name));
         // <--
         
         if (imports.find(dll_name) != imports.end())
@@ -217,7 +217,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
             continue; // DLL not found
         
         auto dll_header = header_pe();
-        C_FAT(dll_header.inspect(dll_bytes));
+        E_FAT(dll_header.inspect(dll_bytes));
 
         const auto old_dll_image_base = dll_header.image_base;
         dll_header.image_base = dll_image_base;
@@ -239,7 +239,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
         while (true)
         {
             IMAGE_BASE_RELOCATION reloc;
-            C_FAT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset, reloc));
+            E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset, reloc));
 
             if (reloc.VirtualAddress == 0x0)
                 break; // END
@@ -248,7 +248,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
             for (auto j = 0; j < count; ++j)
             {
                 WORD w;
-                C_FAT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), w, j));
+                E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), w, j));
 
                 const auto type = (w & 0xf000) >> 12;
                 w &= 0xfff;
@@ -259,9 +259,9 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
                     const auto delta = dll_image_base - old_dll_image_base;
 
                     DWORD value;
-                    C_FAT(uc_ext_mem_read(uc, address, value));
+                    E_FAT(uc_ext_mem_read(uc, address, value));
 
-                    C_FAT(uc_ext_mem_write(uc, address, value + delta));
+                    E_FAT(uc_ext_mem_write(uc, address, value + delta));
                 }
             }
 
@@ -288,7 +288,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
 int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index, std::map<uint64_t, std::string>& secs) const
 {
     header_pe header;
-    C_ERR(header.inspect(bytes));
+    E_ERR(header.inspect(bytes));
 
     switch (header.machine)
     {
@@ -327,7 +327,7 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
         break;
 #endif
     default:
-        return F_FAILURE;
+        return R_FAILURE;
     }
 
     secs = std::map<uint64_t, std::string>();
@@ -347,9 +347,9 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
 
     init_section(uc, std::vector<char>(header.stack_commit), stack_ptr - header.stack_commit + 1);
 
-    C_FAT(uc_reg_write(uc, regs[4], &stack_ptr));
-    C_FAT(uc_reg_write(uc, regs[5], &stack_ptr));
-    C_FAT(uc_reg_write(uc, regs[8], &instr_ptr));
+    E_FAT(uc_reg_write(uc, regs[4], &stack_ptr));
+    E_FAT(uc_reg_write(uc, regs[5], &stack_ptr));
+    E_FAT(uc_reg_write(uc, regs[8], &instr_ptr));
 
-    return F_SUCCESS;
+    return R_SUCCESS;
 }
