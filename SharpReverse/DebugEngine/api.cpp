@@ -17,7 +17,7 @@ API int debugger_load(debugger*& handle, uint64_t scale, const char* bytes, cons
 API int debugger_load_file(debugger*& handle, const char* file_name)
 {
     std::vector<char> bytes;
-    create_dump(file_name, bytes);
+    create_filedump(file_name, bytes);
     
     handle = new debugger();
 
