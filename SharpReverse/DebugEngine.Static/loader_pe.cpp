@@ -74,7 +74,7 @@ int dump_dll(const std::string dll_name, const WORD machine, std::vector<char>& 
 
     file_name << (wow64 ? "SysWOW64" : "System32") << "\\" << dll_name;
 
-    if (create_dump(file_name.str(), dll_bytes))
+    if (create_filedump(file_name.str(), dll_bytes))
         return F_FAILURE;
 
     return F_SUCCESS;
