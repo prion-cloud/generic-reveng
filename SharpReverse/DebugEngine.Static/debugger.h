@@ -2,6 +2,9 @@
 
 #include "loader.h"
 
+/**
+ * \brief Disassembled machine code instruction
+ */
 struct instruction_info
 {
     uint32_t id;
@@ -16,12 +19,18 @@ struct instruction_info
     char operands[160];
 };
 
+/**
+ * \brief Register allocation
+ */
 struct register_info
 {
     char name[4];
     char value[19];
 };
 
+/**
+ * \brief Virtual memory section properties
+ */
 struct memory_info
 {
     char address[19];
@@ -32,6 +41,9 @@ struct memory_info
     char access[4];
 };
 
+/**
+ * \brief Low-level debugger of executable binaries
+ */
 class debugger
 {
     csh cs_ { };
@@ -53,12 +65,27 @@ public:
 
     debugger();
     
+    /**
+     * \brief Uses a loader to make some machine code ready for debugging.
+     */
     int load(const loader& l, std::vector<char> bytes);
+    /**
+     * \brief Ends debugging.
+     */
     int unload();
 
+    /**
+     * \brief Emulates the next machine code instruction.
+     */
     int ins(instruction_info& ins_info) const;
 
+    /**
+     * \brief Reads the current register allocation.
+     */
     int reg(register_info& reg_info);
 
+    /**
+     * \brief Inspects the current memory segmentation.
+     */
     int mem(memory_info& mem_info);
 };

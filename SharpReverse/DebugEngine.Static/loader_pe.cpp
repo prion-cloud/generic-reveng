@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "macro.h"
 
-#include "loader_pe.h"
+#include "loader.h"
 
 #include "bin_dump.h"
 

@@ -5,7 +5,7 @@
 
 #include "bin_dump.h"
 #include "debugger.h"
-#include "loader_pe.h"
+#include "loader.h"
 
 #define API extern "C" __declspec(dllexport)
 
