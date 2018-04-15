@@ -22,7 +22,7 @@ namespace Superbr4in.SharpReverse.Api.Test
 #endif
             
             if (@case.Data is string path && !File.Exists(path))
-                AssertInconclusive($"Apparent test file \"{path}\" not found.");
+                AssertInconclusive($"File \"{path}\" not found.");
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
