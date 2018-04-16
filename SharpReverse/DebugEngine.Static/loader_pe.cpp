@@ -6,7 +6,6 @@
 #include "bin_dump.h"
 
 std::map<std::string, std::tuple<uint64_t, uint64_t>> imports;
-std::map<uint64_t, std::tuple<std::string, std::string>> libraries;
 
 int binary_search(const std::function<std::string(int)> f, const std::string s, int l, int r)
 {
@@ -133,7 +132,7 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
     return size;
 }
 
-void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const std::string dll_name, const uint64_t dll_image_base, const uint64_t dll_exports_address)
+void loader_pe::import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const std::string dll_name, const uint64_t dll_image_base, const uint64_t dll_exports_address)
 {
     for (auto j = 0;; ++j)
     {
@@ -147,7 +146,7 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
         E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
 
         // --
-        libraries.emplace(dll_import_proc_name_address, std::make_tuple(dll_name, dll_import_proc_name));
+        libs_.emplace(dll_import_proc_name_address, std::make_tuple(dll_name, dll_import_proc_name));
         // --
 
         // --> Find DLL export function and replace
@@ -180,8 +179,7 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
         // <--
     }
 }
-
-uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_base)
+uint64_t loader_pe::init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_base)
 {
     // --> Locate import table
     const auto imports_address = header.data_directories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
@@ -290,62 +288,40 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
     return dll_image_base;
 }
 
-int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint64_t& scale, std::vector<int>& regs, int& ip_index, std::map<uint64_t, std::string>& secs) const
+int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
     header_pe header;
     E_ERR(header.inspect(bytes));
+
+    machine_ = header.machine;
 
     switch (header.machine)
     {
     case IMAGE_FILE_MACHINE_I386:
         cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
         uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
-
-        scale = 0xffffffff;
-
-        regs =
-        {
-            X86_REG_EAX, X86_REG_EBX, X86_REG_ECX, X86_REG_EDX,
-            X86_REG_ESP, X86_REG_EBP,
-            X86_REG_ESI, X86_REG_EDI,
-            X86_REG_EIP
-        };
-        ip_index = 8;
-
         break;
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
         cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
         uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
-
-        scale = 0xffffffffffffffff;
-
-        regs =
-        {
-            X86_REG_RAX, X86_REG_RBX, X86_REG_RCX, X86_REG_RDX,
-            X86_REG_RSP, X86_REG_RBP,
-            X86_REG_RSI, X86_REG_RDI,
-            X86_REG_RIP
-        };
-        ip_index = 8;
-
         break;
 #endif
     default:
         return R_FAILURE;
     }
 
-    secs = std::map<uint64_t, std::string>();
+    secs_ = std::map<uint64_t, std::string>();
 
     for (auto h_sec : header.section_headers)
     {
         const auto begin = bytes.begin() + h_sec.PointerToRawData;
         init_section(uc, std::vector<char>(begin, begin + h_sec.SizeOfRawData), header.image_base + h_sec.VirtualAddress);
-        secs.emplace(header.image_base + h_sec.VirtualAddress, std::string(reinterpret_cast<char*>(h_sec.Name)));
+        secs_.emplace(header.image_base + h_sec.VirtualAddress, std::string(reinterpret_cast<char*>(h_sec.Name)));
     }
 
     imports = std::map<std::string, std::tuple<uint64_t, uint64_t>>();
-    libraries = std::map<uint64_t, std::tuple<std::string, std::string>>();
+    libs_ = std::map<uint64_t, std::tuple<std::string, std::string>>();
 
     init_imports(uc, header, 0x70000000);
 
@@ -354,9 +330,75 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
 
     init_section(uc, std::vector<char>(header.stack_commit), stack_ptr - header.stack_commit + 1);
 
-    E_FAT(uc_reg_write(uc, regs[4], &stack_ptr));
-    E_FAT(uc_reg_write(uc, regs[5], &stack_ptr));
-    E_FAT(uc_reg_write(uc, regs[8], &instr_ptr));
+    auto r = regs();
+    E_FAT(uc_reg_write(uc, r[4], &stack_ptr));
+    E_FAT(uc_reg_write(uc, r[5], &stack_ptr));
+    E_FAT(uc_reg_write(uc, r[8], &instr_ptr));
 
     return R_SUCCESS;
+}
+
+uint64_t loader_pe::scale() const
+{
+    switch (machine_)
+    {
+    case IMAGE_FILE_MACHINE_I386:
+        return 0xffffffff;
+#ifdef _WIN64
+    case IMAGE_FILE_MACHINE_AMD64:
+        return 0xffffffffffffffff;
+#endif
+    default:
+        THROW_E;
+    }
+}
+
+std::vector<int> loader_pe::regs() const
+{
+    switch (machine_)
+    {
+    case IMAGE_FILE_MACHINE_I386:
+        return
+        {
+            X86_REG_EAX, X86_REG_EBX, X86_REG_ECX, X86_REG_EDX,
+            X86_REG_ESP, X86_REG_EBP,
+            X86_REG_ESI, X86_REG_EDI,
+            X86_REG_EIP
+        };
+#ifdef _WIN64
+    case IMAGE_FILE_MACHINE_AMD64:
+        return
+        {
+            X86_REG_RAX, X86_REG_RBX, X86_REG_RCX, X86_REG_RDX,
+            X86_REG_RSP, X86_REG_RBP,
+            X86_REG_RSI, X86_REG_RDI,
+            X86_REG_RIP
+        };
+#endif
+    default:
+        THROW_E;
+    }
+}
+int loader_pe::ip_index() const
+{
+    switch (machine_)
+    {
+    case IMAGE_FILE_MACHINE_I386:
+        return 8;
+#ifdef _WIN64
+    case IMAGE_FILE_MACHINE_AMD64:
+        return 8;
+#endif
+    default:
+        THROW_E;
+    }
+}
+
+std::map<uint64_t, std::string> loader_pe::secs() const
+{
+    return secs_;
+}
+std::map<uint64_t, std::tuple<std::string, std::string>> loader_pe::libs() const
+{
+    return libs_;
 }

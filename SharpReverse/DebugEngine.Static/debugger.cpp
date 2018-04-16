@@ -9,12 +9,14 @@ debugger::debugger()
     mem_index_ = 0;
 }
 
-int debugger::load(const loader& l, const std::vector<char> bytes)
+int debugger::load(loader* loader, const std::vector<char> bytes)
 {
-    E_ERR(const_cast<loader&>(l).load(bytes, cs_, uc_, scale_, regs_, ip_index_, secs_));
+    loader_ = loader;
+
+    E_ERR(loader_->load(bytes, cs_, uc_));
     E_ERR(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 
-    auto s = scale_;
+    auto s = loader_->scale();
     auto x = 0;
 
     for (auto i = 0;; ++i)
@@ -36,16 +38,21 @@ int debugger::unload()
 {
     E_ERR(cs_close(&cs_) || uc_close(uc_));
 
+    if (loader_ != nullptr)
+        delete loader_;
+
     return R_SUCCESS;
 }
 
 int debugger::ins(instruction_info& ins_info) const
 {
-    const auto size = 16;
+    const auto ip_reg = loader_->regs()[loader_->ip_index()];
 
     uint64_t cur_addr;
-    E_FAT(uc_reg_read(uc_, regs_[ip_index_], &cur_addr));
-    cur_addr &= scale_;
+    E_FAT(uc_reg_read(uc_, ip_reg, &cur_addr));
+    cur_addr &= loader_->scale();
+    
+    const auto size = 16;
 
     uint8_t bytes[size];
     E_FAT(uc_mem_read(uc_, cur_addr, bytes, size));
@@ -74,7 +81,7 @@ int debugger::ins(instruction_info& ins_info) const
     if (incr)
     {
         auto next_addr = cur_addr + instruction->size;
-        uc_reg_write(uc_, regs_[ip_index_], &next_addr);
+        uc_reg_write(uc_, ip_reg, &next_addr);
     }
 
     ins_info = instruction_info();
@@ -97,17 +104,19 @@ int debugger::reg(register_info& reg_info)
 {
     reg_info = register_info();
 
-    if (reg_index_ >= regs_.size())
+    const auto regs = loader_->regs();
+
+    if (reg_index_ >= regs.size())
     {
         reg_index_ = 0;
         return R_FAILURE;
     }
 
     uint64_t value;
-    E_FAT(uc_reg_read(uc_, regs_[reg_index_], &value));
+    E_FAT(uc_reg_read(uc_, regs[reg_index_], &value));
     
-    sprintf_s(reg_info.name, cs_reg_name(cs_, regs_[reg_index_]));
-    sprintf_s(reg_info.value, format_.c_str(), value & scale_);
+    sprintf_s(reg_info.name, cs_reg_name(cs_, regs[reg_index_]));
+    sprintf_s(reg_info.value, format_.c_str(), value & loader_->scale());
 
     ++reg_index_;
 
@@ -135,7 +144,7 @@ int debugger::mem(memory_info& mem_info)
     sprintf_s(mem_info.address, format_.c_str(), b);
     sprintf_s(mem_info.size, format_.c_str(), e - b + 1);
 
-    const auto s = secs_[b].c_str();
+    const auto s = loader_->secs()[b].c_str();
 
     memcpy(mem_info.section, s, strlen(s));
 

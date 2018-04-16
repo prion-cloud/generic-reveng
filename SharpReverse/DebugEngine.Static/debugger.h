@@ -51,12 +51,7 @@ class debugger
     csh cs_ { };
     uc_engine* uc_ { };
 
-    uint64_t scale_ { };
-
-    std::vector<int> regs_ { };
-    int ip_index_ { };
-
-    std::map<uint64_t, std::string> secs_ { };
+    loader* loader_ { };
 
     std::string format_ { };
 
@@ -70,7 +65,7 @@ public:
     /**
      * \brief Uses a loader to make some machine code ready for debugging.
      */
-    int load(const loader& l, std::vector<char> bytes);
+    int load(loader* loader, std::vector<char> bytes);
     /**
      * \brief Ends debugging.
      */
