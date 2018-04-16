@@ -16,3 +16,9 @@ TEST(bin_dump, create_filedump__success)
     for (unsigned i = 0; i < expected.size(); ++i)
         EXPECT_EQ(expected[i], actual[i]);
 }
+
+TEST(bin_dump, create_filedump__failure)
+{
+    std:: vector<char> bytes;
+    ASSERT_TRUE(create_filedump("invalid", bytes));
+}
