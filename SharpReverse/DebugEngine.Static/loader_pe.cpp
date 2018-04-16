@@ -6,6 +6,7 @@
 #include "bin_dump.h"
 
 std::map<std::string, std::tuple<uint64_t, uint64_t>> imports;
+std::map<uint64_t, std::tuple<std::string, std::string>> libraries;
 
 int binary_search(const std::function<std::string(int)> f, const std::string s, int l, int r)
 {
@@ -132,7 +133,7 @@ uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64
     return size;
 }
 
-void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const uint64_t dll_image_base, const uint64_t dll_exports_address)
+void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const std::string dll_name, const uint64_t dll_image_base, const uint64_t dll_exports_address)
 {
     for (auto j = 0;; ++j)
     {
@@ -142,11 +143,14 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
         if (dll_import_proc_name_address == 0x0)
             break; // END
 
-        dll_import_proc_name_address += sizeof(WORD);
-
         std::string dll_import_proc_name;
-        E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address, dll_import_proc_name));
+        E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
 
+        // --
+        libraries.emplace(dll_import_proc_name_address, std::make_tuple(dll_name, dll_import_proc_name));
+        // --
+
+        // --> Find DLL export function and replace
         IMAGE_EXPORT_DIRECTORY dll_export_directory;
         E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
 
@@ -163,7 +167,7 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
             return dll_export_proc_name;
         };
 
-        const auto dll_export_proc_index = binary_search(f, dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1);
+        const auto dll_export_proc_index = binary_search(f, dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1); // TODO: Use hint.
 
         E_FAT(dll_export_proc_index < 0);
 
@@ -173,6 +177,7 @@ void import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_D
             continue; // Export not found
             
         E_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
+        // <--
     }
 }
 
@@ -207,7 +212,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
             // - Continue without base increase
             
             auto info = imports[dll_name];
-            import_table(uc, header.image_base, import_descriptor, std::get<0>(info), std::get<1>(info));
+            import_table(uc, header.image_base, import_descriptor, dll_name, std::get<0>(info), std::get<1>(info));
             continue;
         }
         
@@ -271,7 +276,7 @@ uint64_t init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_
 
         // --> Import table update
         const auto dll_exports_address = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-        import_table(uc, header.image_base, import_descriptor, dll_image_base, dll_exports_address);
+        import_table(uc, header.image_base, import_descriptor, dll_name, dll_image_base, dll_exports_address);
         // <--
 
         // Mark DLL as load
@@ -340,6 +345,8 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc, uint
     }
 
     imports = std::map<std::string, std::tuple<uint64_t, uint64_t>>();
+    libraries = std::map<uint64_t, std::tuple<std::string, std::string>>();
+
     init_imports(uc, header, 0x70000000);
 
     const uint64_t stack_ptr = 0xffffffff;
