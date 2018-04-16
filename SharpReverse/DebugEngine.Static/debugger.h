@@ -7,16 +7,18 @@
  */
 struct instruction_info
 {
-    uint32_t id;
+    uint32_t id { };
 
-    char address[19];
+    char address[19] { };
 
-    uint16_t size;
+    uint16_t size { };
     
-    uint8_t bytes[16];
+    uint8_t bytes[16] { };
     
-    char mnemonic[32];
-    char operands[160];
+    char mnemonic[32] { };
+    char operands[160] { };
+
+    char comment[64] { };
 };
 
 /**
@@ -24,8 +26,8 @@ struct instruction_info
  */
 struct register_info
 {
-    char name[4];
-    char value[19];
+    char name[4] { };
+    char value[19] { };
 };
 
 /**
@@ -33,12 +35,12 @@ struct register_info
  */
 struct memory_info
 {
-    char address[19];
-    char size[19];
+    char address[19] { };
+    char size[19] { };
 
-    char section[IMAGE_SIZEOF_SHORT_NAME];
+    char section[IMAGE_SIZEOF_SHORT_NAME] { };
 
-    char access[4];
+    char access[4] { };
 };
 
 /**

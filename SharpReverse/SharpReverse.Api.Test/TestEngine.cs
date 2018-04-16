@@ -27,7 +27,14 @@ namespace Superbr4in.SharpReverse.Api.Test
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
                 foreach (var expected in @case.DebugResults)
-                    AssertEqual(expected, (debugger.Debug(), debugger.InspectRegisters()));
+                {
+                    var actual = (debugger.Debug(), debugger.InspectRegisters());
+
+                    Console.WriteLine($"0x{actual.Item1.Address}  {actual.Item1.Instruction}" +
+                                      $"{(actual.Item1.Comment == string.Empty ? null : $" ({actual.Item1.Comment})")}");
+
+                    AssertEqual(expected, actual);
+                }
             }
         }
         
@@ -42,8 +49,6 @@ namespace Superbr4in.SharpReverse.Api.Test
 
         private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual)
         {
-            Console.WriteLine($"0x{actual.Item1.Address}  {actual.Item1.Instruction}");
-
             AssertEqual(expected.Item1.Id, actual.Item1.Id,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");
 
@@ -55,6 +60,9 @@ namespace Superbr4in.SharpReverse.Api.Test
 
             AssertEqual(expected.Item1.Instruction, actual.Item1.Instruction,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Instruction)}");
+
+            AssertEqual(expected.Item1.Comment, actual.Item1.Comment,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Comment)}");
 
             var exp = expected.Item2;
             var act = actual.Item2.ToArray();

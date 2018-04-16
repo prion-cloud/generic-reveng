@@ -47,7 +47,8 @@ namespace Superbr4in.SharpReverse
 
             var ins = _debugger.Debug();
             
-            TextBoxIns.Text += $"0x{ins.Address}  {ins.Instruction}\r\n";
+            TextBoxIns.Text += $"0x{ins.Address}  {ins.Instruction}" +
+                               $"{(ins.Comment == string.Empty ? null : $" ({ins.Comment})")}\r\n";
 
             UpdateRegisterState();
         }

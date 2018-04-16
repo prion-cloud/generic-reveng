@@ -32,7 +32,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                 new (IInstructionInfo, IRegisterInfo[])[]
                 {
                     (
-                        new TestInstructionInfo(0xd8, "00000000", new byte[] { 0x41 }, "inc ecx"),
+                        new TestInstructionInfo(0xd8, "00000000", new byte[] { 0x41 }, "inc ecx", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -47,7 +47,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x87, "00000001", new byte[] { 0x4a }, "dec edx"),
+                        new TestInstructionInfo(0x87, "00000001", new byte[] { 0x4a }, "dec edx", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -72,7 +72,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                 new (IInstructionInfo, IRegisterInfo[])[]
                 {
                     (
-                        new TestInstructionInfo(0x10a, "00401000", new byte[] { 0xeb, 0x10 }, "jmp 0x401012"),
+                        new TestInstructionInfo(0x10a, "00401000", new byte[] { 0xeb, 0x10 }, "jmp 0x401012", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -87,7 +87,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, "00401012", new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 }, "mov eax, dword ptr [0x4161bf]"),
+                        new TestInstructionInfo(0x1ba, "00401012", new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 }, "mov eax, dword ptr [0x4161bf]", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -102,7 +102,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x283, "00401017", new byte[] { 0xc1, 0xe0, 0x02 }, "shl eax, 2"),
+                        new TestInstructionInfo(0x283, "00401017", new byte[] { 0xc1, 0xe0, 0x02 }, "shl eax, 2", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -117,7 +117,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, "0040101a", new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 }, "mov dword ptr [0x4161c3], eax"),
+                        new TestInstructionInfo(0x1ba, "0040101a", new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 }, "mov dword ptr [0x4161c3], eax", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -132,7 +132,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x244, "0040101f", new byte[] { 0x52 }, "push edx"),
+                        new TestInstructionInfo(0x244, "0040101f", new byte[] { 0x52 }, "push edx", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -147,7 +147,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x244, "00401020", new byte[] { 0x6a, 0x00 }, "push 0"),
+                        new TestInstructionInfo(0x244, "00401020", new byte[] { 0x6a, 0x00 }, "push 0", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -162,7 +162,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x38, "00401022", new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 }, "call 0x41518c"),
+                        new TestInstructionInfo(0x38, "00401022", new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 }, "call 0x41518c", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -177,7 +177,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x10a, "0041518c", new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 }, "jmp dword ptr [0x42123c]"),
+                        new TestInstructionInfo(0x10a, "0041518c", new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 }, "jmp dword ptr [0x42123c]", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -192,7 +192,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi"),
+                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -207,7 +207,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x244, TestEngine.PH, new byte[] { 0x55 }, "push ebp"),
+                        new TestInstructionInfo(0x244, TestEngine.PH, new byte[] { 0x55 }, "push ebp", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -222,7 +222,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xec }, "mov ebp, esp"),
+                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xec }, "mov ebp, esp", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -237,7 +237,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x22e, TestEngine.PH, new byte[] { 0x5d }, "pop ebp"),
+                        new TestInstructionInfo(0x22e, TestEngine.PH, new byte[] { 0x5d }, "pop ebp", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -281,7 +281,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                 new (IInstructionInfo, IRegisterInfo[])[]
                 {
                     (
-                        new TestInstructionInfo(0x244, "0000000000000000", new byte[] { 0x55 }, "push rbp"),
+                        new TestInstructionInfo(0x244, "0000000000000000", new byte[] { 0x55 }, "push rbp", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("rax", "0000000000000000"),
@@ -296,7 +296,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, "0000000000000001", new byte[] { 0x48, 0x8b, 0x05, 0xb8, 0x13, 0x00, 0x00 }, "mov rax, qword ptr [rip + 0x13b8]"),
+                        new TestInstructionInfo(0x1ba, "0000000000000001", new byte[] { 0x48, 0x8b, 0x05, 0xb8, 0x13, 0x00, 0x00 }, "mov rax, qword ptr [rip + 0x13b8]", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("rax", "0000000000000000"),
@@ -321,7 +321,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                 new (IInstructionInfo, IRegisterInfo[])[]
                 {
                     (
-                        new TestInstructionInfo(0x146, "0000000000401500", new byte[] { 0x48, 0x83, 0xec, 0x28 }, "sub rsp, 0x28"),
+                        new TestInstructionInfo(0x146, "0000000000401500", new byte[] { 0x48, 0x83, 0xec, 0x28 }, "sub rsp, 0x28", string.Empty),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("rax", "0000000000000000"),
@@ -346,15 +346,17 @@ namespace Superbr4in.SharpReverse.Api.Test
             public string Address { get; }
             public byte[] Bytes { get; }
             public string Instruction { get; }
+            public string Comment { get; }
 
             #endregion
 
-            public TestInstructionInfo(uint id, string address, byte[] bytes, string instruction)
+            public TestInstructionInfo(uint id, string address, byte[] bytes, string instruction, string comment)
             {
                 Id = id;
                 Address = address;
                 Bytes = bytes;
                 Instruction = instruction;
+                Comment = comment;
             }
         }
         private struct TestRegisterInfo : IRegisterInfo

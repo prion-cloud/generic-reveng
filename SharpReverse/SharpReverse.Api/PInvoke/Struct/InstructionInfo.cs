@@ -23,6 +23,9 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         public string Mnemonic_;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 160)]
         public string Operands_;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string Comment_;
         
         // ReSharper restore All
 
@@ -35,5 +38,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         public byte[] Bytes => Bytes_.Take(Size_).ToArray();
 
         public string Instruction => $"{Mnemonic_}{(Operands_ == string.Empty ? null : $" {Operands_}")}";
+
+        public string Comment => Comment_;
     }
 }
