@@ -145,10 +145,6 @@ void loader_pe::import_table(uc_engine* uc, const uint64_t image_base, const IMA
         std::string dll_import_proc_name;
         E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
 
-        // --
-        libs_.emplace(dll_import_proc_name_address, std::make_tuple(dll_name, dll_import_proc_name));
-        // --
-
         // --> Find DLL export function and replace
         IMAGE_EXPORT_DIRECTORY dll_export_directory;
         E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
@@ -176,6 +172,8 @@ void loader_pe::import_table(uc_engine* uc, const uint64_t image_base, const IMA
             continue; // Export not found
             
         E_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
+
+        libs_.emplace(dll_image_base + dll_export_proc_address, std::make_tuple(dll_name, dll_import_proc_name));
         // <--
     }
 }

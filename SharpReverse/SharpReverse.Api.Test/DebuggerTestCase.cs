@@ -192,7 +192,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                         }
                     ),
                     (
-                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", string.Empty),
+                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", "KERNEL32.DLL-GetModuleHandleA"),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),

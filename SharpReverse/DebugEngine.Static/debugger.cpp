@@ -51,6 +51,17 @@ int debugger::ins(instruction_info& ins_info) const
     uint64_t cur_addr;
     E_FAT(uc_reg_read(uc_, ip_reg, &cur_addr));
     cur_addr &= loader_->scale();
+
+    std::string comment = { };
+
+    auto libs = loader_->libs();
+    if (libs.find(cur_addr) != libs.end())
+    {
+        auto func = libs[cur_addr];
+        auto stream = std::ostringstream();
+        stream << std::get<0>(func) << "-" << std::get<1>(func);
+        comment = stream.str();
+    }
     
     const auto size = 16;
 
@@ -96,6 +107,8 @@ int debugger::ins(instruction_info& ins_info) const
 
     memcpy(ins_info.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
     memcpy(ins_info.operands, instruction->op_str, strlen(instruction->op_str));
+
+    std::copy(comment.begin(), comment.end(), ins_info.comment);
 
     return R_SUCCESS;
 }
