@@ -10,10 +10,10 @@ uc_err uc_ext_mem_read_string(uc_engine* uc, const uint64_t address, std::string
         if (err)
             return err;
 
-        chars.push_back(c);
-
         if (c == '\0')
             break;
+
+        chars.push_back(c);
     }
 
     value = std::string(chars.begin(), chars.end());
