@@ -296,14 +296,14 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     // -->
     // Essential map initialization
 
-    //dll_export_addresses_ = std::map<uint64_t, uint64_t>();
+    dll_export_addresses_ = std::map<uint64_t, uint64_t>();
     
     secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
     dll_procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
 
     // <--
 
-    // TODO: Init header section
+    init_section(uc, SEC_OWNER_SELF, SEC_DESC_PE_HEADER, header.image_base, &bytes[0], PAGE_SIZE);
 
     for (auto h_sec : header.section_headers)
     {
