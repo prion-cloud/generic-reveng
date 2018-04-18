@@ -10,31 +10,6 @@
 
 #define SEC_OWNER_SELF "(Self)"
 
-int binary_search(const std::function<std::string(int)> f, const std::string s, int l, int r)
-{
-    while (true)
-    {
-        if (l > r)
-            return -1;
-
-        const auto m = (l + r) / 2;
-
-        if (f(m).compare(s) < 0)
-        {
-            l = m + 1;
-            continue;
-        }
-
-        if (f(m).compare(s) > 0)
-        {
-            r = m - 1;
-            continue;
-        }
-
-        return m;
-    }
-}
-
 size_t calc_virt_size(const size_t raw_size)
 {
     auto virt_size = PAGE_SIZE * (raw_size / PAGE_SIZE);
@@ -88,8 +63,32 @@ void loader_pe::import_descriptor_update(uc_engine* uc, const uint64_t image_bas
 
             return dll_export_proc_name;
         };
+        const std::function<int(std::string, int, int)> binary_search = [f](const std::string s, int l, int r)
+        {
+            while (true)
+            {
+                if (l > r)
+                    return -1;
 
-        const auto dll_export_proc_index = binary_search(f, dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1); // TODO: Use hint.
+                const auto m = (l + r) / 2;
+
+                if (f(m).compare(s) < 0)
+                {
+                    l = m + 1;
+                    continue;
+                }
+
+                if (f(m).compare(s) > 0)
+                {
+                    r = m - 1;
+                    continue;
+                }
+
+                return m;
+            }
+        };
+
+        const auto dll_export_proc_index = binary_search(dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1); // TODO: Use hint.
 
         E_FAT(dll_export_proc_index < 0);
 
