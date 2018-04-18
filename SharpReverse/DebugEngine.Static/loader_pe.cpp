@@ -35,6 +35,49 @@ void loader_pe::init_section(uc_engine* uc, const std::string owner, const std::
 
 void loader_pe::import_descriptor_update(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const std::string dll_name, const uint64_t dll_image_base, const uint64_t dll_exports_address)
 {
+    // Retrieve export directory
+    IMAGE_EXPORT_DIRECTORY dll_export_directory;
+    E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
+    
+    // Define local binary search function for finding exported proc addresses
+    const std::function<int(std::string)> search_proc = [uc, dll_image_base, dll_export_directory](const std::string proc_name)
+    {
+        const std::function<std::string(int)> get_proc_name = [uc, dll_image_base, dll_export_directory](int index)
+        {
+            DWORD dll_export_proc_name_address;
+            E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, index));
+
+            std::string dll_export_proc_name;
+            E_FAT(uc_ext_mem_read_string(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
+
+            return dll_export_proc_name;
+        };
+        
+        auto l = 0;
+        int r = dll_export_directory.NumberOfNames - 1;
+
+        while (l <= r)
+        {
+            const auto m = (l + r) / 2;
+
+            if (get_proc_name(m).compare(proc_name) < 0)
+            {
+                l = m + 1;
+                continue;
+            }
+
+            if (get_proc_name(m).compare(proc_name) > 0)
+            {
+                r = m - 1;
+                continue;
+            }
+
+            return m;
+        }
+        
+        return -1;
+    };
+
     // Inspect import descriptor procs
     for (auto j = 0;; ++j)
     {
@@ -46,56 +89,16 @@ void loader_pe::import_descriptor_update(uc_engine* uc, const uint64_t image_bas
 
         std::string dll_import_proc_name;
         E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
-
-        // Retrieve export directory
-        IMAGE_EXPORT_DIRECTORY dll_export_directory;
-        E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
-
-        DWORD dll_export_proc_address = 0x0;
-
-        const std::function<std::string(int)> f = [uc, dll_image_base, dll_export_directory](int k)
-        {
-            DWORD dll_export_proc_name_address;
-            E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_export_directory.AddressOfNames, dll_export_proc_name_address, k));
-                
-            std::string dll_export_proc_name;
-            E_FAT(uc_ext_mem_read_string(uc, dll_image_base + dll_export_proc_name_address, dll_export_proc_name));
-
-            return dll_export_proc_name;
-        };
-        const std::function<int(std::string, int, int)> binary_search = [f](const std::string s, int l, int r)
-        {
-            while (true)
-            {
-                if (l > r)
-                    return -1;
-
-                const auto m = (l + r) / 2;
-
-                if (f(m).compare(s) < 0)
-                {
-                    l = m + 1;
-                    continue;
-                }
-
-                if (f(m).compare(s) > 0)
-                {
-                    r = m - 1;
-                    continue;
-                }
-
-                return m;
-            }
-        };
-
-        const auto dll_export_proc_index = binary_search(dll_import_proc_name, 0, dll_export_directory.NumberOfNames - 1); // TODO: Use hint.
+        
+        const auto dll_export_proc_index = search_proc(dll_import_proc_name);
 
         E_FAT(dll_export_proc_index < 0);
 
+        DWORD dll_export_proc_address;
         E_FAT(uc_ext_mem_read<DWORD>(uc, dll_image_base + dll_export_directory.AddressOfFunctions, dll_export_proc_address, dll_export_proc_index));
 
         if (dll_export_proc_address == 0x0)
-            continue; // Export not found
+            continue;
             
         E_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
 
