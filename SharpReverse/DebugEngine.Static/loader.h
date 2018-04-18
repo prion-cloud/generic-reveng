@@ -52,15 +52,13 @@ class loader_pe : public loader
 {
     WORD machine_ { };
     
-    std::map<uint64_t, uint64_t> dll_export_addresses_ { };     // [dll_address] = dll_export_address
+    std::map<uint64_t, uint64_t> dll_export_addresses_ { };                     // [dll_address] = dll_export_address
 
-    std::map<uint64_t, std::pair<std::string, std::string>> secs_ { };         // [address] = (owner, description)
-    std::map<uint64_t, std::pair<std::string, std::string>> dll_procs_ { };    // [address] = (dll_name, name)
+    std::map<uint64_t, std::pair<std::string, std::string>> secs_ { };          // [section_address] = (owner, description)
+    std::map<uint64_t, std::pair<std::string, std::string>> dll_procs_ { };     // [dll_proc_address] = (dll_name, name)
 
-    void init_section(uc_engine* uc, std::string owner, std::string desc, uint64_t address, size_t size);
     void init_section(uc_engine* uc, std::string owner, std::string desc, uint64_t address, const void* buffer, size_t size);
 
-    void import_descriptor_update(uc_engine* uc, uint64_t image_base, IMAGE_IMPORT_DESCRIPTOR import_descriptor, std::string dll_name, uint64_t dll_image_base, uint64_t dll_exports_address);
     void import_dlls(uc_engine* uc, header_pe header, bool sub);
 
 public:
