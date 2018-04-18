@@ -10,7 +10,7 @@ namespace Superbr4in.SharpReverse.Api.Test
     public static class TestEngine
     {
         /// <summary>
-        /// Placeholder for characters to be ignored in string comparison.
+        /// Placeholder for ignored strings.
         /// </summary>
         public const string PH = "\uffff";
 
@@ -52,7 +52,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             AssertEqual(expected.Item1.Id, actual.Item1.Id,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");
 
-            AssertStringEqual(expected.Item1.Address, actual.Item1.Address,
+            AssertEqual(expected.Item1.Address, actual.Item1.Address,
                 $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}");
 
             AssertArrayEqual(expected.Item1.Bytes, actual.Item1.Bytes,
@@ -77,7 +77,7 @@ namespace Superbr4in.SharpReverse.Api.Test
 
                 AssertEqual(e.Name, a.Name,
                     $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Name)}");
-                AssertStringEqual(e.Value, a.Value,
+                AssertEqual(e.Value, a.Value,
                     $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Value)}");
             }
         }
@@ -88,26 +88,22 @@ namespace Superbr4in.SharpReverse.Api.Test
         }
         private static void AssertEqual<T>(T expected, T actual, string description, Func<T, string> toString)
         {
+            if (expected is string str && str == PH)
+                return;
+
             if (!Equals(expected, actual))
                 AssertFail(toString(expected), toString(actual), description);
         }
         
         private static void AssertArrayEqual<T>(T[] expected, T[] actual, string name, Func<T, string> toString)
         {
-            AssertEqual(expected.Length, actual.Length, $"{name}.{nameof(actual.Length)}");
-
-            for (var i = 0; i < expected.Length; i++)
-                AssertEqual(expected[i], actual[i], $"{name}[{i}]", toString);
-        }
-
-        private static void AssertStringEqual(string expected, string actual, string name)
-        {
-            if (expected == PH)
+            if (expected == null)
                 return;
 
             AssertEqual(expected.Length, actual.Length, $"{name}.{nameof(actual.Length)}");
 
-            AssertEqual(expected, actual, name);
+            for (var i = 0; i < expected.Length; i++)
+                AssertEqual(expected[i], actual[i], $"{name}[{i}]", toString);
         }
     }
 }

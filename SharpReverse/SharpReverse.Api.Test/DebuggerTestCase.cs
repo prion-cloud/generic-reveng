@@ -250,9 +250,9 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("edi", "00000000"),
                             new TestRegisterInfo("eip", TestEngine.PH)
                         }
-                    )/*,
+                    ),
                     (
-                        new TestInstructionInfo(0x10a, TestEngine.PH, new byte[] { 0xff, 0x25, 0xa0, 0x10, 0x5b, 0x77 }, "jmp dword ptr [0x775b10a0]"),
+                        new TestInstructionInfo(0x10a, TestEngine.PH, null, TestEngine.PH, "KERNELBASE.GetModuleFileNameA" /*BUG*/),
                         new IRegisterInfo[]
                         {
                             new TestRegisterInfo("eax", "00000000"),
@@ -263,10 +263,9 @@ namespace Superbr4in.SharpReverse.Api.Test
                             new TestRegisterInfo("ebp", "ffffffff"),
                             new TestRegisterInfo("esi", "00000000"),
                             new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "0009323e")
+                            new TestRegisterInfo("eip", TestEngine.PH)
                         }
                     )
-                    */
                 });
         }
 
