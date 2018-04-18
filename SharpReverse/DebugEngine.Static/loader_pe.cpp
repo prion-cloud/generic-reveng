@@ -3,9 +3,12 @@
 
 #include "loader.h"
 
-#include "bin_dump.h"
+#define PAGE_SIZE 0x1000
 
-std::map<std::string, std::tuple<uint64_t, uint64_t>> imports;
+#define SEC_DESC_PE_HEADER "(PE header)"
+#define SEC_DESC_STACK "(Stack)"
+
+#define SEC_OWNER_SELF "(Self)"
 
 int binary_search(const std::function<std::string(int)> f, const std::string s, int l, int r)
 {
@@ -32,120 +35,44 @@ int binary_search(const std::function<std::string(int)> f, const std::string s, 
     }
 }
 
-int dump_dll(const std::string dll_name, const WORD machine, std::vector<char>& dll_bytes)
+size_t calc_virt_size(const size_t raw_size)
 {
-    // TODO: Look for DLL in application folder.
+    auto virt_size = PAGE_SIZE * (raw_size / PAGE_SIZE);
+    if (raw_size % PAGE_SIZE > 0)
+        virt_size += PAGE_SIZE;
 
-    auto file_name = std::ostringstream();
-    file_name << getenv("windir") << "\\";
-    
-    auto wow64 = FALSE;
-    E_FAT(!IsWow64Process(GetCurrentProcess(), &wow64));
-    
-#ifdef _WIN64
-    wow64 |= machine == IMAGE_FILE_MACHINE_I386;
-#endif
-
-    file_name << (wow64 ? "SysWOW64" : "System32") << "\\" << dll_name;
-
-    if (create_filedump(file_name.str(), dll_bytes))
-        return R_FAILURE;
-
-    return R_SUCCESS;
+    return virt_size;
 }
 
-int header_pe::inspect(std::vector<char> bytes)
+void loader_pe::init_section(uc_engine* uc, std::string owner, std::string desc, const uint64_t address, const size_t size)
 {
-    size_t cursor = 0;
+    E_FAT(size == 0);
+    E_FAT(uc_mem_map(uc, address, calc_virt_size(size), UC_PROT_ALL));
 
-    const auto h_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&bytes[cursor]);
-    E_ERR(h_dos.e_magic != 0x5A4D);
+    secs_.emplace(address, std::make_pair(owner, desc));
+}
+void loader_pe::init_section(uc_engine* uc, const std::string owner, const std::string desc, const uint64_t address, const void* buffer, const size_t size)
+{
+    init_section(uc, owner, desc, address, size);
 
-    const auto pe_sig = *reinterpret_cast<const DWORD*>(&bytes[cursor += h_dos.e_lfanew]);
-    E_ERR(pe_sig != 0x4550);
-
-    const auto h_fil = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&bytes[cursor += sizeof(DWORD)]);
-    cursor += sizeof h_fil;
-
-    machine = h_fil.Machine;
-
-    data_directories = std::array<IMAGE_DATA_DIRECTORY, 16>();
-
-    switch (h_fil.SizeOfOptionalHeader)
-    {
-    case sizeof(IMAGE_OPTIONAL_HEADER32):
-        const auto h_opt32 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER32*>(&bytes[cursor]);
-
-        image_base = h_opt32.ImageBase;
-        stack_commit = h_opt32.SizeOfStackCommit;
-
-        entry_point = h_opt32.AddressOfEntryPoint;
-
-        std::copy(
-            std::begin(h_opt32.DataDirectory),
-            std::end(h_opt32.DataDirectory),
-            std::begin(data_directories));
-
-        break;
-    case sizeof(IMAGE_OPTIONAL_HEADER64):
-    {
-        const auto h_opt64 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&bytes[cursor]);
-
-        image_base = h_opt64.ImageBase;
-        stack_commit = h_opt64.SizeOfStackCommit;
-
-        entry_point = h_opt64.AddressOfEntryPoint;
-
-        std::copy(
-            std::begin(h_opt64.DataDirectory),
-            std::end(h_opt64.DataDirectory),
-            std::begin(data_directories));
-
-        break;
-    }
-    default:
-        return R_FAILURE;
-    }
-    cursor += h_fil.SizeOfOptionalHeader;
-
-    section_headers = std::vector<IMAGE_SECTION_HEADER>();
-    for (unsigned i = 0; i < h_fil.NumberOfSections; ++i)
-        section_headers.push_back(*reinterpret_cast<const IMAGE_SECTION_HEADER*>(&bytes[cursor + i * sizeof(IMAGE_SECTION_HEADER)]));
-
-    return R_SUCCESS;
+    E_FAT(uc_mem_write(uc, address, buffer, size));
 }
 
-uint64_t init_section(uc_engine* uc, const std::vector<char> bytes, const uint64_t address)
+void loader_pe::import_descriptor_update(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const std::string dll_name, const uint64_t dll_image_base, const uint64_t dll_exports_address)
 {
-    if (bytes.size() == 0)
-        return 0;
-    
-    const uint64_t alignment = 0x1000;
-
-    auto size = alignment * (bytes.size() / alignment);
-    if (bytes.size() % alignment > 0)
-        size += alignment;
-
-    E_FAT(uc_mem_map(uc, address, static_cast<size_t>(size), UC_PROT_ALL));
-    E_FAT(uc_mem_write(uc, address, &bytes[0], bytes.size()));
-
-    return size;
-}
-
-void loader_pe::import_table(uc_engine* uc, const uint64_t image_base, const IMAGE_IMPORT_DESCRIPTOR import_descriptor, const std::string dll_name, const uint64_t dll_image_base, const uint64_t dll_exports_address)
-{
+    // Inspect import descriptor procs
     for (auto j = 0;; ++j)
     {
         DWORD dll_import_proc_name_address;
         E_FAT(uc_ext_mem_read(uc, image_base + import_descriptor.FirstThunk, dll_import_proc_name_address, j));
 
         if (dll_import_proc_name_address == 0x0)
-            break; // END
+            break; // No more procs
 
         std::string dll_import_proc_name;
         E_FAT(uc_ext_mem_read_string(uc, image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
 
-        // --> Find DLL export function and replace
+        // Retrieve export directory
         IMAGE_EXPORT_DIRECTORY dll_export_directory;
         E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_exports_address, dll_export_directory));
 
@@ -173,123 +100,181 @@ void loader_pe::import_table(uc_engine* uc, const uint64_t image_base, const IMA
             
         E_FAT(uc_ext_mem_write(uc, image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_image_base) + dll_export_proc_address, j));
 
-        libs_.emplace(dll_image_base + dll_export_proc_address, std::make_tuple(dll_name, dll_import_proc_name));
-        // <--
+        dll_procs_.emplace(dll_image_base + dll_export_proc_address, std::make_pair(dll_name, dll_import_proc_name));
     }
 }
-uint64_t loader_pe::init_imports(uc_engine* uc, const header_pe header, uint64_t dll_image_base)
+void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool sub)
 {
-    // --> Locate import table
+    // Locate import table
     const auto imports_address = header.data_directories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
 
     if (imports_address == 0x0)
-        return dll_image_base; // NO IMPORTS
-    // <--
+        return; // No imports
     
-    // --> Inspect import table
+    // Inspect import table entries
     for (auto i = 0;; ++i)
     {
-        // --> Inspect descriptor
+        // Retrieve import descriptor
         IMAGE_IMPORT_DESCRIPTOR import_descriptor;
         E_FAT(uc_ext_mem_read(uc, header.image_base + imports_address, import_descriptor, i));
 
-        if (import_descriptor.Name == 0x0 || import_descriptor.Characteristics == 0x0) // TODO: Characteristics ?
-            break; // END
+        if (import_descriptor.Characteristics == 0x0 || import_descriptor.Name == 0x0)
+            break; // No more entries
 
+        // DLL: Get name
         std::string dll_name;
         E_FAT(uc_ext_mem_read_string(uc, header.image_base + import_descriptor.Name, dll_name));
-        // <--
         
-        if (imports.find(dll_name) != imports.end())
+        // DLL: Get handle
+        const auto dll_handle = sub
+            ? GetModuleHandleA(dll_name.c_str()) // TODO: Kernel32 apis may refer to itself!
+            : LoadLibraryA(dll_name.c_str());
+        const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
+
+        // DLL: Update name
+        char dll_path[MAX_PATH];
+        GetModuleFileNameA(dll_handle, dll_path, MAX_PATH);
+        char dll_name_c[MAX_PATH];
+        _splitpath(dll_path, nullptr, nullptr, dll_name_c, nullptr);
+        dll_name = std::string(dll_name_c, strlen(dll_name_c));
+
+        uint64_t dll_exports_address;
+
+        // DLL: Not yet imported?
+        if (dll_export_addresses_.find(dll_address) == dll_export_addresses_.end())
         {
-            // DLL is already load:
-            // - Skip "Load DLL", "DLL relocation"
-            // - Table update with this address
-            // - Continue without base increase
-            
-            auto info = imports[dll_name];
-            import_table(uc, header.image_base, import_descriptor, dll_name, std::get<0>(info), std::get<1>(info));
-            continue;
-        }
-        
-        // --> Load DLL
-        std::vector<char> dll_bytes;
-        if (dump_dll(dll_name, header.machine, dll_bytes))
-            continue; // DLL not found
-        
-        auto dll_header = header_pe();
-        E_FAT(dll_header.inspect(dll_bytes));
+            const auto dll_header_size = PAGE_SIZE;
 
-        const auto old_dll_image_base = dll_header.image_base;
-        dll_header.image_base = dll_image_base;
-        
-        uint64_t dll_end = 0;
-        for (auto h_sec : dll_header.section_headers)
-        {
-            dll_end = dll_image_base + h_sec.VirtualAddress;
+            // DLL: Read bytes of header section
+            const auto dll_header_buffer = static_cast<char*>(malloc(dll_header_size));
+            ReadProcessMemory(GetCurrentProcess(), dll_handle, dll_header_buffer, dll_header_size, nullptr);
 
-            const auto begin = dll_bytes.begin() + h_sec.PointerToRawData;
-            dll_end += init_section(uc, std::vector<char>(begin, begin + h_sec.SizeOfRawData), dll_end);
-        }
-        // <--
+            // DLL: Initialize header section in UC (optional)
+            init_section(uc, dll_name, SEC_DESC_PE_HEADER, dll_address, dll_header_buffer, dll_header_size);
 
-        // --> DLL relocation
-        const auto dll_reloc = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+            // DLL: Create header from bytes
+            auto dll_header = header_pe();
+            E_FAT(dll_header.inspect(dll_header_buffer));
 
-        auto offset = 0;
-        while (true)
-        {
-            IMAGE_BASE_RELOCATION reloc;
-            E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset, reloc));
+            free(dll_header_buffer);
 
-            if (reloc.VirtualAddress == 0x0)
-                break; // END
+            // DLL Assert: Equal base addresses (optional)
+            E_FAT(dll_address != dll_header.image_base);
 
-            const int count = (reloc.SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
-            for (auto j = 0; j < count; ++j)
+            // DLL: Retrieve export table address and mark as imported
+            dll_exports_address = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+            dll_export_addresses_.emplace(dll_address, dll_exports_address);
+
+            // DLL: Use header to write remaining sections to UC
+            for (auto dll_sec_header : dll_header.section_headers)
             {
-                WORD w;
-                E_FAT(uc_ext_mem_read(uc, dll_image_base + dll_reloc + offset + sizeof(IMAGE_BASE_RELOCATION), w, j));
+                const auto dll_sec_address = dll_address + dll_sec_header.VirtualAddress;
+                const auto dll_sec_handle = reinterpret_cast<HMODULE>(dll_sec_address);
+                const auto dll_sec_size = dll_sec_header.SizeOfRawData;
 
-                const auto type = (w & 0xf000) >> 12;
-                w &= 0xfff;
+                const auto dll_sec_buffer = static_cast<char*>(malloc(dll_sec_size));
+                ReadProcessMemory(GetCurrentProcess(), dll_sec_handle, dll_sec_buffer, dll_sec_size, nullptr);
 
-                if (type == IMAGE_REL_BASED_HIGHLOW)
-                {
-                    const auto address = dll_image_base + reloc.VirtualAddress + w;
-                    const auto delta = dll_image_base - old_dll_image_base;
+                init_section(uc, dll_name, std::string(reinterpret_cast<char*>(dll_sec_header.Name), IMAGE_SIZEOF_SHORT_NAME),
+                    dll_sec_address, dll_sec_buffer, dll_sec_size);
 
-                    DWORD value;
-                    E_FAT(uc_ext_mem_read(uc, address, value));
-
-                    E_FAT(uc_ext_mem_write(uc, address, value + delta));
-                }
+                free(dll_sec_buffer);
             }
 
-            offset += reloc.SizeOfBlock;
+            // Recurse to get sub DLLs
+            import_dlls(uc, dll_header, true);
         }
-        // <--
+        else
+        {
+            // Assert: Section exists
+            E_FAT(secs_.find(dll_address) == secs_.end());
 
-        // --> Import table update
-        const auto dll_exports_address = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-        import_table(uc, header.image_base, import_descriptor, dll_name, dll_image_base, dll_exports_address);
-        // <--
+            const auto sec = secs_[dll_address];
 
-        // Mark DLL as load
-        imports.emplace(dll_name, std::make_tuple(dll_image_base, dll_exports_address));
+            // Assert: Section owner is DLL
+            E_FAT(std::get<0>(sec) != dll_name);
 
-        // Increase base for next DLL
-        dll_image_base = init_imports(uc, dll_header, dll_end);
+            // Assert: Section description is DLL header
+            E_FAT(std::get<1>(sec) != SEC_DESC_PE_HEADER);
+
+            dll_exports_address = dll_export_addresses_[dll_address];
+        }
+
+        // Update all proc references of import descriptor
+        if (!sub)
+        {
+            import_descriptor_update(uc, header.image_base, import_descriptor, dll_name, dll_address, dll_exports_address);
+
+            // TODO: FreeLibrary ?
+        }
     }
-    // <--
+}
 
-    return dll_image_base;
+int header_pe::inspect(const char* buffer)
+{
+    size_t cursor = 0;
+
+    const auto h_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&buffer[cursor]);
+    E_ERR(h_dos.e_magic != 0x5A4D);
+
+    const auto pe_sig = *reinterpret_cast<const DWORD*>(&buffer[cursor += h_dos.e_lfanew]);
+    E_ERR(pe_sig != 0x4550);
+
+    const auto h_fil = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&buffer[cursor += sizeof(DWORD)]);
+    cursor += sizeof h_fil;
+
+    machine = h_fil.Machine;
+
+    data_directories = std::array<IMAGE_DATA_DIRECTORY, 16>();
+
+    switch (h_fil.SizeOfOptionalHeader)
+    {
+    case sizeof(IMAGE_OPTIONAL_HEADER32):
+        const auto h_opt32 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER32*>(&buffer[cursor]);
+
+        image_base = h_opt32.ImageBase;
+        stack_commit = h_opt32.SizeOfStackCommit;
+
+        entry_point = h_opt32.AddressOfEntryPoint;
+
+        std::copy(
+            std::begin(h_opt32.DataDirectory),
+            std::end(h_opt32.DataDirectory),
+            std::begin(data_directories));
+
+        break;
+    case sizeof(IMAGE_OPTIONAL_HEADER64):
+    {
+        const auto h_opt64 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&buffer[cursor]);
+
+        image_base = h_opt64.ImageBase;
+        stack_commit = h_opt64.SizeOfStackCommit;
+
+        entry_point = h_opt64.AddressOfEntryPoint;
+
+        std::copy(
+            std::begin(h_opt64.DataDirectory),
+            std::end(h_opt64.DataDirectory),
+            std::begin(data_directories));
+
+        break;
+    }
+    default:
+        return R_FAILURE;
+    }
+    cursor += h_fil.SizeOfOptionalHeader;
+
+    section_headers = std::vector<IMAGE_SECTION_HEADER>();
+    for (unsigned i = 0; i < h_fil.NumberOfSections; ++i)
+        section_headers.push_back(*reinterpret_cast<const IMAGE_SECTION_HEADER*>(&buffer[cursor + i * sizeof(IMAGE_SECTION_HEADER)]));
+
+    return R_SUCCESS;
 }
 
 int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
     header_pe header;
-    E_ERR(header.inspect(bytes));
+    E_ERR(header.inspect(&bytes[0]));
 
     machine_ = header.machine;
 
@@ -308,30 +293,39 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     default:
         return R_FAILURE;
     }
+    
+    // -->
+    // Essential map initialization
 
-    secs_ = std::map<uint64_t, std::string>();
+    //dll_export_addresses_ = std::map<uint64_t, uint64_t>();
+    
+    secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+    dll_procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+
+    // <--
+
+    // TODO: Init header section
 
     for (auto h_sec : header.section_headers)
     {
-        const auto begin = bytes.begin() + h_sec.PointerToRawData;
-        init_section(uc, std::vector<char>(begin, begin + h_sec.SizeOfRawData), header.image_base + h_sec.VirtualAddress);
-        secs_.emplace(header.image_base + h_sec.VirtualAddress, std::string(reinterpret_cast<char*>(h_sec.Name)));
+        init_section(uc, SEC_OWNER_SELF, std::string(reinterpret_cast<char*>(h_sec.Name), IMAGE_SIZEOF_SHORT_NAME),
+            header.image_base + h_sec.VirtualAddress, &bytes[0] + h_sec.PointerToRawData, h_sec.SizeOfRawData);
     }
 
-    imports = std::map<std::string, std::tuple<uint64_t, uint64_t>>();
-    libs_ = std::map<uint64_t, std::tuple<std::string, std::string>>();
+    import_dlls(uc, header, false);
 
-    init_imports(uc, header, 0x70000000);
+    const uint64_t stack_pointer = 0xffffffff;
+    const auto stack_size = header.stack_commit;
 
-    const uint64_t stack_ptr = 0xffffffff;
-    const auto instr_ptr = header.image_base + header.entry_point;
-
-    init_section(uc, std::vector<char>(header.stack_commit), stack_ptr - header.stack_commit + 1);
+    init_section(uc, SEC_OWNER_SELF, SEC_DESC_STACK, stack_pointer - stack_size + 1, stack_size);
 
     auto r = regs();
-    E_FAT(uc_reg_write(uc, r[4], &stack_ptr));
-    E_FAT(uc_reg_write(uc, r[5], &stack_ptr));
-    E_FAT(uc_reg_write(uc, r[8], &instr_ptr));
+    E_FAT(uc_reg_write(uc, r[4], &stack_pointer));
+    E_FAT(uc_reg_write(uc, r[5], &stack_pointer));
+    
+    const auto instruction_pointer = header.image_base + header.entry_point;
+
+    E_FAT(uc_reg_write(uc, r[8], &instruction_pointer));
 
     return R_SUCCESS;
 }
@@ -392,11 +386,11 @@ int loader_pe::ip_index() const
     }
 }
 
-std::map<uint64_t, std::string> loader_pe::secs() const
+std::map<uint64_t, std::pair<std::string, std::string>> loader_pe::secs() const
 {
     return secs_;
 }
-std::map<uint64_t, std::tuple<std::string, std::string>> loader_pe::libs() const
+std::map<uint64_t, std::pair<std::string, std::string>> loader_pe::dll_procs() const
 {
-    return libs_;
+    return dll_procs_;
 }

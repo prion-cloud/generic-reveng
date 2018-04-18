@@ -38,7 +38,8 @@ struct memory_info
     char address[19] { };
     char size[19] { };
 
-    char section[IMAGE_SIZEOF_SHORT_NAME] { };
+    char owner[16] { };
+    char description[16] { };
 
     char access[4] { };
 };

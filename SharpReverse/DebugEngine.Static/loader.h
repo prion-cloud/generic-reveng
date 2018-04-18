@@ -19,8 +19,8 @@ public:
     virtual std::vector<int> regs() const = 0;
     virtual int ip_index() const = 0;
 
-    virtual std::map<uint64_t, std::string> secs() const = 0;
-    virtual std::map<uint64_t, std::tuple<std::string, std::string>> libs() const = 0;
+    virtual std::map<uint64_t, std::pair<std::string, std::string>> secs() const = 0;
+    virtual std::map<uint64_t, std::pair<std::string, std::string>> dll_procs() const = 0;
 };
 
 /**
@@ -42,7 +42,7 @@ struct header_pe
     /**
      * \brief Inspects a range of bytes for a valid PE header and initializes all fields if successful.
      */
-    int inspect(std::vector<char> bytes);
+    int inspect(const char* buffer);
 };
 
 /**
@@ -51,12 +51,17 @@ struct header_pe
 class loader_pe : public loader
 {
     WORD machine_ { };
+    
+    std::map<uint64_t, uint64_t> dll_export_addresses_ { };     // [dll_address] = dll_export_address
 
-    std::map<uint64_t, std::string> secs_ { };
-    std::map<uint64_t, std::tuple<std::string, std::string>> libs_;
+    std::map<uint64_t, std::pair<std::string, std::string>> secs_ { };         // [address] = (owner, description)
+    std::map<uint64_t, std::pair<std::string, std::string>> dll_procs_ { };    // [address] = (dll_name, name)
 
-    void import_table(uc_engine* uc, uint64_t image_base, IMAGE_IMPORT_DESCRIPTOR import_descriptor, std::string dll_name, uint64_t dll_image_base, uint64_t dll_exports_address);
-    uint64_t init_imports(uc_engine* uc, header_pe header, uint64_t dll_image_base);
+    void init_section(uc_engine* uc, std::string owner, std::string desc, uint64_t address, size_t size);
+    void init_section(uc_engine* uc, std::string owner, std::string desc, uint64_t address, const void* buffer, size_t size);
+
+    void import_descriptor_update(uc_engine* uc, uint64_t image_base, IMAGE_IMPORT_DESCRIPTOR import_descriptor, std::string dll_name, uint64_t dll_image_base, uint64_t dll_exports_address);
+    void import_dlls(uc_engine* uc, header_pe header, bool sub);
 
 public:
 
@@ -67,6 +72,6 @@ public:
     std::vector<int> regs() const override;
     int ip_index() const override;
 
-    std::map<uint64_t, std::string> secs() const override;
-    std::map<uint64_t, std::tuple<std::string, std::string>> libs() const override;
+    std::map<uint64_t, std::pair<std::string, std::string>> secs() const override;
+    std::map<uint64_t, std::pair<std::string, std::string>> dll_procs() const override;
 };

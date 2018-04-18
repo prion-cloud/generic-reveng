@@ -54,12 +54,12 @@ int debugger::ins(instruction_info& ins_info) const
 
     std::string comment = { };
 
-    auto libs = loader_->libs();
+    auto libs = loader_->dll_procs();
     if (libs.find(cur_addr) != libs.end())
     {
         auto func = libs[cur_addr];
         auto stream = std::ostringstream();
-        stream << std::get<0>(func) << "-" << std::get<1>(func);
+        stream << std::get<0>(func) << "." << std::get<1>(func);
         comment = stream.str();
     }
     
@@ -157,9 +157,12 @@ int debugger::mem(memory_info& mem_info)
     sprintf_s(mem_info.address, format_.c_str(), b);
     sprintf_s(mem_info.size, format_.c_str(), e - b + 1);
 
-    const auto s = loader_->secs()[b].c_str();
+    const auto sec = loader_->secs().at(b);
 
-    memcpy(mem_info.section, s, strlen(s));
+    const auto o = std::get<0>(sec).c_str();
+    memcpy(mem_info.owner, o, strlen(o));
+    const auto d = std::get<1>(sec).c_str();
+    memcpy(mem_info.description, d, strlen(d));
 
     mem_info.access[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
     mem_info.access[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';

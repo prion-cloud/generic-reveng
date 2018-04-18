@@ -5,7 +5,8 @@
         string Address { get; }
         string Size { get; }
 
-        string Section { get; }
+        string Owner { get; }
+        string Description { get; }
 
         string Access { get; }
     }
