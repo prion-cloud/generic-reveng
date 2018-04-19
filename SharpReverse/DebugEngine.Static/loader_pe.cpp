@@ -169,6 +169,8 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
         }
         else
         {
+            // TODO: Remove assertions ?
+
             // Assert: Section exists
             E_FAT(secs_.find(dll_address) == secs_.end());
 
@@ -181,29 +183,30 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             E_FAT(std::get<1>(sec) != SEC_DESC_PE_HEADER);
         }
 
-        // Continue for indirect DLL imports here (only touch imports of the executable itself, no indirect DLL imports)
-        if (sub)
-            continue;
-
         // Inspect import descriptor procs
         for (auto j = 0;; ++j)
         {
-            DWORD dll_import_proc_name_address;
-            E_FAT(uc_ext_mem_read(uc, header.image_base + import_descriptor.OriginalFirstThunk, dll_import_proc_name_address, j));
+            DWORD import_proc_name_address;
+            E_FAT(uc_ext_mem_read(uc, header.image_base + import_descriptor.OriginalFirstThunk, import_proc_name_address, j));
 
-            if (dll_import_proc_name_address == 0x0)
+            if (import_proc_name_address == 0x0)
                 break; // No more procs
 
-            std::string dll_import_proc_name;
-            E_FAT(uc_ext_mem_read_string(uc, header.image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
+            std::string import_proc_name;
+            if (uc_ext_mem_read_string(uc, header.image_base + import_proc_name_address + sizeof(WORD), import_proc_name))
+                continue;
 
-            const auto dll_export_proc_address = reinterpret_cast<DWORD>(GetProcAddress(dll_handle, dll_import_proc_name.c_str()));
+            const auto dll_export_proc_address = reinterpret_cast<DWORD>(GetProcAddress(dll_handle, import_proc_name.c_str()));
 
-            // Update address
-            E_FAT(uc_ext_mem_write(uc, header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j));
+            // Update address (only for imports of the executable itself, no indirect DLL imports)
+            if (!sub)
+                E_FAT(uc_ext_mem_write(uc, header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j));
 
-            dll_procs_.emplace(dll_export_proc_address, std::make_pair(dll_name, dll_import_proc_name));
+            dll_procs_.emplace(dll_export_proc_address, std::make_pair(dll_name, import_proc_name));
         }
+
+        if (!sub)
+            FreeLibrary(dll_handle);
     }
 }
 
