@@ -75,7 +75,8 @@ int header_pe::inspect(const char* buffer)
 
 void loader_pe::init_section(uc_engine* uc, const std::string owner, const std::string desc, const uint64_t address, const void* buffer, const size_t size)
 {
-    E_FAT(size == 0);
+    if (size == 0)
+        return;
 
     auto virt_size = PAGE_SIZE * (size / PAGE_SIZE);
     if (size % PAGE_SIZE > 0)
