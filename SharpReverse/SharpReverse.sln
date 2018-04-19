@@ -9,6 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse.Api", "SharpRe
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse.Api.Test", "SharpReverse.Api.Test\SharpReverse.Api.Test.csproj", "{46F58ED2-DD8E-435B-BC30-02A94311C9F4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BEB3CCDF-24EE-4E86-890F-D29FF81E9E97} = {BEB3CCDF-24EE-4E86-890F-D29FF81E9E97}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine", "DebugEngine\DebugEngine.vcxproj", "{BC77E8CE-943B-409D-8B70-11B3DAA6EDFB}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -18,6 +21,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse", "SharpReverse\SharpReverse.csproj", "{C225BE3C-16CD-466B-A6C7-556CE52EE440}"
 	ProjectSection(ProjectDependencies) = postProject
 		{46F58ED2-DD8E-435B-BC30-02A94311C9F4} = {46F58ED2-DD8E-435B-BC30-02A94311C9F4}
+		{BEB3CCDF-24EE-4E86-890F-D29FF81E9E97} = {BEB3CCDF-24EE-4E86-890F-D29FF81E9E97}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Static", "DebugEngine.Static\DebugEngine.Static.vcxproj", "{F1704FF7-1816-4AC1-9838-DE1AFC75EEF9}"

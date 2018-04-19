@@ -4,10 +4,12 @@
     {
         uint Id { get; }
 
-        ulong Address { get; }
+        string Address { get; }
 
         byte[] Bytes { get; }
 
         string Instruction { get; }
+
+        string Comment { get; }
     }
 }

@@ -85,15 +85,16 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="TestFiles\Test.exe">
+    <None Include="..\TestFiles\helloworld32.exe">
+      <Link>TestFiles\helloworld32.exe</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="TestFiles\helloworld32.exe">
+    <None Include="..\TestFiles\helloworld64.exe">
+      <Link>TestFiles\helloworld64.exe</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="TestFiles\helloworld64.exe">
+    <None Include="..\TestFiles\Test.exe">
+      <Link>TestFiles\Test.exe</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

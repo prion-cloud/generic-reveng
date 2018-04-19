@@ -1,20 +1,37 @@
 #include "stdafx.h"
+#include "macro.h"
 
 #include "bin_dump.h"
 
-int create_dump(std::string file_name, std::vector<char>& bytes)
+int create_filedump(std::string file_name, std::vector<char>& bytes)
 {
-    const auto file = fopen(file_name.c_str(), "rb");
+    struct stat buf;
+    E_ERR(stat(file_name.c_str(), &buf));
 
-    fseek(file, 0, SEEK_END);
+    FILE* file;
+    E_ERR(fopen_s(&file, file_name.c_str(), "rb"));
+
+    E_ERR(fseek(file, 0, SEEK_END));
     const auto length = ftell(file);
     rewind(file);
 
     const auto buffer = static_cast<char*>(malloc(length));
     fread(buffer, sizeof(char), length, file);
-    fclose(file);
+    E_ERR(fclose(file));
+
     bytes = std::vector<char>(buffer, buffer + length);
     free(buffer);
 
-    return F_SUCCESS; // TODO: F_FAILURE
+    return R_SUCCESS;
+}
+
+int create_dumpfile(std::string file_name, std::vector<char> bytes)
+{
+    FILE* file;
+    E_ERR(fopen_s(&file, file_name.c_str(), "wb"));
+
+    fwrite(&bytes[0], sizeof(char), bytes.size(), file);
+    E_ERR(fclose(file));
+
+    return R_SUCCESS;
 }

@@ -156,18 +156,22 @@
     <ClInclude Include="bin_dump.h" />
     <ClInclude Include="debugger.h" />
     <ClInclude Include="loader.h" />
+    <ClInclude Include="macro.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="unicorn_ext.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bin_dump.cpp" />
     <ClCompile Include="debugger.cpp" />
-    <ClCompile Include="loader.cpp" />
+    <ClCompile Include="loader_pe.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="unicorn_ext.cpp" />
+    <ClInclude Include="unicorn_ext_t.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Capstone\msvc\Debug\capstone.lib" />
