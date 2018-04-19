@@ -21,6 +21,7 @@ namespace Superbr4in.SharpReverse.Api.Test
             DebugResults = debugResults;
         }
 
+        /*
         public static DebuggerTestCase<byte[]> GetTestCase32_Bytes1()
         {
             // http://www.unicorn-engine.org/docs/tutorial.html
@@ -63,6 +64,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                     )
                 });
         }
+        */
         public static DebuggerTestCase<string> GetTestCase32_File1()
         {
             return new DebuggerTestCase<string>(
@@ -284,6 +286,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                 });
         }
 
+        /*
         public static DebuggerTestCase<byte[]> GetTestCase64_Bytes1()
         {
             // http://www.capstone-engine.org/lang_c.html
@@ -326,6 +329,7 @@ namespace Superbr4in.SharpReverse.Api.Test
                     )
                 });
         }
+        */
         public static DebuggerTestCase<string> GetTestCase64_File1()
         {
             return new DebuggerTestCase<string>(

@@ -25,14 +25,10 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
 
         #endregion
 
-        public Debugger(byte[] bytes, bool amd64)
-        {
-            throw new NotImplementedException();
-        }
         public Debugger(string fileName)
         {
             if (LoadFile(out _handle, fileName) != 0)
-                throw new NotImplementedException();
+                throw new InvalidOperationException("Loading failed.");
         }
 
         ~Debugger()
@@ -55,7 +51,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         public IInstructionInfo Debug()
         {
             if (Ins(_handle, out var ins) != 0)
-                throw new NotImplementedException();
+                throw new InvalidOperationException("Tried to debug invalid instruction.");
             return ins;
         }
 
@@ -73,8 +69,6 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
         
         #region DllImports
         
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_load")]
-        private static extern int Load(out IntPtr handle, ulong scale, byte[] bytes, int size);
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_load_file")]
         private static extern int LoadFile(out IntPtr handle, string fileName);
 

@@ -9,11 +9,6 @@
 
 #define API extern "C" __declspec(dllexport)
 
-API int debugger_load(debugger*& handle, uint64_t scale, const char* bytes, const int32_t size)
-{
-    // TODO: another loader
-    return -1;
-}
 API int debugger_load_file(debugger*& handle, const char* file_name)
 {
     std::vector<char> bytes;
