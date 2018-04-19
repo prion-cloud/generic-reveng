@@ -5,6 +5,8 @@
 
 #define PAGE_SIZE 0x1000
 
+#define STR_UNKNOWN "???"
+
 #define SEC_DESC_PE_HEADER "(PE header)"
 #define SEC_DESC_STACK "(Stack)"
 
@@ -202,7 +204,7 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             if (!sub)
                 E_FAT(uc_ext_mem_write(uc, header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j));
 
-            dll_procs_.emplace(dll_export_proc_address, std::make_pair(dll_name, import_proc_name));
+            procs_.emplace(dll_export_proc_address, std::make_pair(dll_name, import_proc_name));
         }
 
         if (!sub)
@@ -239,7 +241,7 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     imported_dlls_ = std::set<std::string>();
     
     secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
-    dll_procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+    procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
 
     // <--
 
@@ -325,11 +327,29 @@ int loader_pe::ip_index() const
     }
 }
 
-std::map<uint64_t, std::pair<std::string, std::string>> loader_pe::secs() const
+bool find(std::map<uint64_t, std::pair<std::string, std::string>> map, const uint64_t key, std::string& first, std::string& second)
 {
-    return secs_;
+    if (map.find(key) == map.end())
+    {
+        first = STR_UNKNOWN;
+        second = STR_UNKNOWN;
+        
+        return false;
+    }
+
+    auto sec = map[key];
+
+    first = std::get<0>(sec);
+    second = std::get<1>(sec);
+
+    return true;
 }
-std::map<uint64_t, std::pair<std::string, std::string>> loader_pe::dll_procs() const
+
+bool loader_pe::find_sec(const uint64_t sec_address, std::string& owner, std::string& description)
 {
-    return dll_procs_;
+    return find(secs_, sec_address, owner, description);
+}
+bool loader_pe::find_proc(const uint64_t proc_address, std::string& dll_name, std::string& proc_name)
+{
+    return find(procs_, proc_address, dll_name, proc_name);
 }

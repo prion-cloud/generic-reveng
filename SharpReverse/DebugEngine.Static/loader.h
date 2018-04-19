@@ -19,8 +19,8 @@ public:
     virtual std::vector<int> regs() const = 0;
     virtual int ip_index() const = 0;
 
-    virtual std::map<uint64_t, std::pair<std::string, std::string>> secs() const = 0;
-    virtual std::map<uint64_t, std::pair<std::string, std::string>> dll_procs() const = 0;
+    virtual bool find_sec(uint64_t sec_address, std::string& owner, std::string& description) = 0;
+    virtual bool find_proc(uint64_t proc_address, std::string& dll_name, std::string& proc_name) = 0;
 };
 
 /**
@@ -54,8 +54,8 @@ class loader_pe : public loader
     
     std::set<std::string> imported_dlls_ { };
 
-    std::map<uint64_t, std::pair<std::string, std::string>> secs_ { };          // [section_address] = (owner, description)
-    std::map<uint64_t, std::pair<std::string, std::string>> dll_procs_ { };     // [dll_proc_address] = (dll_name, name)
+    std::map<uint64_t, std::pair<std::string, std::string>> secs_ { };
+    std::map<uint64_t, std::pair<std::string, std::string>> procs_ { };
 
     void init_section(uc_engine* uc, std::string owner, std::string desc, uint64_t address, const void* buffer, size_t size);
 
@@ -70,6 +70,6 @@ public:
     std::vector<int> regs() const override;
     int ip_index() const override;
 
-    std::map<uint64_t, std::pair<std::string, std::string>> secs() const override;
-    std::map<uint64_t, std::pair<std::string, std::string>> dll_procs() const override;
+    bool find_sec(uint64_t sec_address, std::string& owner, std::string& description) override;
+    bool find_proc(uint64_t proc_address, std::string& dll_name, std::string& proc_name) override;
 };

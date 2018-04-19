@@ -54,12 +54,11 @@ int debugger::ins(instruction_info& ins_info) const
 
     std::string comment = { };
 
-    auto libs = loader_->dll_procs();
-    if (libs.find(cur_addr) != libs.end())
+    std::string dll_name, proc_name;
+    if (loader_->find_proc(cur_addr, dll_name, proc_name))
     {
-        auto func = libs[cur_addr];
         auto stream = std::ostringstream();
-        stream << std::get<0>(func) << "." << std::get<1>(func);
+        stream << dll_name << "." << proc_name;
         comment = stream.str();
     }
     
@@ -157,12 +156,10 @@ int debugger::mem(memory_info& mem_info)
     sprintf_s(mem_info.address, format_.c_str(), b);
     sprintf_s(mem_info.size, format_.c_str(), e - b + 1);
 
-    const auto sec = loader_->secs().at(b);
-
-    const auto o = std::get<0>(sec).c_str();
-    memcpy(mem_info.owner, o, strlen(o));
-    const auto d = std::get<1>(sec).c_str();
-    memcpy(mem_info.description, d, strlen(d));
+    std::string o, d;
+    loader_-> find_sec(b, o, d);
+    memcpy(mem_info.owner, o.c_str(), strlen(o.c_str()));
+    memcpy(mem_info.description, d.c_str(), strlen(d.c_str()));
 
     mem_info.access[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
     mem_info.access[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';
