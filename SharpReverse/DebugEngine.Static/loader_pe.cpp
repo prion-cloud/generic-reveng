@@ -113,7 +113,7 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
         
         // DLL: Get handle
         const auto dll_handle = sub
-            ? GetModuleHandleA(dll_name.c_str()) // TODO: Kernel32 apis may refer to itself!
+            ? GetModuleHandleA(dll_name.c_str()) // TODO: Kernel32 apis may refer to themselves!
             : LoadLibraryA(dll_name.c_str());
         const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
 
@@ -167,10 +167,9 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             // Recurse to get sub DLLs
             import_dlls(uc, dll_header, true);
         }
+        /* Optional assertions:
         else
         {
-            // TODO: Remove assertions ?
-
             // Assert: Section exists
             E_FAT(secs_.find(dll_address) == secs_.end());
 
@@ -182,6 +181,7 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             // Assert: Section description is DLL header
             E_FAT(std::get<1>(sec) != SEC_DESC_PE_HEADER);
         }
+        */
 
         // Inspect import descriptor procs
         for (auto j = 0;; ++j)
