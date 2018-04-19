@@ -52,7 +52,7 @@ class loader_pe : public loader
 {
     WORD machine_ { };
     
-    std::map<uint64_t, uint64_t> dll_export_addresses_ { };                     // [dll_address] = dll_export_address
+    std::set<std::string> imported_dlls_ { };
 
     std::map<uint64_t, std::pair<std::string, std::string>> secs_ { };          // [section_address] = (owner, description)
     std::map<uint64_t, std::pair<std::string, std::string>> dll_procs_ { };     // [dll_proc_address] = (dll_name, name)

@@ -124,10 +124,8 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
         _splitpath(dll_path, nullptr, nullptr, dll_name_c, nullptr);
         dll_name = std::string(dll_name_c, strlen(dll_name_c));
 
-        uint64_t dll_exports_address;
-
         // DLL: Not yet imported?
-        if (dll_export_addresses_.find(dll_address) == dll_export_addresses_.end())
+        if (imported_dlls_.find(dll_name) == imported_dlls_.end())
         {
             const auto dll_header_size = PAGE_SIZE;
 
@@ -147,10 +145,6 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             // DLL Assert: Equal base addresses (optional)
             E_FAT(dll_address != dll_header.image_base);
 
-            // DLL: Retrieve export table address and mark as imported
-            dll_exports_address = dll_header.data_directories[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-            dll_export_addresses_.emplace(dll_address, dll_exports_address);
-
             // DLL: Use header to write remaining sections to UC
             for (auto dll_sec_header : dll_header.section_headers)
             {
@@ -167,6 +161,9 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
                 free(dll_sec_buffer);
             }
 
+            // DLL: Mark as imported
+            imported_dlls_.insert(dll_name);
+
             // Recurse to get sub DLLs
             import_dlls(uc, dll_header, true);
         }
@@ -182,56 +179,11 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
 
             // Assert: Section description is DLL header
             E_FAT(std::get<1>(sec) != SEC_DESC_PE_HEADER);
-
-            dll_exports_address = dll_export_addresses_[dll_address];
         }
 
-        // Continue for indirect DLL imports here
+        // Continue for indirect DLL imports here (only touch imports of the executable itself, no indirect DLL imports)
         if (sub)
             continue;
-
-        // Retrieve export directory
-        IMAGE_EXPORT_DIRECTORY dll_export_directory;
-        E_FAT(uc_ext_mem_read(uc, dll_address + dll_exports_address, dll_export_directory));
-    
-        // Define local binary search function for finding exported proc addresses
-        const std::function<int(std::string)> search_proc = [uc, dll_address, dll_export_directory](const std::string proc_name)
-        {
-            const std::function<std::string(int)> get_proc_name = [uc, dll_address, dll_export_directory](int index)
-            {
-                DWORD dll_export_proc_name_address;
-                E_FAT(uc_ext_mem_read(uc, dll_address + dll_export_directory.AddressOfNames, dll_export_proc_name_address, index));
-
-                std::string dll_export_proc_name;
-                E_FAT(uc_ext_mem_read_string(uc, dll_address + dll_export_proc_name_address, dll_export_proc_name));
-
-                return dll_export_proc_name;
-            };
-        
-            auto l = 0;
-            int r = dll_export_directory.NumberOfNames - 1;
-
-            while (l <= r)
-            {
-                const auto m = (l + r) / 2;
-
-                if (get_proc_name(m).compare(proc_name) < 0)
-                {
-                    l = m + 1;
-                    continue;
-                }
-
-                if (get_proc_name(m).compare(proc_name) > 0)
-                {
-                    r = m - 1;
-                    continue;
-                }
-
-                return m;
-            }
-        
-            return -1;
-        };
 
         // Inspect import descriptor procs
         for (auto j = 0;; ++j)
@@ -244,21 +196,13 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
 
             std::string dll_import_proc_name;
             E_FAT(uc_ext_mem_read_string(uc, header.image_base + dll_import_proc_name_address + sizeof(WORD), dll_import_proc_name));
-        
-            const auto dll_export_proc_index = search_proc(dll_import_proc_name);
 
-            E_FAT(dll_export_proc_index < 0);
+            const auto dll_export_proc_address = reinterpret_cast<DWORD>(GetProcAddress(dll_handle, dll_import_proc_name.c_str()));
 
-            DWORD dll_export_proc_address;
-            E_FAT(uc_ext_mem_read<DWORD>(uc, dll_address + dll_export_directory.AddressOfFunctions, dll_export_proc_address, dll_export_proc_index));
-
-            if (dll_export_proc_address == 0x0)
-                continue;
-            
             // Update address
-            E_FAT(uc_ext_mem_write(uc, header.image_base + import_descriptor.FirstThunk, static_cast<DWORD>(dll_address) + dll_export_proc_address, j));
+            E_FAT(uc_ext_mem_write(uc, header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j));
 
-            dll_procs_.emplace(dll_address + dll_export_proc_address, std::make_pair(dll_name, dll_import_proc_name));
+            dll_procs_.emplace(dll_export_proc_address, std::make_pair(dll_name, dll_import_proc_name));
         }
     }
 }
@@ -289,7 +233,7 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     // -->
     // Essential map initialization
 
-    dll_export_addresses_ = std::map<uint64_t, uint64_t>();
+    imported_dlls_ = std::set<std::string>();
     
     secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
     dll_procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
