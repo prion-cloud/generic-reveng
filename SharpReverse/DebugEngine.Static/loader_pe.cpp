@@ -17,7 +17,7 @@ int header_pe::inspect(const char* buffer)
     size_t cursor = 0;
 
     const auto h_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&buffer[cursor]);
-    E_ERR(h_dos.e_magic != 0x5A4D);
+    E_ERR(h_dos.e_magic != 0x5a4d);
 
     const auto pe_sig = *reinterpret_cast<const DWORD*>(&buffer[cursor += h_dos.e_lfanew]);
     E_ERR(pe_sig != 0x4550);
@@ -118,6 +118,11 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
         const auto dll_handle = sub
             ? GetModuleHandleA(dll_name.c_str()) // TODO: Kernel32 apis may refer to themselves!
             : LoadLibraryA(dll_name.c_str());
+
+        // Assert: Valid handle
+        E_FAT(dll_handle == nullptr);
+
+        // DLL: Resolve base address
         const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
 
         // DLL: Update name
@@ -170,7 +175,6 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             // Recurse to get sub DLLs
             import_dlls(uc, dll_header, true);
         }
-        /* Optional assertions:
         else
         {
             // Assert: Section exists
@@ -184,7 +188,6 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             // Assert: Section description is DLL header
             E_FAT(std::get<1>(sec) != SEC_DESC_PE_HEADER);
         }
-        */
 
         // Inspect import descriptor procs
         for (auto j = 0;; ++j)
