@@ -218,12 +218,17 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
 
 int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
 {
+    // Reset data structures
+    imported_dlls_ = std::set<std::string>();
+    secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+    procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+
+    // Resolve header
     header_pe header;
     E_ERR(header.inspect(&bytes[0]));
 
-    machine_ = header.machine;
-
-    switch (header.machine)
+    // Create decompiler and emulator
+    switch (machine_ = header.machine)
     {
     case IMAGE_FILE_MACHINE_I386:
         cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
@@ -238,38 +243,30 @@ int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
     default:
         return R_FAILURE;
     }
-    
-    // -->
-    // Essential map initialization
 
-    imported_dlls_ = std::set<std::string>();
-    
-    secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
-    procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
-
-    // <--
-
+    // Mem: All defined sections
     init_section(uc, SEC_OWNER_SELF, SEC_DESC_PE_HEADER, header.image_base, &bytes[0], PAGE_SIZE);
-
     for (auto h_sec : header.section_headers)
     {
         init_section(uc, SEC_OWNER_SELF, std::string(reinterpret_cast<char*>(h_sec.Name), IMAGE_SIZEOF_SHORT_NAME),
             header.image_base + h_sec.VirtualAddress, &bytes[0] + h_sec.PointerToRawData, h_sec.SizeOfRawData);
     }
 
+    // DLL: All defined imports (start recursion)
     import_dlls(uc, header, false);
 
+    // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
     const auto stack_size = header.stack_commit;
-
     init_section(uc, SEC_OWNER_SELF, SEC_DESC_STACK, stack_pointer - stack_size + 1, nullptr, stack_size);
 
+    // Reg: Stack
     auto r = regs();
     E_FAT(uc_reg_write(uc, r[4], &stack_pointer));
     E_FAT(uc_reg_write(uc, r[5], &stack_pointer));
     
+    // Reg: IP
     const auto instruction_pointer = header.image_base + header.entry_point;
-
     E_FAT(uc_reg_write(uc, r[8], &instruction_pointer));
 
     return R_SUCCESS;
