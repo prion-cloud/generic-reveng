@@ -25,8 +25,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse", "SharpRevers
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Static", "DebugEngine.Static\DebugEngine.Static.vcxproj", "{F1704FF7-1816-4AC1-9838-DE1AFC75EEF9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05} = {D6063EFB-01BE-4397-A407-7D6346FD5D05}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Static.Test", "DebugEngine.Static.Test\DebugEngine.Static.Test.vcxproj", "{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyPE", "DummyPE\DummyPE.vcxproj", "{D6063EFB-01BE-4397-A407-7D6346FD5D05}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -84,6 +89,14 @@ Global
 		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x64.Build.0 = Release|x64
 		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x86.ActiveCfg = Release|Win32
 		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x86.Build.0 = Release|Win32
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x64.ActiveCfg = Debug|x64
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x64.Build.0 = Debug|x64
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x86.ActiveCfg = Debug|Win32
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x86.Build.0 = Debug|Win32
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Release|x64.ActiveCfg = Release|x64
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Release|x64.Build.0 = Release|x64
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Release|x86.ActiveCfg = Release|Win32
+		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
