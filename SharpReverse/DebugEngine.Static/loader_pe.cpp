@@ -212,7 +212,9 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
         }
 
         if (!sub)
-            FreeLibrary(dll_handle);
+            E_FAT(!FreeLibrary(dll_handle));
+
+        CloseHandle(dll_handle);
     }
 }
 
@@ -277,10 +279,10 @@ uint64_t loader_pe::scale() const
     switch (machine_)
     {
     case IMAGE_FILE_MACHINE_I386:
-        return 0xffffffff;
+        return UINT32_MAX;
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
-        return 0xffffffffffffffff;
+        return UINT64_MAX;
 #endif
     default:
         THROW_E;
