@@ -213,8 +213,6 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
 
         if (!sub)
             E_FAT(!FreeLibrary(dll_handle));
-
-        CloseHandle(dll_handle);
     }
 }
 
