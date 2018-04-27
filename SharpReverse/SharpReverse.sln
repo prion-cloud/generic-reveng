@@ -14,9 +14,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse.Api.Test", "Sh
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine", "DebugEngine\DebugEngine.vcxproj", "{BC77E8CE-943B-409D-8B70-11B3DAA6EDFB}"
-	ProjectSection(ProjectDependencies) = postProject
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69} = {EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpReverse", "SharpReverse\SharpReverse.csproj", "{C225BE3C-16CD-466B-A6C7-556CE52EE440}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -28,8 +25,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Static", "Debug
 	ProjectSection(ProjectDependencies) = postProject
 		{D6063EFB-01BE-4397-A407-7D6346FD5D05} = {D6063EFB-01BE-4397-A407-7D6346FD5D05}
 	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Static.Test", "DebugEngine.Static.Test\DebugEngine.Static.Test.vcxproj", "{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyPE", "DummyPE\DummyPE.vcxproj", "{D6063EFB-01BE-4397-A407-7D6346FD5D05}"
 EndProject
@@ -81,14 +76,6 @@ Global
 		{F1704FF7-1816-4AC1-9838-DE1AFC75EEF9}.Release|x64.Build.0 = Release|x64
 		{F1704FF7-1816-4AC1-9838-DE1AFC75EEF9}.Release|x86.ActiveCfg = Release|Win32
 		{F1704FF7-1816-4AC1-9838-DE1AFC75EEF9}.Release|x86.Build.0 = Release|Win32
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Debug|x64.ActiveCfg = Debug|x64
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Debug|x64.Build.0 = Debug|x64
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Debug|x86.ActiveCfg = Debug|Win32
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Debug|x86.Build.0 = Debug|Win32
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x64.ActiveCfg = Release|x64
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x64.Build.0 = Release|x64
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x86.ActiveCfg = Release|Win32
-		{EA1FC451-DFC0-4916-A6ED-BF52DFED8C69}.Release|x86.Build.0 = Release|Win32
 		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x64.ActiveCfg = Debug|x64
 		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x64.Build.0 = Debug|x64
 		{D6063EFB-01BE-4397-A407-7D6346FD5D05}.Debug|x86.ActiveCfg = Debug|Win32
