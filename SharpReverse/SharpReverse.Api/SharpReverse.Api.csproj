@@ -57,12 +57,8 @@
     <Compile Include="Factory\DebuggerFactory.cs" />
     <Compile Include="IDebugger.cs" />
     <Compile Include="IInstructionInfo.cs" />
-    <Compile Include="IMemoryInfo.cs" />
-    <Compile Include="IRegisterInfo.cs" />
     <Compile Include="PInvoke\Debugger.cs" />
     <Compile Include="PInvoke\Struct\InstructionInfo.cs" />
-    <Compile Include="PInvoke\Struct\MemoryInfo.cs" />
-    <Compile Include="PInvoke\Struct\RegisterInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

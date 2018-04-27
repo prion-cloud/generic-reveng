@@ -48,24 +48,18 @@ namespace Superbr4in.SharpReverse
             var ins = _debugger.Debug();
             
             TextBoxIns.Text += $"0x{ins.Address}  {ins.Instruction}" +
-                               $"{(ins.Comment == string.Empty ? null : $" ({ins.Comment})")}\r\n";
+                               $"{(ins.Label == string.Empty ? null : $" ({ins.Label})")}\r\n";
 
             UpdateRegisterState();
         }
         private void Button_Memory_Click(object sender, RoutedEventArgs e)
         {
-            if (_debugger == null)
-                return;
-
-            new MemoryWindow(_debugger.InspectMemory()).ShowDialog();
         }
 
         private void UpdateRegisterState()
         {
             TextBoxReg.Clear();
 
-            foreach (var reg in _debugger.InspectRegisters())
-                TextBoxReg.Text += $"{reg.Name.ToUpper()}: {reg.Value}\n";
         }
     }
 }

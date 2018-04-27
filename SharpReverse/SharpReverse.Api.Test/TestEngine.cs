@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -26,12 +24,12 @@ namespace Superbr4in.SharpReverse.Api.Test
 
             using (var debugger = @case.DebuggerConstructor(@case.Data))
             {
-                foreach (var expected in @case.DebugResults)
+                foreach (var expected in @case.Instructions)
                 {
-                    var actual = (debugger.Debug(), debugger.InspectRegisters());
+                    var actual = debugger.Debug();
 
-                    Console.WriteLine($"0x{actual.Item1.Address}  {actual.Item1.Instruction}" +
-                                      $"{(actual.Item1.Comment == string.Empty ? null : $" ({actual.Item1.Comment})")}");
+                    Console.WriteLine($"0x{actual.Address}  {actual.Instruction}" +
+                                      $"{(actual.Label == string.Empty ? null : $" ({actual.Label})")}");
 
                     AssertEqual(expected, actual);
                 }
@@ -47,39 +45,22 @@ namespace Superbr4in.SharpReverse.Api.Test
             throw new AssertInconclusiveException(message);
         }
 
-        private static void AssertEqual((IInstructionInfo, IRegisterInfo[]) expected, (IInstructionInfo, IEnumerable<IRegisterInfo>) actual)
+        private static void AssertEqual(IInstructionInfo expected, IInstructionInfo actual)
         {
-            AssertEqual(expected.Item1.Id, actual.Item1.Id,
-                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Id)}", i => $"0x{i:x}");
+            AssertEqual(expected.Id, actual.Id,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Id)}", i => $"0x{i:x}");
 
-            AssertEqual(expected.Item1.Address, actual.Item1.Address,
-                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Address)}");
+            AssertEqual(expected.Address, actual.Address,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Address)}");
 
-            AssertArrayEqual(expected.Item1.Bytes, actual.Item1.Bytes,
-                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Bytes)}", i => $"0x{i:x2}");
+            AssertArrayEqual(expected.Bytes, actual.Bytes,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Bytes)}", i => $"0x{i:x2}");
 
-            AssertEqual(expected.Item1.Instruction, actual.Item1.Instruction,
-                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Instruction)}");
+            AssertEqual(expected.Instruction, actual.Instruction,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Instruction)}");
 
-            AssertEqual(expected.Item1.Comment, actual.Item1.Comment,
-                $"{nameof(IInstructionInfo)}.{nameof(actual.Item1.Comment)}");
-
-            var exp = expected.Item2;
-            var act = actual.Item2.ToArray();
-
-            if (exp.Length != act.Length)
-                Assert.Fail("Length"); // TODO
-
-            for (var i = 0; i < exp.Length; i++)
-            {
-                var e = exp[i];
-                var a = act[i];
-
-                AssertEqual(e.Name, a.Name,
-                    $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Name)}");
-                AssertEqual(e.Value, a.Value,
-                    $"{nameof(IRegisterInfo)}[{i}].{nameof(e.Value)}");
-            }
+            AssertEqual(expected.Label, actual.Label,
+                $"{nameof(IInstructionInfo)}.{nameof(actual.Label)}");
         }
 
         private static void AssertEqual<T>(T expected, T actual, string description)

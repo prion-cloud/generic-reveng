@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using Superbr4in.SharpReverse.Api.PInvoke.Struct;
@@ -54,18 +53,6 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
                 throw new InvalidOperationException("Tried to debug invalid instruction.");
             return ins;
         }
-
-        public IEnumerable<IRegisterInfo> InspectRegisters()
-        {
-            while (Reg(_handle, out var reg) == 0)
-                yield return reg;
-        }
-
-        public IEnumerable<IMemoryInfo> InspectMemory()
-        {
-            while (Mem(_handle, out var mem) == 0)
-                yield return mem;
-        }
         
         #region DllImports
         
@@ -77,12 +64,6 @@ namespace Superbr4in.SharpReverse.Api.PInvoke
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_ins")]
         private static extern int Ins(IntPtr handle, out InstructionInfo ins);
-
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_reg")]
-        private static extern int Reg(IntPtr handle, out RegisterInfo reg);
-
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "debugger_mem")]
-        private static extern int Mem(IntPtr handle, out MemoryInfo mem);
 
         #endregion
     }

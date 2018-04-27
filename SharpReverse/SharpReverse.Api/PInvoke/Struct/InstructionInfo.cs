@@ -25,7 +25,7 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
         public string Operands_;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
-        public string Comment_;
+        public string Label_;
         
         // ReSharper restore All
 
@@ -39,6 +39,6 @@ namespace Superbr4in.SharpReverse.Api.PInvoke.Struct
 
         public string Instruction => $"{Mnemonic_}{(Operands_ == string.Empty ? null : $" {Operands_}")}";
 
-        public string Comment => Comment_;
+        public string Label => Label_;
     }
 }

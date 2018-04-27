@@ -10,15 +10,15 @@ namespace Superbr4in.SharpReverse.Api.Test
 
         public bool Amd64 { get; }
 
-        public (IInstructionInfo, IRegisterInfo[])[] DebugResults { get; }
+        public IInstructionInfo[] Instructions { get; }
 
         #endregion
 
-        protected DebuggerTestCase(bool amd64, (IInstructionInfo, IRegisterInfo[])[] debugResults)
+        protected DebuggerTestCase(bool amd64, IInstructionInfo[] instructions)
         {
             Amd64 = amd64;
 
-            DebugResults = debugResults;
+            Instructions = instructions;
         }
 
         /*
@@ -71,218 +71,22 @@ namespace Superbr4in.SharpReverse.Api.Test
                 DebuggerFactory.CreateNew,
                 TestDeploy.FILE_TEST_EXE,
                 false,
-                new (IInstructionInfo, IRegisterInfo[])[]
+                new IInstructionInfo[]
                 {
-                    (
-                        new TestInstructionInfo(0x10a, "00401000", new byte[] { 0xeb, 0x10 }, "jmp 0x401012", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "ffffffff"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "00401012")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x1ba, "00401012", new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 }, "mov eax, dword ptr [0x4161bf]", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "ffffffff"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "00401017")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x283, "00401017", new byte[] { 0xc1, 0xe0, 0x02 }, "shl eax, 2", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "ffffffff"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "0040101a")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x1ba, "0040101a", new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 }, "mov dword ptr [0x4161c3], eax", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "ffffffff"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "0040101f")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x244, "0040101f", new byte[] { 0x52 }, "push edx", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffffb"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "00401020")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x244, "00401020", new byte[] { 0x6a, 0x00 }, "push 0", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff7"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "00401022")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x38, "00401022", new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 }, "call 0x41518c", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff3"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", "0041518c")
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x10a, "0041518c", new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 }, "jmp dword ptr [0x42123c]", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff3"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", "KERNEL32.GetModuleHandleA"),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff3"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x244, TestEngine.PH, new byte[] { 0x55 }, "push ebp", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "ffffffef"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xec }, "mov ebp, esp", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "ffffffef"),
-                            new TestRegisterInfo("ebp", "ffffffef"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x22e, TestEngine.PH, new byte[] { 0x5d }, "pop ebp", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff3"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x10a, TestEngine.PH, null, TestEngine.PH, string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff3"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    ),
-                    (
-                        new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", "KERNELBASE.GetModuleHandleA"),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("eax", "00000000"),
-                            new TestRegisterInfo("ebx", "00000000"),
-                            new TestRegisterInfo("ecx", "00000000"),
-                            new TestRegisterInfo("edx", "00000000"),
-                            new TestRegisterInfo("esp", "fffffff3"),
-                            new TestRegisterInfo("ebp", "ffffffff"),
-                            new TestRegisterInfo("esi", "00000000"),
-                            new TestRegisterInfo("edi", "00000000"),
-                            new TestRegisterInfo("eip", TestEngine.PH)
-                        }
-                    )
+                    new TestInstructionInfo(0x10a, "00401000", new byte[] { 0xeb, 0x10 }, "jmp 0x401012", string.Empty),
+                    new TestInstructionInfo(0x1ba, "00401012", new byte[] { 0xa1, 0xbf, 0x61, 0x41, 0x00 }, "mov eax, dword ptr [0x4161bf]", string.Empty),
+                    new TestInstructionInfo(0x283, "00401017", new byte[] { 0xc1, 0xe0, 0x02 }, "shl eax, 2", string.Empty),
+                    new TestInstructionInfo(0x1ba, "0040101a", new byte[] { 0xa3, 0xc3, 0x61, 0x41, 0x00 }, "mov dword ptr [0x4161c3], eax", string.Empty),
+                    new TestInstructionInfo(0x244, "0040101f", new byte[] { 0x52 }, "push edx", string.Empty),
+                    new TestInstructionInfo(0x244, "00401020", new byte[] { 0x6a, 0x00 }, "push 0", string.Empty),
+                    new TestInstructionInfo(0x038, "00401022", new byte[] { 0xe8, 0x65, 0x41, 0x01, 0x00 }, "call 0x41518c", string.Empty),
+                    new TestInstructionInfo(0x10a, "0041518c", new byte[] { 0xff, 0x25, 0x3c, 0x12, 0x42, 0x00 }, "jmp dword ptr [0x42123c]", string.Empty),
+                    new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", "KERNEL32.GetModuleHandleA"),
+                    new TestInstructionInfo(0x244, TestEngine.PH, new byte[] { 0x55 }, "push ebp", string.Empty),
+                    new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xec }, "mov ebp, esp", string.Empty),
+                    new TestInstructionInfo(0x22e, TestEngine.PH, new byte[] { 0x5d }, "pop ebp", string.Empty),
+                    new TestInstructionInfo(0x10a, TestEngine.PH, null, TestEngine.PH, string.Empty),
+                    new TestInstructionInfo(0x1ba, TestEngine.PH, new byte[] { 0x8b, 0xff }, "mov edi, edi", "KERNELBASE.GetModuleHandleA"),
                 });
         }
 
@@ -336,23 +140,9 @@ namespace Superbr4in.SharpReverse.Api.Test
                 DebuggerFactory.CreateNew,
                 TestDeploy.FILE_HELLOWORLD64_EXE,
                 true,
-                new (IInstructionInfo, IRegisterInfo[])[]
+                new IInstructionInfo[]
                 {
-                    (
-                        new TestInstructionInfo(0x146, "0000000000401500", new byte[] { 0x48, 0x83, 0xec, 0x28 }, "sub rsp, 0x28", string.Empty),
-                        new IRegisterInfo[]
-                        {
-                            new TestRegisterInfo("rax", "0000000000000000"),
-                            new TestRegisterInfo("rbx", "0000000000000000"),
-                            new TestRegisterInfo("rcx", "0000000000000000"),
-                            new TestRegisterInfo("rdx", "0000000000000000"),
-                            new TestRegisterInfo("rsp", "00000000ffffffd7"),
-                            new TestRegisterInfo("rbp", "00000000ffffffff"),
-                            new TestRegisterInfo("rsi", "0000000000000000"),
-                            new TestRegisterInfo("rdi", "0000000000000000"),
-                            new TestRegisterInfo("rip", "0000000000401504")
-                        }
-                    )
+                    new TestInstructionInfo(0x146, "0000000000401500", new byte[] { 0x48, 0x83, 0xec, 0x28 }, "sub rsp, 0x28", string.Empty)
                 });
         }
 
@@ -364,32 +154,17 @@ namespace Superbr4in.SharpReverse.Api.Test
             public string Address { get; }
             public byte[] Bytes { get; }
             public string Instruction { get; }
-            public string Comment { get; }
+            public string Label { get; }
 
             #endregion
 
-            public TestInstructionInfo(uint id, string address, byte[] bytes, string instruction, string comment)
+            public TestInstructionInfo(uint id, string address, byte[] bytes, string instruction, string label)
             {
                 Id = id;
                 Address = address;
                 Bytes = bytes;
                 Instruction = instruction;
-                Comment = comment;
-            }
-        }
-        private struct TestRegisterInfo : IRegisterInfo
-        {
-            #region Properties
-            
-            public string Name { get; }
-            public string Value { get; }
-
-            #endregion
-
-            public TestRegisterInfo(string name, string value)
-            {
-                Name = name;
-                Value = value;
+                Label = label;
             }
         }
     }
@@ -405,8 +180,8 @@ namespace Superbr4in.SharpReverse.Api.Test
         #endregion
 
         public DebuggerTestCase(Func<T, IDebugger> debuggerConstructor, T data, bool amd64,
-            (IInstructionInfo, IRegisterInfo[])[] debugResults)
-            : base(amd64, debugResults)
+            IInstructionInfo[] instructions)
+            : base(amd64, instructions)
         {
             DebuggerConstructor = debuggerConstructor;
 

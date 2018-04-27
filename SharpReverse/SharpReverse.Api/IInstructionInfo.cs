@@ -10,6 +10,6 @@
 
         string Instruction { get; }
 
-        string Comment { get; }
+        string Label { get; }
     }
 }
