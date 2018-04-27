@@ -1,5 +1,7 @@
 #pragma once
 
+#include "include/capstone.h"
+
 #include "loader.h"
 
 /**
@@ -18,7 +20,7 @@ struct instruction_info
     char mnemonic[32] { };
     char operands[160] { };
 
-    char comment[64] { };
+    char label[64] { };
 };
 
 /**
@@ -50,14 +52,13 @@ struct memory_info
 class debugger
 {
     csh cs_ { };
-    uc_engine* uc_ { };
+    emulator* emulator_ { };
 
-    loader* loader_ { };
+    std::map<uint64_t, std::pair<std::string, std::string>> sections_ { };
+    std::map<uint64_t, std::string> labels_ { };
 
-    std::string format_ { };
-
-    unsigned reg_index_;
-    unsigned mem_index_;
+    int reg_index_;
+    int mem_index_;
 
 public:
 
@@ -73,17 +74,7 @@ public:
     int unload();
 
     /**
-     * \brief Emulates the next machine code instruction.
+     * \brief Emulates the next machine code instruction and applies its results.
      */
-    int ins(instruction_info& ins_info) const;
-
-    /**
-     * \brief Reads the current register allocation.
-     */
-    int reg(register_info& reg_info);
-
-    /**
-     * \brief Inspects the current memory segmentation.
-     */
-    int mem(memory_info& mem_info);
+    int debug(instruction_info& ins_info) const;
 };

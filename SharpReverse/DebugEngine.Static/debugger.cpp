@@ -11,66 +11,42 @@ debugger::debugger()
 
 int debugger::load(loader* loader, const std::vector<char> bytes)
 {
-    loader_ = loader;
+    const auto machine = IMAGE_FILE_MACHINE_I386;
 
-    E_ERR(loader_->load(bytes, cs_, uc_));
-    E_ERR(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
+    E_FAT(cs_open(CS_ARCH_X86, CS_MODE_32, &cs_));
+    E_FAT(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 
-    auto s = loader_->scale();
-    auto x = 0;
+    emulator_ = new emulator(machine);
 
-    for (auto i = 0;; ++i)
-    {
-        if (s == 0x0)
-            break;
+    E_ERR(loader->load(emulator_, bytes));
 
-        ++x;
-        s = s >> 4;
-    }
-
-    auto format = std::ostringstream();
-    format << "%0" << x << "llx";
-    format_ = format.str();
+    sections_ = loader->sections();
+    labels_ = loader->labels();
 
     return R_SUCCESS;
 }
 int debugger::unload()
 {
-    E_ERR(cs_close(&cs_) || uc_close(uc_));
+    E_ERR(cs_close(&cs_));
 
-    if (loader_ != nullptr)
-        delete loader_;
+    if (emulator_ != nullptr)
+        delete emulator_;
 
     return R_SUCCESS;
 }
 
-int debugger::ins(instruction_info& ins_info) const
+int debugger::debug(instruction_info& ins_info) const
 {
-    const auto ip_reg = loader_->regs()[loader_->ip_index()];
-
-    uint64_t cur_addr;
-    E_FAT(uc_reg_read(uc_, ip_reg, &cur_addr));
-    cur_addr &= loader_->scale();
-
-    std::string comment = { };
-
-    std::string dll_name, proc_name;
-    if (loader_->find_proc(cur_addr, dll_name, proc_name))
-    {
-        auto stream = std::ostringstream();
-        stream << dll_name << "." << proc_name;
-        comment = stream.str();
-    }
-    
+    const auto address = emulator_->reg_read<uint64_t>(reg_ip);
     const auto size = 16;
 
     uint8_t bytes[size];
-    E_FAT(uc_mem_read(uc_, cur_addr, bytes, size));
+    emulator_->mem_read(address, bytes, size);
 
     cs_insn* instruction;
-    E_FAT(!cs_disasm(cs_, bytes, size, cur_addr, 1, &instruction));
+    E_FAT(!cs_disasm(cs_, bytes, size, address, 1, &instruction));
 
-    E_ERR(uc_emu_start(uc_, cur_addr, -1, 0, 1));
+    emulator_->step_into();
 
     auto incr = true;
 
@@ -89,16 +65,13 @@ int debugger::ins(instruction_info& ins_info) const
     }
 
     if (incr)
-    {
-        auto next_addr = cur_addr + instruction->size;
-        uc_reg_write(uc_, ip_reg, &next_addr);
-    }
+        emulator_->jump(address + instruction->size);
 
     ins_info = instruction_info();
 
     ins_info.id = instruction->id;
 
-    sprintf_s(ins_info.address, format_.c_str(), instruction->address);
+    sprintf_s(ins_info.address, "%08llx", instruction->address);
 
     ins_info.size = instruction->size;
 
@@ -107,66 +80,10 @@ int debugger::ins(instruction_info& ins_info) const
     memcpy(ins_info.mnemonic, instruction->mnemonic, strlen(instruction->mnemonic));
     memcpy(ins_info.operands, instruction->op_str, strlen(instruction->op_str));
 
-    std::copy(comment.begin(), comment.end(), ins_info.comment);
-
-    return R_SUCCESS;
-}
-
-int debugger::reg(register_info& reg_info)
-{
-    reg_info = register_info();
-
-    const auto regs = loader_->regs();
-
-    if (reg_index_ >= regs.size())
-    {
-        reg_index_ = 0;
-        return R_FAILURE;
-    }
-
-    uint64_t value;
-    E_FAT(uc_reg_read(uc_, regs[reg_index_], &value));
-    
-    sprintf_s(reg_info.name, cs_reg_name(cs_, regs[reg_index_]));
-    sprintf_s(reg_info.value, format_.c_str(), value & loader_->scale());
-
-    ++reg_index_;
-
-    return R_SUCCESS;
-}
-
-int debugger::mem(memory_info& mem_info)
-{
-    uc_mem_region* regions;
-    uint32_t count;
-    E_FAT(uc_mem_regions(uc_, &regions, &count));
-
-    mem_info = memory_info();
-
-    if (mem_index_ >= count)
-    {
-        mem_index_ = 0;
-        return R_FAILURE;
-    }
-
-    const auto b = regions[mem_index_].begin;
-    const auto e = regions[mem_index_].end;
-    const auto p = regions[mem_index_].perms;
-
-    sprintf_s(mem_info.address, format_.c_str(), b);
-    sprintf_s(mem_info.size, format_.c_str(), e - b + 1);
-
-    std::string o, d;
-    loader_-> find_sec(b, o, d);
-    memcpy(mem_info.owner, o.c_str(), strlen(o.c_str()));
-    memcpy(mem_info.description, d.c_str(), strlen(d.c_str()));
-
-    mem_info.access[0] = (p & UC_PROT_READ) == UC_PROT_READ ? 'R' : ' ';
-    mem_info.access[1] = (p & UC_PROT_WRITE) == UC_PROT_WRITE ? 'W' : ' ';
-    mem_info.access[2] = (p & UC_PROT_EXEC) == UC_PROT_EXEC ? 'E' : ' ';
-    mem_info.access[3] = '\0';
-
-    ++mem_index_;
+    std::string label = { };
+    if (labels_.find(address) != labels_.end())
+        label = labels_.at(address);
+    std::copy(label.begin(), label.end(), ins_info.label);
 
     return R_SUCCESS;
 }

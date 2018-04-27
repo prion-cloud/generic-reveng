@@ -1,5 +1,7 @@
 #pragma once
 
+#define TPL template <typename T>
+
 /**
  * \brief Indicator for a successful method execution
  */

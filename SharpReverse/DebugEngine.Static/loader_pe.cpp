@@ -3,10 +3,6 @@
 
 #include "loader.h"
 
-#define PAGE_SIZE 0x1000
-
-#define STR_UNKNOWN "???"
-
 #define SEC_DESC_PE_HEADER "(PE header)"
 #define SEC_DESC_STACK "(Stack)"
 
@@ -73,26 +69,16 @@ int header_pe::inspect(const char* buffer)
     return R_SUCCESS;
 }
 
-void loader_pe::init_section(uc_engine* uc, const std::string owner, const std::string desc, const uint64_t address, const void* buffer, const size_t size)
+void loader_pe::init_section(emulator* emulator, const std::string owner, const std::string desc, const uint64_t address, void* buffer, const size_t size)
 {
     if (size == 0)
         return;
 
-    auto virt_size = PAGE_SIZE * (size / PAGE_SIZE);
-    if (size % PAGE_SIZE > 0)
-        virt_size += PAGE_SIZE;
+    sections_.emplace(address, std::make_pair(owner, desc));
 
-    E_FAT(uc_mem_map(uc, address, virt_size, UC_PROT_ALL));
-
-    secs_.emplace(address, std::make_pair(owner, desc));
-
-    if (buffer == nullptr)
-        return;
-
-    E_FAT(uc_mem_write(uc, address, buffer, size));
+    emulator->mem_map(address, buffer, size);
 }
-
-void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool sub)
+void loader_pe::init_imports(emulator* emulator, const header_pe header, const bool sub)
 {
     // Locate import table
     const auto imports_address = header.data_directories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
@@ -104,15 +90,13 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
     for (auto i = 0;; ++i)
     {
         // Retrieve import descriptor
-        IMAGE_IMPORT_DESCRIPTOR import_descriptor;
-        E_FAT(uc_ext_mem_read(uc, header.image_base + imports_address, import_descriptor, i));
+        const auto import_descriptor = emulator->mem_read<IMAGE_IMPORT_DESCRIPTOR>(header.image_base + imports_address, i);
 
         if (import_descriptor.Characteristics == 0x0 || import_descriptor.Name == 0x0)
             break; // No more entries
 
         // DLL: Get name
-        std::string dll_name;
-        E_FAT(uc_ext_mem_read_string(uc, header.image_base + import_descriptor.Name, dll_name));
+        auto dll_name = emulator->mem_read_string(header.image_base + import_descriptor.Name);
         
         // DLL: Get handle
         const auto dll_handle = sub
@@ -142,7 +126,7 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             ReadProcessMemory(GetCurrentProcess(), dll_handle, dll_header_buffer, dll_header_size, nullptr);
 
             // DLL: Initialize header section in UC (optional)
-            init_section(uc, dll_name, SEC_DESC_PE_HEADER, dll_address, dll_header_buffer, dll_header_size);
+            init_section(emulator, dll_name, SEC_DESC_PE_HEADER, dll_address, dll_header_buffer, dll_header_size);
 
             // DLL: Create header from bytes
             auto dll_header = header_pe();
@@ -163,7 +147,7 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
                 const auto dll_sec_buffer = static_cast<char*>(malloc(dll_sec_size));
                 ReadProcessMemory(GetCurrentProcess(), dll_sec_handle, dll_sec_buffer, dll_sec_size, nullptr);
 
-                init_section(uc, dll_name, std::string(reinterpret_cast<char*>(dll_sec_header.Name), IMAGE_SIZEOF_SHORT_NAME),
+                init_section(emulator, dll_name, std::string(reinterpret_cast<char*>(dll_sec_header.Name), IMAGE_SIZEOF_SHORT_NAME),
                     dll_sec_address, dll_sec_buffer, dll_sec_size);
 
                 free(dll_sec_buffer);
@@ -173,14 +157,14 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
             imported_dlls_.insert(dll_name);
 
             // Recurse to get sub DLLs
-            import_dlls(uc, dll_header, true);
+            init_imports(emulator, dll_header, true);
         }
         else
         {
             // Assert: Section exists
-            E_FAT(secs_.find(dll_address) == secs_.end());
+            E_FAT(sections_.find(dll_address) == sections_.end());
 
-            const auto sec = secs_[dll_address];
+            const auto sec = sections_[dll_address];
 
             // Assert: Section owner is DLL
             E_FAT(std::get<0>(sec) != dll_name);
@@ -192,23 +176,30 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
         // Inspect import descriptor procs
         for (auto j = 0;; ++j)
         {
-            DWORD import_proc_name_address;
-            E_FAT(uc_ext_mem_read(uc, header.image_base + import_descriptor.OriginalFirstThunk, import_proc_name_address, j));
+            const auto import_proc_name_address = emulator->mem_read<DWORD>(header.image_base + import_descriptor.OriginalFirstThunk, j);
 
             if (import_proc_name_address == 0x0)
                 break; // No more procs
 
             std::string import_proc_name;
-            if (uc_ext_mem_read_string(uc, header.image_base + import_proc_name_address + sizeof(WORD), import_proc_name))
+            try // TODO: What exactly causes this error ?
+            {
+                import_proc_name = emulator->mem_read_string(header.image_base + import_proc_name_address + sizeof(WORD));
+            }
+            catch (std::runtime_error)
+            {
                 continue;
+            }
 
             const auto dll_export_proc_address = reinterpret_cast<DWORD>(GetProcAddress(dll_handle, import_proc_name.c_str()));
 
             // Update address (only for imports of the executable itself, no indirect DLL imports)
             if (!sub)
-                E_FAT(uc_ext_mem_write(uc, header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j));
+                emulator->mem_write(header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j);
 
-            procs_.emplace(dll_export_proc_address, std::make_pair(dll_name, import_proc_name));
+            auto label_stream = std::ostringstream();
+            label_stream << dll_name << "." << import_proc_name;
+            labels_.emplace(dll_export_proc_address, label_stream.str());
         }
 
         if (!sub)
@@ -216,141 +207,48 @@ void loader_pe::import_dlls(uc_engine* uc, const header_pe header, const bool su
     }
 }
 
-int loader_pe::load(const std::vector<char> bytes, csh& cs, uc_engine*& uc)
+int loader_pe::load(emulator* emulator, std::vector<char> bytes)
 {
     // Reset data structures
     imported_dlls_ = std::set<std::string>();
-    secs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
-    procs_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+    sections_ = std::map<uint64_t, std::pair<std::string, std::string>>();
+    labels_ = std::map<uint64_t, std::string>();
 
-    // Resolve header
+    // Bytes contain a valid PE header?
     header_pe header;
     E_ERR(header.inspect(&bytes[0]));
 
-    // Create decompiler and emulator
-    switch (machine_ = header.machine)
-    {
-    case IMAGE_FILE_MACHINE_I386:
-        cs_open(CS_ARCH_X86, CS_MODE_32, &cs);
-        uc_open(UC_ARCH_X86, UC_MODE_32, &uc);
-        break;
-#ifdef _WIN64
-    case IMAGE_FILE_MACHINE_AMD64:
-        cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
-        uc_open(UC_ARCH_X86, UC_MODE_64, &uc);
-        break;
-#endif
-    default:
-        return R_FAILURE;
-    }
-
     // Mem: All defined sections
-    init_section(uc, SEC_OWNER_SELF, SEC_DESC_PE_HEADER, header.image_base, &bytes[0], PAGE_SIZE);
+    init_section(emulator, SEC_OWNER_SELF, SEC_DESC_PE_HEADER, header.image_base, &bytes[0], PAGE_SIZE);
     for (auto h_sec : header.section_headers)
     {
-        init_section(uc, SEC_OWNER_SELF, std::string(reinterpret_cast<char*>(h_sec.Name), IMAGE_SIZEOF_SHORT_NAME),
+        init_section(emulator, SEC_OWNER_SELF, std::string(reinterpret_cast<char*>(h_sec.Name), IMAGE_SIZEOF_SHORT_NAME),
             header.image_base + h_sec.VirtualAddress, &bytes[0] + h_sec.PointerToRawData, h_sec.SizeOfRawData);
     }
 
     // DLL: All defined imports (start recursion)
-    import_dlls(uc, header, false);
+    init_imports(emulator, header, false);
 
     // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
     const auto stack_size = header.stack_commit;
-    init_section(uc, SEC_OWNER_SELF, SEC_DESC_STACK, stack_pointer - stack_size + 1, nullptr, stack_size);
+    init_section(emulator, SEC_OWNER_SELF, SEC_DESC_STACK, stack_pointer - stack_size + 1, nullptr, stack_size);
 
     // Reg: Stack
-    auto r = regs();
-    E_FAT(uc_reg_write(uc, r[4], &stack_pointer));
-    E_FAT(uc_reg_write(uc, r[5], &stack_pointer));
+    emulator->reg_write(reg_sp, stack_pointer);
+    emulator->reg_write(reg_bp, stack_pointer);
     
     // Reg: IP
-    const auto instruction_pointer = header.image_base + header.entry_point;
-    E_FAT(uc_reg_write(uc, r[8], &instruction_pointer));
+    emulator->reg_write(reg_ip, header.image_base + header.entry_point);
 
     return R_SUCCESS;
 }
 
-uint64_t loader_pe::scale() const
+std::map<uint64_t, std::pair<std::string, std::string>> loader_pe::sections() const
 {
-    switch (machine_)
-    {
-    case IMAGE_FILE_MACHINE_I386:
-        return UINT32_MAX;
-#ifdef _WIN64
-    case IMAGE_FILE_MACHINE_AMD64:
-        return UINT64_MAX;
-#endif
-    default:
-        THROW_E;
-    }
+    return sections_;
 }
-
-std::vector<int> loader_pe::regs() const
+std::map<uint64_t, std::string> loader_pe::labels() const
 {
-    switch (machine_)
-    {
-    case IMAGE_FILE_MACHINE_I386:
-        return
-        {
-            X86_REG_EAX, X86_REG_EBX, X86_REG_ECX, X86_REG_EDX,
-            X86_REG_ESP, X86_REG_EBP,
-            X86_REG_ESI, X86_REG_EDI,
-            X86_REG_EIP
-        };
-#ifdef _WIN64
-    case IMAGE_FILE_MACHINE_AMD64:
-        return
-        {
-            X86_REG_RAX, X86_REG_RBX, X86_REG_RCX, X86_REG_RDX,
-            X86_REG_RSP, X86_REG_RBP,
-            X86_REG_RSI, X86_REG_RDI,
-            X86_REG_RIP
-        };
-#endif
-    default:
-        THROW_E;
-    }
-}
-int loader_pe::ip_index() const
-{
-    switch (machine_)
-    {
-    case IMAGE_FILE_MACHINE_I386:
-        return 8;
-#ifdef _WIN64
-    case IMAGE_FILE_MACHINE_AMD64:
-        return 8;
-#endif
-    default:
-        THROW_E;
-    }
-}
-
-bool find(std::map<uint64_t, std::pair<std::string, std::string>> map, const uint64_t key, std::string& first, std::string& second)
-{
-    if (map.find(key) == map.end())
-    {
-        first = STR_UNKNOWN;
-        second = STR_UNKNOWN;
-        
-        return false;
-    }
-
-    auto sec = map[key];
-
-    first = std::get<0>(sec);
-    second = std::get<1>(sec);
-
-    return true;
-}
-
-bool loader_pe::find_sec(const uint64_t sec_address, std::string& owner, std::string& description)
-{
-    return find(secs_, sec_address, owner, description);
-}
-bool loader_pe::find_proc(const uint64_t proc_address, std::string& dll_name, std::string& proc_name)
-{
-    return find(procs_, proc_address, dll_name, proc_name);
+    return labels_;
 }

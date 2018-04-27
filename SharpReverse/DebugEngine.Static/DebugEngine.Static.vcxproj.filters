@@ -31,14 +31,14 @@
     <ClInclude Include="loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="unicorn_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="unicorn_ext_t.cpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="macro.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emulator_tpl.cpp">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -51,10 +51,10 @@
     <ClCompile Include="debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="unicorn_ext.cpp">
+    <ClCompile Include="loader_pe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="loader_pe.cpp">
+    <ClCompile Include="emulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

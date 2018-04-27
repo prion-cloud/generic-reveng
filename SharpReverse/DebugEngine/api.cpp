@@ -31,15 +31,5 @@ API int debugger_unload(debugger* handle)
 
 API int debugger_ins(debugger* handle, instruction_info& ins_info)
 {
-    return handle->ins(ins_info);
-}
-
-API int debugger_reg(debugger* handle, register_info& reg_info)
-{
-    return handle->reg(reg_info);
-}
-
-API int debugger_mem(debugger* handle, memory_info& mem_info)
-{
-    return handle->mem(mem_info);
+    return handle->debug(ins_info);
 }
