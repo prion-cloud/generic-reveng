@@ -9,12 +9,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Libraries">
       <UniqueIdentifier>{08017116-aacb-4ded-8574-14d40d686a71}</UniqueIdentifier>
+      <Extensions>dll;lib</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -55,16 +52,16 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\Capstone\Win32\capstone_static.lib">
+    <Library Include="..\Bin-Capstone\Win32\capstone_static.lib">
       <Filter>Libraries</Filter>
     </Library>
-    <Library Include="..\Capstone\Win64\capstone_static.lib">
+    <Library Include="..\Bin-Capstone\Win64\capstone_static.lib">
       <Filter>Libraries</Filter>
     </Library>
-    <Library Include="..\Unicorn\Win32\unicorn.lib">
+    <Library Include="..\Bin-Unicorn\Win32\unicorn_static.lib">
       <Filter>Libraries</Filter>
     </Library>
-    <Library Include="..\Unicorn\Win64\unicorn.lib">
+    <Library Include="..\Bin-Unicorn\Win64\unicorn_static.lib">
       <Filter>Libraries</Filter>
     </Library>
   </ItemGroup>
