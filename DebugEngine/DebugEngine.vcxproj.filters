@@ -9,29 +9,10 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Libraries">
-      <UniqueIdentifier>{08017116-aacb-4ded-8574-14d40d686a71}</UniqueIdentifier>
-      <Extensions>dll;lib</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="debugger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="emulator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="loader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="macro.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="emulator_tpl.cpp">
-      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -41,28 +22,5 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="debugger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="emulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="loader_pe.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\Bin-Capstone\Win32\capstone_static.lib">
-      <Filter>Libraries</Filter>
-    </Library>
-    <Library Include="..\Bin-Capstone\Win64\capstone_static.lib">
-      <Filter>Libraries</Filter>
-    </Library>
-    <Library Include="..\Bin-Unicorn\Win32\unicorn_static.lib">
-      <Filter>Libraries</Filter>
-    </Library>
-    <Library Include="..\Bin-Unicorn\Win64\unicorn_static.lib">
-      <Filter>Libraries</Filter>
-    </Library>
   </ItemGroup>
 </Project>
