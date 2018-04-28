@@ -1,6 +1,6 @@
 #pragma once
 
-#include "include/unicorn/unicorn.h"
+#include "unicorn.h"
 
 #define PAGE_SIZE 0x1000
 

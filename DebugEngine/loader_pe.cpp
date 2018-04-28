@@ -113,7 +113,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
         char dll_path[MAX_PATH];
         GetModuleFileNameA(dll_handle, dll_path, MAX_PATH);
         char dll_name_c[MAX_PATH];
-        _splitpath(dll_path, nullptr, nullptr, dll_name_c, nullptr);
+        _splitpath_s(dll_path, nullptr, 0, nullptr, 0, dll_name_c, MAX_PATH, nullptr, 0);
         dll_name = std::string(dll_name_c, strlen(dll_name_c));
 
         // DLL: Not yet imported?

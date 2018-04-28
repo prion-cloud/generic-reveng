@@ -1,6 +1,6 @@
 #pragma once
 
-#include "include/capstone.h"
+#include "capstone.h"
 
 #include "loader.h"
 

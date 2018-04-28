@@ -13,28 +13,24 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="External Libraries">
-      <UniqueIdentifier>{495f1a78-4713-44a0-b2af-24928a5d732c}</UniqueIdentifier>
-      <Extensions>lib</Extensions>
+    <Filter Include="Libraries">
+      <UniqueIdentifier>{08017116-aacb-4ded-8574-14d40d686a71}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bin_dump.h">
+    <ClInclude Include="debugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="debugger.h">
+    <ClInclude Include="emulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="macro.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="emulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="emulator_tpl.cpp">
@@ -45,31 +41,31 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="bin_dump.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="debugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="loader_pe.cpp">
+    <ClCompile Include="emulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="emulator.cpp">
+    <ClCompile Include="loader_pe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\Capstone\msvc\Debug\capstone.lib">
-      <Filter>External Libraries</Filter>
+    <Library Include="..\Capstone\Win32\capstone_static.lib">
+      <Filter>Libraries</Filter>
     </Library>
-    <Library Include="..\..\Capstone\msvc\x64\Debug\capstone.lib">
-      <Filter>External Libraries</Filter>
+    <Library Include="..\Capstone\Win64\capstone_static.lib">
+      <Filter>Libraries</Filter>
     </Library>
-    <Library Include="..\..\Unicorn\msvc\Win32\Debug\unicorn_static.lib">
-      <Filter>External Libraries</Filter>
+    <Library Include="..\Unicorn\Win32\unicorn.lib">
+      <Filter>Libraries</Filter>
     </Library>
-    <Library Include="..\..\Unicorn\msvc\x64\Debug\unicorn_static.lib">
-      <Filter>External Libraries</Filter>
+    <Library Include="..\Unicorn\Win64\unicorn.lib">
+      <Filter>Libraries</Filter>
     </Library>
   </ItemGroup>
 </Project>
