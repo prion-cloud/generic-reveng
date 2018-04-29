@@ -1,51 +1,27 @@
 #include "stdafx.h"
 
-#include "Windows.h"
-
-#include <string>
-
 #include <iomanip>
 #include <iostream>
 
-#define CMD_HELP "help"
-#define CMD_EXIT "exit"
+#include "../DebugEngine.Static/debugger.h"
 
-#define CMD_STEP_INTO "stepinto"
-
-bool read_command()
+std::vector<uint8_t> dump_file(const std::string file_name)
 {
-    std::cout << "# ";
+    FILE* file;
+    fopen_s(&file, file_name.c_str(), "rb");
 
-    std::string cmd;
-    std::cin >> cmd;
+    fseek(file, 0, SEEK_END);
+    const auto length = ftell(file);
+    rewind(file);
 
-    char x = std::cin.eof();
+    const auto buffer = static_cast<char*>(malloc(length));
+    fread(buffer, sizeof(char), length, file);
+    fclose(file);
 
-    if (cmd == CMD_HELP)
-    {
-        std::left(std::cout);
-        std::cout << std::setw(20) << CMD_HELP << "print help" << std::endl;
-        std::cout << std::setw(20) << CMD_EXIT << "exit program" << std::endl;
-        std::cout << std::setw(20) << CMD_STEP_INTO << "debug next instruction" << std::endl;
-    }
-    else if (cmd == CMD_EXIT)
-        return true;
-    else if (cmd == CMD_STEP_INTO)
-    {
-        std::string arg;
-        std::cin >> arg;
+    const auto byte_vec = std::vector<uint8_t>(buffer, buffer + length);
+    free(buffer);
 
-        auto a = 0;
-    }
-    else
-    {
-        std::cout << "Command not recognized." << std::endl;
-    }
-
-    std::cin.clear();
-    std::cin.ignore(INT64_MAX, '\n');
-
-    return false;
+    return byte_vec;
 }
 
 int main(const int argc, char* argv[])
@@ -70,12 +46,41 @@ int main(const int argc, char* argv[])
         std::cout << "Too many arguments.";
         return -1;
     }
-/*
+
+    const auto file_name = argv[1];
+
+    struct stat buf;
+    if (stat(file_name, &buf))
+    {
+        std::cout << "Specified file does not exist.";
+        return -1;
+    }
+
+    const auto loader = new loader_pe();
+
+    auto dbg = debugger(loader, IMAGE_FILE_MACHINE_I386, dump_file(file_name));
+
+    delete loader;
+
+    std::cout << "File loaded: \"" << file_name << "\"" << std::endl;
+
     for (;;)
     {
-        if (read_command())
-            break;
+        std::cin.get();
+
+        instruction instruction;
+        std::string label;
+
+        if (dbg.debug(instruction, label))
+        {
+            std::cout << "Something seems wrong.";
+            return -1;
+        }
+
+        std::cout << std::hex << std::setw(8) << instruction.address;
+        std::cout << "\t" << instruction.mnemonic << " " << instruction.operands;
+
+        if (!label.empty())
+            std::cout << " <" << label << ">";
     }
-*/
-    return 0;
 }
