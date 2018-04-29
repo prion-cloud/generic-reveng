@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="debugger.h" />
+    <ClInclude Include="disassembler.h" />
     <ClInclude Include="emulator.h" />
     <ClInclude Include="loader.h" />
     <ClInclude Include="macro.h" />
@@ -159,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="debugger.cpp" />
+    <ClCompile Include="disassembler.cpp" />
     <ClCompile Include="emulator.cpp" />
     <ClInclude Include="emulator_tpl.cpp" />
     <ClCompile Include="loader_pe.cpp" />

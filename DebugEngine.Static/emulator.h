@@ -4,8 +4,6 @@
 
 #define PAGE_SIZE 0x1000
 
-#define REG_COUNT 9
-
 enum regs
 {
     reg_ax, reg_bx, reg_cx, reg_dx,
@@ -24,9 +22,11 @@ class emulator
 
 public:
 
-    explicit emulator(WORD machine);
+    explicit emulator(uint16_t machine);
     ~emulator();
-    
+
+    // Memory
+
     void mem_map(uint64_t address, void* buffer, size_t size) const;
     
     TPL T mem_read(uint64_t address) const;
@@ -39,10 +39,15 @@ public:
     TPL void mem_write(uint64_t address, T value) const;
     TPL void mem_write(uint64_t address, T value, int index) const;
 
+    // Registers
+
     TPL T reg_read(regs reg) const;
     TPL void reg_write(regs reg, T value) const;
 
+    uint64_t address() const;
     void jump(uint64_t address) const;
+
+    // Emulation
 
     void run() const;
 

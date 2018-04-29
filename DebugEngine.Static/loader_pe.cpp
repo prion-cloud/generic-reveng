@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "macro.h"
 
 #include "loader.h"
 
@@ -8,7 +7,7 @@
 
 #define SEC_OWNER_SELF "(Self)"
 
-int header_pe::inspect(const char* buffer)
+int header_pe::inspect(const uint8_t* buffer)
 {
     size_t cursor = 0;
 
@@ -122,7 +121,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
             const auto dll_header_size = PAGE_SIZE;
 
             // DLL: Read bytes of header section
-            const auto dll_header_buffer = static_cast<char*>(malloc(dll_header_size));
+            const auto dll_header_buffer = static_cast<uint8_t*>(malloc(dll_header_size));
             ReadProcessMemory(GetCurrentProcess(), dll_handle, dll_header_buffer, dll_header_size, nullptr);
 
             // DLL: Initialize header section in UC (optional)
@@ -207,7 +206,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
     }
 }
 
-int loader_pe::load(emulator* emulator, std::vector<char> bytes)
+int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
 {
     // Reset data structures
     imported_dlls_ = std::set<std::string>();

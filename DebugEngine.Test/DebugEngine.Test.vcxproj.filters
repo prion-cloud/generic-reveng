@@ -16,9 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="..\TestFiles\Test.exe">
-      <Filter>Test Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -28,9 +25,6 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{9a5e0a14-9744-45d8-adbd-42af6a7e3c36}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Test Files">
-      <UniqueIdentifier>{b1be7092-e9ad-482e-8608-b2619bd1cb10}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -1,38 +1,14 @@
 #include "stdafx.h"
-#include "macro.h"
 
 #include "emulator.h"
 
-emulator::emulator(const WORD machine)
+emulator::emulator(const uint16_t machine)
 {
     uc_arch arch;
     uc_mode mode;
 
     switch (machine)
     {
-#ifdef _WIN32
-    case IMAGE_FILE_MACHINE_I386:
-
-        arch = UC_ARCH_X86;
-        mode = UC_MODE_32;
-
-        scale_ = UINT32_MAX;
-
-        registers_ =
-        {
-            { reg_ax, UC_X86_REG_EAX },
-            { reg_bx, UC_X86_REG_EBX },
-            { reg_cx, UC_X86_REG_ECX },
-            { reg_dx, UC_X86_REG_EDX },
-            { reg_sp, UC_X86_REG_ESP },
-            { reg_bp, UC_X86_REG_EBP },
-            { reg_si, UC_X86_REG_ESI },
-            { reg_di, UC_X86_REG_EDI },
-            { reg_ip, UC_X86_REG_EIP }
-        };
-
-        break;
-#endif
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
         
@@ -55,14 +31,34 @@ emulator::emulator(const WORD machine)
         };
 
         break;
+#else
+    case IMAGE_FILE_MACHINE_I386:
+
+        arch = UC_ARCH_X86;
+        mode = UC_MODE_32;
+
+        scale_ = UINT32_MAX;
+
+        registers_ =
+        {
+            { reg_ax, UC_X86_REG_EAX },
+            { reg_bx, UC_X86_REG_EBX },
+            { reg_cx, UC_X86_REG_ECX },
+            { reg_dx, UC_X86_REG_EDX },
+            { reg_sp, UC_X86_REG_ESP },
+            { reg_bp, UC_X86_REG_EBP },
+            { reg_si, UC_X86_REG_ESI },
+            { reg_di, UC_X86_REG_EDI },
+            { reg_ip, UC_X86_REG_EIP }
+        };
+
+        break;
 #endif
     default:
         THROW_E;
     }
 
-    uc_open(arch, mode, &uc_);
-
-    auto a = uc_;
+    E_FAT(uc_open(arch, mode, &uc_));
 }
 emulator::~emulator()
 {
@@ -104,6 +100,10 @@ std::string emulator::mem_read_string(const uint64_t address) const
     return std::string(chars.begin(), chars.end());
 }
 
+uint64_t emulator::address() const
+{
+    return reg_read<uint64_t>(reg_ip);
+}
 void emulator::jump(const uint64_t address) const
 {
     reg_write(reg_ip, address);

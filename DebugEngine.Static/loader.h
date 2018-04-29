@@ -14,7 +14,7 @@ public:
     /**
      * \brief Initializes an emulator according to a set of machine code.
      */
-    virtual int load(emulator* emulator, std::vector<char> bytes) = 0;
+    virtual int load(emulator* emulator, std::vector<uint8_t> bytes) = 0;
 
     virtual std::map<uint64_t, std::pair<std::string, std::string>> sections() const = 0;
     virtual std::map<uint64_t, std::string> labels() const = 0;
@@ -39,7 +39,7 @@ struct header_pe
     /**
      * \brief Inspects a range of bytes for a valid PE header and initializes all fields if successful.
      */
-    int inspect(const char* buffer);
+    int inspect(const uint8_t* buffer);
 };
 
 /**
@@ -57,7 +57,7 @@ class loader_pe : public loader
 
 public:
 
-    int load(emulator* emulator, std::vector<char> bytes) override;
+    int load(emulator* emulator, std::vector<uint8_t> bytes) override;
 
     std::map<uint64_t, std::pair<std::string, std::string>> sections() const override;
     std::map<uint64_t, std::string> labels() const override;

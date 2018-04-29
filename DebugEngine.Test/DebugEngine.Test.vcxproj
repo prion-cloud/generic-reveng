@@ -58,10 +58,6 @@
     <ClCompile Include="test_loader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\TestFiles\Test.exe">
-      <DeploymentContent>true</DeploymentContent>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

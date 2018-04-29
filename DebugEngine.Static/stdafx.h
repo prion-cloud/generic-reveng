@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <iomanip>
 #include <map>
 #include <set>
 #include <sstream>
@@ -8,3 +9,5 @@
 #include <vector>
 
 #include "Windows.h"
+
+#include "macro.h"

@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "macro.h"
 
 TPL T emulator::mem_read(const uint64_t address) const
 {

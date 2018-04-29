@@ -33,6 +33,9 @@
     <ClInclude Include="emulator_tpl.cpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="disassembler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -45,6 +48,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="loader_pe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="disassembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
