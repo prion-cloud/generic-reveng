@@ -233,12 +233,8 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
     const auto stack_size = header.stack_commit;
     init_section(emulator, SEC_OWNER_SELF, SEC_DESC_STACK, stack_pointer - stack_size + 1, nullptr, stack_size);
 
-    // Reg: Stack
-    emulator->reg_write(reg_sp, stack_pointer);
-    emulator->reg_write(reg_bp, stack_pointer);
-    
-    // Reg: IP
-    emulator->reg_write(reg_ip, header.image_base + header.entry_point);
+    // Reg: Initialize
+    emulator->init_regs(stack_pointer, header.image_base + header.entry_point);
 
     return R_SUCCESS;
 }

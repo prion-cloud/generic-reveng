@@ -25,7 +25,7 @@ disassembler::disassembler(const uint16_t machine)
         break;
 #endif
     default:
-        THROW_E;
+        THROW;
     }
 
     E_FAT(cs_open(arch, mode, &cs_));
@@ -36,7 +36,7 @@ disassembler::~disassembler()
     cs_close(&cs_);
 }
 
-uint64_t disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction) const
+uint64_t disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction, std::map<x86_reg, std::string>& registers) const
 {
     cs_insn* insn;
     E_FAT(!cs_disasm(cs_, bytes, MAX_BYTES, address, 1, &insn));
@@ -49,6 +49,24 @@ uint64_t disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t addr
 
     instruction.mnemonic = insn->mnemonic;
     instruction.operands = insn->op_str;
+
+    for (auto i = 0; i < insn->detail->x86.op_count; ++i) // TODO: Somehow enforce x86
+    {
+        const auto operand = insn->detail->x86.operands[i];
+        const auto reg = operand.reg;
+
+        if (reg == X86_REG_INVALID)
+            continue;
+
+        switch (operand.type)
+        {
+        case X86_OP_REG:
+        case X86_OP_MEM:
+            registers.emplace(reg, cs_reg_name(cs_, reg));
+            break;
+        default:;
+        }
+    }
     
     auto incr = true;
     for (auto i = 0; i < insn->detail->groups_count; ++i)
@@ -61,6 +79,7 @@ uint64_t disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t addr
         case CS_GRP_INT:
         case CS_GRP_IRET:
             incr = false;
+            break;
         default:;
         }
     }

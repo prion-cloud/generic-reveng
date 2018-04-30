@@ -22,5 +22,5 @@ public:
     ~debugger();
 
     // Emulates the next machine code instruction.
-    int debug(instruction& instruction, std::string& label) const;
+    int debug(instruction& instruction, std::string& label, std::map<std::string, uint64_t>& registers) const;
 };

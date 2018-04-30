@@ -4,21 +4,16 @@
 
 #define PAGE_SIZE 0x1000
 
-enum regs
-{
-    reg_ax, reg_bx, reg_cx, reg_dx,
-    reg_sp, reg_bp,
-    reg_si, reg_di,
-    reg_ip
-};
-
 class emulator
 {
     uc_engine* uc_;
 
     uint64_t scale_;
 
-    std::map<int, int> registers_;
+    int reg_sp_id_;
+    int reg_bp_id_;
+
+    int reg_ip_id_;
 
 public:
 
@@ -41,18 +36,20 @@ public:
 
     // Registers
 
-    TPL T reg_read(regs reg) const;
-    TPL void reg_write(regs reg, T value) const;
+    void init_regs(uint64_t stack_pointer, uint64_t instruction_pointer) const;
+
+    TPL T reg_read(int regid) const;
+    TPL void reg_write(int regid, T value) const;
 
     uint64_t address() const;
     void jump(uint64_t address) const;
 
     // Emulation
 
-    void run() const;
+    int run() const;
 
-    void step_into() const;
-    void step_over() const;
+    int step_into() const;
+    int step_over() const;
 };
 
 #include "emulator_tpl.cpp"

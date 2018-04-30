@@ -18,16 +18,20 @@ debugger::~debugger()
     delete emulator_;
 }
 
-int debugger::debug(instruction& instruction, std::string& label) const
+int debugger::debug(instruction& instruction, std::string& label, std::map<std::string, uint64_t>& registers) const
 {
     const auto address = emulator_->address();
 
     uint8_t bytes[MAX_BYTES];
     emulator_->mem_read(address, bytes, MAX_BYTES);
 
-    const auto next = disassembler_->disassemble(bytes, address, instruction);
+    std::map<x86_reg, std::string> regs;
+    const auto next = disassembler_->disassemble(bytes, address, instruction, regs);
 
-    emulator_->step_into();
+    const auto res = emulator_->step_into();
+
+    for (const auto reg : regs)
+        registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
     if (next != 0)
         emulator_->jump(next);
@@ -36,5 +40,5 @@ int debugger::debug(instruction& instruction, std::string& label) const
         label = labels_.at(address);
     else label = { };
 
-    return R_SUCCESS;
+    return res;
 }

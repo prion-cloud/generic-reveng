@@ -2,27 +2,21 @@
 
 #include "emulator.h"
 
-/**
- * \brief Initializer for machine code emulation
- */
+// Initializer for machine code emulation
 class loader
 {
 public:
 
     virtual ~loader() = default;
 
-    /**
-     * \brief Initializes an emulator according to a set of machine code.
-     */
+    // Initializes an emulator according to a set of machine code.
     virtual int load(emulator* emulator, std::vector<uint8_t> bytes) = 0;
 
     virtual std::map<uint64_t, std::pair<std::string, std::string>> sections() const = 0;
     virtual std::map<uint64_t, std::string> labels() const = 0;
 };
 
-/**
- * \brief Important properties of a PE file header
- */
+// Important properties of a PE file header
 struct header_pe
 {
     WORD machine;
@@ -36,15 +30,11 @@ struct header_pe
 
     std::vector<IMAGE_SECTION_HEADER> section_headers;
 
-    /**
-     * \brief Inspects a range of bytes for a valid PE header and initializes all fields if successful.
-     */
+    // Inspects a range of bytes for a valid PE header and initializes all fields if successful.
     int inspect(const uint8_t* buffer);
 };
 
-/**
- * \brief Initializer for machine code emulation of PE binaries
- */
+// Initializer for machine code emulation of PE binaries
 class loader_pe : public loader
 {
     std::set<std::string> imported_dlls_ { };

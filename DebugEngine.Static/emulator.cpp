@@ -16,19 +16,11 @@ emulator::emulator(const uint16_t machine)
         mode = UC_MODE_64;
 
         scale_ = UINT64_MAX;
-        
-        registers_ =
-        {
-            { reg_ax, UC_X86_REG_RAX },
-            { reg_bx, UC_X86_REG_RBX },
-            { reg_cx, UC_X86_REG_RCX },
-            { reg_dx, UC_X86_REG_RDX },
-            { reg_sp, UC_X86_REG_RSP },
-            { reg_bp, UC_X86_REG_RBP },
-            { reg_si, UC_X86_REG_RSI },
-            { reg_di, UC_X86_REG_RDI },
-            { reg_ip, UC_X86_REG_RIP }
-        };
+
+        reg_sp_id_ = UC_X86_REG_RSP;
+        reg_bp_id_ = UC_X86_REG_RBP;
+
+        reg_ip_id_ = UC_X86_REG_RIP;
 
         break;
 #else
@@ -39,23 +31,15 @@ emulator::emulator(const uint16_t machine)
 
         scale_ = UINT32_MAX;
 
-        registers_ =
-        {
-            { reg_ax, UC_X86_REG_EAX },
-            { reg_bx, UC_X86_REG_EBX },
-            { reg_cx, UC_X86_REG_ECX },
-            { reg_dx, UC_X86_REG_EDX },
-            { reg_sp, UC_X86_REG_ESP },
-            { reg_bp, UC_X86_REG_EBP },
-            { reg_si, UC_X86_REG_ESI },
-            { reg_di, UC_X86_REG_EDI },
-            { reg_ip, UC_X86_REG_EIP }
-        };
+        reg_sp_id_ = UC_X86_REG_ESP;
+        reg_bp_id_ = UC_X86_REG_EBP;
+
+        reg_ip_id_ = UC_X86_REG_EIP;
 
         break;
 #endif
     default:
-        THROW_E;
+        THROW;
     }
 
     E_FAT(uc_open(arch, mode, &uc_));
@@ -64,6 +48,8 @@ emulator::~emulator()
 {
     uc_close(uc_);
 }
+
+// Memory
 
 void emulator::mem_map(const uint64_t address, void* buffer, const size_t size) const
 {
@@ -100,25 +86,38 @@ std::string emulator::mem_read_string(const uint64_t address) const
     return std::string(chars.begin(), chars.end());
 }
 
+// Registers
+
+void emulator::init_regs(const uint64_t stack_pointer, const uint64_t instruction_pointer) const
+{
+    reg_write(reg_sp_id_, stack_pointer);
+    reg_write(reg_bp_id_, stack_pointer);
+
+    jump(instruction_pointer);
+}
+
 uint64_t emulator::address() const
 {
-    return reg_read<uint64_t>(reg_ip);
+    return reg_read<uint64_t>(reg_ip_id_);
 }
 void emulator::jump(const uint64_t address) const
 {
-    reg_write(reg_ip, address);
+    reg_write(reg_ip_id_, address);
 }
 
-void emulator::run() const
+// Emulation
+
+int emulator::run() const
 {
-    THROW_E; // TODO
+    return R_FAILURE; // TODO
 }
 
-void emulator::step_into() const
+int emulator::step_into() const
 {
-    uc_emu_start(uc_, reg_read<uint64_t>(reg_ip), -1, 0, 1);
+    E_ERR(uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 1));
+    return R_SUCCESS;
 }
-void emulator::step_over() const
+int emulator::step_over() const
 {
-    THROW_E; // TODO
+    return R_FAILURE; // TODO
 }

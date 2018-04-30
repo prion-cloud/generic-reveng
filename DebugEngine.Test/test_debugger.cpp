@@ -29,8 +29,9 @@ void test_file(const std::string file_name, const uint16_t machine, const std::v
     {
         instruction ins;
         std::string label;
+        std::map<std::string, uint64_t> registers;
 
-        ASSERT_FALSE(dbg->debug(ins, label));
+        ASSERT_FALSE(dbg->debug(ins, label, registers));
 
         if (std::get<0>(exp_ins))
             EXPECT_EQ(std::get<2>(exp_ins).address, ins.address);
