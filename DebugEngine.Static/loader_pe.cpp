@@ -68,15 +68,6 @@ int header_pe::inspect(const uint8_t* buffer)
     return R_SUCCESS;
 }
 
-void loader_pe::init_section(emulator* emulator, const std::string owner, const std::string desc, const uint64_t address, void* buffer, const size_t size)
-{
-    if (size == 0)
-        return;
-
-    sections_.emplace(address, std::make_pair(owner, desc));
-
-    emulator->mem_map(address, buffer, size);
-}
 void loader_pe::init_imports(emulator* emulator, const header_pe header, const bool sub)
 {
     // Locate import table
@@ -99,7 +90,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
         
         // DLL: Get handle
         const auto dll_handle = sub
-            ? GetModuleHandleA(dll_name.c_str()) // TODO: Kernel32 apis may refer to themselves!
+            ? GetModuleHandleA(dll_name.c_str())
             : LoadLibraryA(dll_name.c_str());
 
         // Assert: Valid handle
@@ -124,8 +115,8 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
             const auto dll_header_buffer = static_cast<uint8_t*>(malloc(dll_header_size));
             ReadProcessMemory(GetCurrentProcess(), dll_handle, dll_header_buffer, dll_header_size, nullptr);
 
-            // DLL: Initialize header section in UC (optional)
-            init_section(emulator, dll_name, SEC_DESC_PE_HEADER, dll_address, dll_header_buffer, dll_header_size);
+            // DLL: Initialize header section in UC
+            emulator->mem_map(dll_address, dll_header_buffer, dll_header_size);
 
             // DLL: Create header from bytes
             auto dll_header = header_pe();
@@ -133,21 +124,20 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
 
             free(dll_header_buffer);
 
-            // DLL Assert: Equal base addresses (optional)
+            // DLL Assert: Equal base addresses
             E_FAT(dll_address != dll_header.image_base);
 
             // DLL: Use header to write remaining sections to UC
-            for (auto dll_sec_header : dll_header.section_headers)
+            for (auto dll_sec : dll_header.section_headers)
             {
-                const auto dll_sec_address = dll_address + dll_sec_header.VirtualAddress;
+                const auto dll_sec_address = dll_address + dll_sec.VirtualAddress;
                 const auto dll_sec_handle = reinterpret_cast<HMODULE>(dll_sec_address);
-                const auto dll_sec_size = dll_sec_header.SizeOfRawData;
+                const auto dll_sec_size = dll_sec.SizeOfRawData;
 
                 const auto dll_sec_buffer = static_cast<char*>(malloc(dll_sec_size));
                 ReadProcessMemory(GetCurrentProcess(), dll_sec_handle, dll_sec_buffer, dll_sec_size, nullptr);
 
-                init_section(emulator, dll_name, std::string(reinterpret_cast<char*>(dll_sec_header.Name), IMAGE_SIZEOF_SHORT_NAME),
-                    dll_sec_address, dll_sec_buffer, dll_sec_size);
+                emulator->mem_map(dll_sec_address, dll_sec_buffer, dll_sec_size);
 
                 free(dll_sec_buffer);
             }
@@ -157,19 +147,6 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
 
             // Recurse to get sub DLLs
             init_imports(emulator, dll_header, true);
-        }
-        else
-        {
-            // Assert: Section exists
-            E_FAT(sections_.find(dll_address) == sections_.end());
-
-            const auto sec = sections_[dll_address];
-
-            // Assert: Section owner is DLL
-            E_FAT(std::get<0>(sec) != dll_name);
-
-            // Assert: Section description is DLL header
-            E_FAT(std::get<1>(sec) != SEC_DESC_PE_HEADER);
         }
 
         // Inspect import descriptor procs
@@ -181,7 +158,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
                 break; // No more procs
 
             std::string import_proc_name;
-            try // TODO: What exactly causes this error ?
+            try // TODO: What is this error ?
             {
                 import_proc_name = emulator->mem_read_string(header.image_base + import_proc_name_address + sizeof(WORD));
             }
@@ -210,20 +187,17 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
 {
     // Reset data structures
     imported_dlls_ = std::set<std::string>();
-    sections_ = std::map<uint64_t, std::pair<std::string, std::string>>();
     labels_ = std::map<uint64_t, std::string>();
+    deferrals_ = std::map<uint64_t, std::string>();
 
     // Bytes contain a valid PE header?
     header_pe header;
     E_ERR(header.inspect(&bytes[0]));
 
     // Mem: All defined sections
-    init_section(emulator, SEC_OWNER_SELF, SEC_DESC_PE_HEADER, header.image_base, &bytes[0], PAGE_SIZE);
-    for (auto h_sec : header.section_headers)
-    {
-        init_section(emulator, SEC_OWNER_SELF, std::string(reinterpret_cast<char*>(h_sec.Name), IMAGE_SIZEOF_SHORT_NAME),
-            header.image_base + h_sec.VirtualAddress, &bytes[0] + h_sec.PointerToRawData, h_sec.SizeOfRawData);
-    }
+    emulator->mem_map(header.image_base, &bytes[0], PAGE_SIZE);
+    for (auto sec : header.section_headers)
+        emulator->mem_map(header.image_base + sec.VirtualAddress, &bytes[0] + sec.PointerToRawData, sec.SizeOfRawData);
 
     // DLL: All defined imports (start recursion)
     init_imports(emulator, header, false);
@@ -231,7 +205,7 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
     // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
     const auto stack_size = header.stack_commit;
-    init_section(emulator, SEC_OWNER_SELF, SEC_DESC_STACK, stack_pointer - stack_size + 1, nullptr, stack_size);
+    emulator->mem_map(stack_pointer - stack_size + 1, nullptr, stack_size);
 
     // Reg: Initialize
     emulator->init_regs(stack_pointer, header.image_base + header.entry_point);
@@ -239,11 +213,11 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
     return R_SUCCESS;
 }
 
-std::map<uint64_t, std::pair<std::string, std::string>> loader_pe::sections() const
-{
-    return sections_;
-}
 std::map<uint64_t, std::string> loader_pe::labels() const
 {
     return labels_;
+}
+std::map<uint64_t, std::string> loader_pe::deferrals() const
+{
+    return deferrals_;
 }

@@ -27,9 +27,6 @@
     <ClInclude Include="loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="macro.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="emulator_tpl.cpp">
       <Filter>Source Files</Filter>
     </ClInclude>

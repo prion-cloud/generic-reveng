@@ -155,7 +155,6 @@
     <ClInclude Include="disassembler.h" />
     <ClInclude Include="emulator.h" />
     <ClInclude Include="loader.h" />
-    <ClInclude Include="macro.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>

@@ -11,8 +11,8 @@ class debugger
     disassembler* disassembler_;
     emulator* emulator_;
 
-    std::map<uint64_t, std::pair<std::string, std::string>> sections_;
     std::map<uint64_t, std::string> labels_;
+    std::map<uint64_t, std::string> deferrals_;
 
 public:
     

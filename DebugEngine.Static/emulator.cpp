@@ -53,6 +53,9 @@ emulator::~emulator()
 
 void emulator::mem_map(const uint64_t address, void* buffer, const size_t size) const
 {
+    if (size == 0x0)
+        return;
+
     auto virt_size = PAGE_SIZE * (size / PAGE_SIZE);
     if (size % PAGE_SIZE > 0)
         virt_size += PAGE_SIZE;
