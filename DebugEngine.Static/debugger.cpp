@@ -21,7 +21,7 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
 {
     const auto address = emulator_->address();
 
-    loader_->check_import(address);
+    loader_->validate_availablility(address);
 
     uint8_t bytes[MAX_BYTES];
     emulator_->mem_read(address, bytes, MAX_BYTES);

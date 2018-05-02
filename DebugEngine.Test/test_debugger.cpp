@@ -23,7 +23,7 @@ void test_file(const std::string file_name, const uint16_t machine, const std::v
     const auto loader = new loader_pe();
     const auto dbg = new debugger(loader, machine, bytes);
 
-    delete loader;
+    // delete loader; TODO
 
     for (auto exp_ins : expected)
     {

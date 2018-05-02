@@ -12,7 +12,7 @@ public:
     // Initializes an emulator according to a set of machine code.
     virtual int load(emulator* emulator, std::vector<uint8_t> bytes) = 0;
 
-    virtual void check_import(uint64_t address) = 0;
+    virtual void validate_availablility(uint64_t address) = 0;
 
     virtual std::map<uint64_t, std::string> labels() const = 0;
 };
@@ -47,16 +47,16 @@ class loader_pe : public loader
 
     std::map<uint64_t, std::string> labels_ { };
 
-    std::map<std::string, IMAGE_IMPORT_DESCRIPTOR> import_descriptors_ { };
+    std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>*> import_descriptors_ { };
 
+    void import_dll(uint64_t base, std::string dll_name, bool sub);
     void import_dlls(header_pe header, bool sub);
-    // void import_dll(header_pe header, std::string dll_name, bool sub); TODO
 
 public:
 
     int load(emulator* emulator, std::vector<uint8_t> bytes) override;
 
-    void check_import(uint64_t address) override;
+    void validate_availablility(uint64_t address) override;
 
     std::map<uint64_t, std::string> labels() const override;
 };
