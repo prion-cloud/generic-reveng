@@ -210,7 +210,7 @@ int main(const int argc, char* argv[])
         dump_file(file_name)
     );
 
-    delete loader;
+    // delete loader; TODO
 
     std::cout << "File loaded: \"" << file_name << "\"" << std::endl;
         
@@ -231,4 +231,5 @@ int main(const int argc, char* argv[])
     }
 
     delete dbg;
+    delete loader;
 }

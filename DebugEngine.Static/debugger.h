@@ -8,11 +8,10 @@
 // Low-level debugger of executable binaries
 class debugger
 {
+    loader* loader_;
+
     disassembler* disassembler_;
     emulator* emulator_;
-
-    std::map<uint64_t, std::string> labels_;
-    std::map<uint64_t, std::string> deferrals_;
 
 public:
     

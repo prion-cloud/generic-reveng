@@ -11,6 +11,7 @@
 
 #include <Windows.h>
 
+// Templated function
 #define TPL template <typename T>
 
 // Indicator for a successful method execution
@@ -25,6 +26,8 @@
 #define E_ERR(cond) if (cond) return R_FAILURE
 // Fatal error; throw exception if condition is true.
 #define E_FAT(cond) if (cond && global_flag_status.fat) THROW
+
+#define STR_UNKNOWN "???"
 
 struct flag_status
 {

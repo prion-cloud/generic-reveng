@@ -2,12 +2,7 @@
 
 #include "loader.h"
 
-#define SEC_DESC_PE_HEADER "(PE header)"
-#define SEC_DESC_STACK "(Stack)"
-
-#define SEC_OWNER_SELF "(Self)"
-
-int header_pe::inspect(const uint8_t* buffer)
+int header_pe::retrieve(const uint8_t* buffer)
 {
     size_t cursor = 0;
 
@@ -68,7 +63,7 @@ int header_pe::inspect(const uint8_t* buffer)
     return R_SUCCESS;
 }
 
-void loader_pe::init_imports(emulator* emulator, const header_pe header, const bool sub)
+void loader_pe::import_dlls(const header_pe header, const bool sub)
 {
     // Locate import table
     const auto imports_address = header.data_directories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
@@ -80,23 +75,19 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
     for (auto i = 0;; ++i)
     {
         // Retrieve import descriptor
-        const auto import_descriptor = emulator->mem_read<IMAGE_IMPORT_DESCRIPTOR>(header.image_base + imports_address, i);
+        const auto import_descriptor = emulator_->mem_read<IMAGE_IMPORT_DESCRIPTOR>(header.image_base + imports_address, i);
 
         if (import_descriptor.Characteristics == 0x0 || import_descriptor.Name == 0x0)
             break; // No more entries
 
         // DLL: Get name
-        auto dll_name = emulator->mem_read_string(header.image_base + import_descriptor.Name);
+        auto dll_name = emulator_->mem_read_string(header.image_base + import_descriptor.Name);
         
         // DLL: Get handle
-        const auto dll_handle = sub
+        const auto dll_handle = sub // TODO: Validate necessity
             ? GetModuleHandleA(dll_name.c_str())
             : LoadLibraryA(dll_name.c_str());
-
-        // Assert: Valid handle
         E_FAT(dll_handle == nullptr);
-
-        // DLL: Resolve base address
         const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
 
         // DLL: Update name
@@ -116,11 +107,11 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
             ReadProcessMemory(GetCurrentProcess(), dll_handle, dll_header_buffer, dll_header_size, nullptr);
 
             // DLL: Initialize header section in UC
-            emulator->mem_map(dll_address, dll_header_buffer, dll_header_size);
+            emulator_->mem_map(dll_address, dll_header_buffer, dll_header_size);
 
             // DLL: Create header from bytes
             auto dll_header = header_pe();
-            E_FAT(dll_header.inspect(dll_header_buffer));
+            E_FAT(dll_header.retrieve(dll_header_buffer));
 
             free(dll_header_buffer);
 
@@ -137,22 +128,22 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
                 const auto dll_sec_buffer = static_cast<char*>(malloc(dll_sec_size));
                 ReadProcessMemory(GetCurrentProcess(), dll_sec_handle, dll_sec_buffer, dll_sec_size, nullptr);
 
-                emulator->mem_map(dll_sec_address, dll_sec_buffer, dll_sec_size);
+                emulator_->mem_map(dll_sec_address, dll_sec_buffer, dll_sec_size);
 
                 free(dll_sec_buffer);
             }
 
             // DLL: Mark as imported
-            imported_dlls_.insert(dll_name);
+            imported_dlls_.emplace(dll_name, dll_header);
 
             // Recurse to get sub DLLs
-            init_imports(emulator, dll_header, true);
+            import_dlls(dll_header, true);
         }
 
         // Inspect import descriptor procs
         for (auto j = 0;; ++j)
         {
-            const auto import_proc_name_address = emulator->mem_read<DWORD>(header.image_base + import_descriptor.OriginalFirstThunk, j);
+            const auto import_proc_name_address = emulator_->mem_read<DWORD>(header.image_base + import_descriptor.OriginalFirstThunk, j);
 
             if (import_proc_name_address == 0x0)
                 break; // No more procs
@@ -160,7 +151,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
             std::string import_proc_name;
             try // TODO: What is this error ?
             {
-                import_proc_name = emulator->mem_read_string(header.image_base + import_proc_name_address + sizeof(WORD));
+                import_proc_name = emulator_->mem_read_string(header.image_base + import_proc_name_address + sizeof(WORD));
             }
             catch (std::runtime_error)
             {
@@ -171,7 +162,7 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
 
             // Update address (only for imports of the executable itself, no indirect DLL imports)
             if (!sub)
-                emulator->mem_write(header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j);
+                emulator_->mem_write(header.image_base + import_descriptor.FirstThunk, dll_export_proc_address, j);
 
             auto label_stream = std::ostringstream();
             label_stream << dll_name << "." << import_proc_name;
@@ -185,30 +176,31 @@ void loader_pe::init_imports(emulator* emulator, const header_pe header, const b
 
 int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
 {
+    emulator_ = emulator;
+    
     // Reset data structures
-    imported_dlls_ = std::set<std::string>();
+    imported_dlls_ = std::map<std::string, header_pe>();
+    deferred_dlls_ = std::map<uint64_t, std::string*>();
     labels_ = std::map<uint64_t, std::string>();
-    deferrals_ = std::map<uint64_t, std::string>();
 
     // Bytes contain a valid PE header?
-    header_pe header;
-    E_ERR(header.inspect(&bytes[0]));
+    E_ERR(header_.retrieve(&bytes[0]));
 
     // Mem: All defined sections
-    emulator->mem_map(header.image_base, &bytes[0], PAGE_SIZE);
-    for (auto sec : header.section_headers)
-        emulator->mem_map(header.image_base + sec.VirtualAddress, &bytes[0] + sec.PointerToRawData, sec.SizeOfRawData);
+    emulator_->mem_map(header_.image_base, &bytes[0], PAGE_SIZE);
+    for (auto sec : header_.section_headers)
+        emulator_->mem_map(header_.image_base + sec.VirtualAddress, &bytes[0] + sec.PointerToRawData, sec.SizeOfRawData);
 
     // DLL: All defined imports (start recursion)
-    init_imports(emulator, header, false);
+    import_dlls(header_, false);
 
     // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
-    const auto stack_size = header.stack_commit;
-    emulator->mem_map(stack_pointer - stack_size + 1, nullptr, stack_size);
+    const auto stack_size = header_.stack_commit;
+    emulator_->mem_map(stack_pointer - stack_size + 1, nullptr, stack_size);
 
     // Reg: Initialize
-    emulator->init_regs(stack_pointer, header.image_base + header.entry_point);
+    emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);
 
     return R_SUCCESS;
 }
@@ -217,7 +209,18 @@ std::map<uint64_t, std::string> loader_pe::labels() const
 {
     return labels_;
 }
-std::map<uint64_t, std::string> loader_pe::deferrals() const
+
+void loader_pe::check_import(const uint64_t address)
 {
-    return deferrals_;
+    if (deferred_dlls_.find(address) == deferred_dlls_.end())
+        return;
+
+    const auto dll_name_ptr = deferred_dlls_.at(address);
+    const auto dll_name = *dll_name_ptr;
+
+    E_FAT(dll_name == STR_UNKNOWN);
+    
+    // import_dll(header_, dll_name, false); TODO
+
+    *dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
 }

@@ -4,13 +4,12 @@
 
 debugger::debugger(loader* loader, const uint16_t machine, const std::vector<uint8_t> byte_vec)
 {
+    loader_ = loader;
+
     disassembler_ = new disassembler(machine);
     emulator_ = new emulator(machine);
 
     E_FAT(loader->load(emulator_, byte_vec));
-
-    labels_ = loader->labels();
-    deferrals_ = loader->deferrals();
 }
 debugger::~debugger()
 {
@@ -22,12 +21,7 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
 {
     const auto address = emulator_->address();
 
-    if (deferrals_.find(address) != deferrals_.end())
-    {
-        const auto dll_name = deferrals_.at(address);
-
-        // TODO
-    }
+    loader_->check_import(address);
 
     uint8_t bytes[MAX_BYTES];
     emulator_->mem_read(address, bytes, MAX_BYTES);
@@ -43,9 +37,10 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
     if (next != 0)
         emulator_->jump(next);
 
-    if (labels_.find(address) != labels_.end())
-        label = labels_.at(address);
-    else label = { };
+    const auto labels = loader_->labels();
+    label = labels.find(address) != labels.end()
+        ? labels.at(address)
+        : std::string();
 
     return res;
 }
