@@ -239,10 +239,10 @@ std::map<uint64_t, std::string> loader_pe::labels() const
     return labels_;
 }
 
-void loader_pe::validate_availablility(const uint64_t address)
+bool loader_pe::validate_availablility(const uint64_t address)
 {
     if (deferred_dlls_.find(address) == deferred_dlls_.end())
-        return;
+        return false;
 
     const auto dll_name = deferred_dlls_.at(address);
 
@@ -251,4 +251,6 @@ void loader_pe::validate_availablility(const uint64_t address)
     import_dll(header_.image_base, dll_name, false);
 
     //dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
+
+    return true;
 }

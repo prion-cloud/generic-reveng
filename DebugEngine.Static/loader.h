@@ -12,7 +12,7 @@ public:
     // Initializes an emulator according to a set of machine code.
     virtual int load(emulator* emulator, std::vector<uint8_t> bytes) = 0;
 
-    virtual void validate_availablility(uint64_t address) = 0;
+    virtual bool validate_availablility(uint64_t address) = 0;
 
     virtual std::map<uint64_t, std::string> labels() const = 0;
 };
@@ -60,7 +60,7 @@ public:
 
     int load(emulator* emulator, std::vector<uint8_t> bytes) override;
 
-    void validate_availablility(uint64_t address) override;
+    bool validate_availablility(uint64_t address) override;
 
     std::map<uint64_t, std::string> labels() const override;
 };

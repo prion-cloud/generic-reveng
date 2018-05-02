@@ -29,9 +29,8 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
 
     const auto res = emulator_->step_into();
 
-    if (res == 8)
+    if (res == 8 && loader_->validate_availablility(emulator_->address()))
     {
-        loader_->validate_availablility(emulator_->address());
         emulator_->jump(address);
         return debug(instruction, label, registers);
     }
