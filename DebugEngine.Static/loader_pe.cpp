@@ -73,7 +73,7 @@ void loader_pe::import_dll(const uint64_t base, std::string dll_name, const bool
     const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
     
     // Retrieve import descriptor
-    const auto import_descriptor = import_descriptors_.at(base)->at(dll_name);
+    const auto import_descriptor = import_descriptors_.at(base).at(dll_name);
 
     // DLL: Update name
     char dll_path[MAX_PATH];
@@ -163,8 +163,7 @@ void loader_pe::import_dlls(const header_pe header, const bool sub)
     if (imports_address == 0x0)
         return; // No imports
 
-    std::map<std::string, IMAGE_IMPORT_DESCRIPTOR> map;
-    import_descriptors_.emplace(header.image_base, &map);
+    import_descriptors_.emplace(header.image_base, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>());
 
     // Inspect import table entries
     for (auto i = 0;; ++i)
@@ -176,12 +175,28 @@ void loader_pe::import_dlls(const header_pe header, const bool sub)
             break; // No more entries
 
         // DLL: Get name
-        const auto dll_name = emulator_->mem_read_string(header.image_base + import_descriptor.Name);
+        auto dll_name = emulator_->mem_read_string(header.image_base + import_descriptor.Name);
 
-        map.emplace(dll_name, import_descriptor);
+        import_descriptors_.at(header.image_base).emplace(dll_name, import_descriptor);
 
-        import_dll(header.image_base, dll_name, sub);
+        if (defer_)
+        {
+            for (auto j = 0;; ++j)
+            {
+                if (emulator_->mem_read<DWORD>(header.image_base + import_descriptor.OriginalFirstThunk, j) == 0x0)
+                    break;
+
+                const auto address = static_cast<uint64_t>(emulator_->mem_read<DWORD>(header.image_base + import_descriptor.FirstThunk, j));
+                deferred_dlls_.emplace(address, dll_name);
+            }
+        }
+        else import_dll(header.image_base, dll_name, sub);
     }
+}
+
+loader_pe::loader_pe()
+{
+    defer_ = global_flag_status.lazy;
 }
 
 int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
@@ -190,10 +205,10 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
     
     // Reset data structures
     imported_dlls_ = std::map<std::string, header_pe>();
-    deferred_dlls_ = std::map<uint64_t, std::string*>();
+    deferred_dlls_ = std::map<uint64_t, std::string>();
     labels_ = std::map<uint64_t, std::string>();
 
-    import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>*>();
+    import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
 
     // Bytes contain a valid PE header?
     E_ERR(header_.retrieve(&bytes[0]));
@@ -214,6 +229,8 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
     // Reg: Initialize
     emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);
 
+    defer_ = false;
+
     return R_SUCCESS;
 }
 
@@ -227,12 +244,11 @@ void loader_pe::validate_availablility(const uint64_t address)
     if (deferred_dlls_.find(address) == deferred_dlls_.end())
         return;
 
-    const auto dll_name_ptr = deferred_dlls_.at(address);
-    const auto dll_name = *dll_name_ptr;
+    const auto dll_name = deferred_dlls_.at(address);
 
     E_FAT(dll_name == STR_UNKNOWN);
     
     import_dll(header_.image_base, dll_name, false);
 
-    *dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
+    //dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
 }

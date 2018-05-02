@@ -38,21 +38,25 @@ struct header_pe
 // Initializer for machine code emulation of PE binaries
 class loader_pe : public loader
 {
+    bool defer_;
+
     emulator* emulator_ { };
 
     header_pe header_ { };
 
     std::map<std::string, header_pe> imported_dlls_ { };
-    std::map<uint64_t, std::string*> deferred_dlls_ { };
+    std::map<uint64_t, std::string> deferred_dlls_ { };
 
     std::map<uint64_t, std::string> labels_ { };
 
-    std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>*> import_descriptors_ { };
+    std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>> import_descriptors_ { };
 
     void import_dll(uint64_t base, std::string dll_name, bool sub);
     void import_dlls(header_pe header, bool sub);
 
 public:
+
+    loader_pe();
 
     int load(emulator* emulator, std::vector<uint8_t> bytes) override;
 

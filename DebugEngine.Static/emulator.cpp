@@ -117,8 +117,7 @@ int emulator::run() const
 
 int emulator::step_into() const
 {
-    E_ERR(uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 1));
-    return R_SUCCESS;
+    return uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 1);
 }
 int emulator::step_over() const
 {

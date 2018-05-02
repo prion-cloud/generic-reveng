@@ -21,8 +21,6 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
 {
     const auto address = emulator_->address();
 
-    loader_->validate_availablility(address);
-
     uint8_t bytes[MAX_BYTES];
     emulator_->mem_read(address, bytes, MAX_BYTES);
 
@@ -30,6 +28,13 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
     const auto next = disassembler_->disassemble(bytes, address, instruction, regs);
 
     const auto res = emulator_->step_into();
+
+    if (res == 8)
+    {
+        loader_->validate_availablility(emulator_->address());
+        emulator_->jump(address);
+        return debug(instruction, label, registers);
+    }
 
     for (const auto reg : regs)
         registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));

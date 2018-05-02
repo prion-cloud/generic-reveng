@@ -33,7 +33,7 @@ struct flag_status
 {
     // Enable fatal errors.
     bool fat = true;
-    // Do any memory allocation once it is needed. TODO: Not yet implemented.
+    // Do any memory allocation once it is needed.
     bool lazy = false;
     // TODO: Consider some sort of utility for this.
     bool ugly = true;
