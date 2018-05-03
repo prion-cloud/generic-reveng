@@ -70,6 +70,7 @@ int inspect_args(std::vector<std::string> args, std::string& file_name, flag_sta
                 
                 std::cout << "\t" << std::setw(20) << "--" FLAG_NO_FAT << "Disable fatal errors." << std::endl;
                 std::cout << "\t" << std::setw(20) << "--" FLAG_LAZY << "Do any memory allocation once it is needed." << std::endl;
+                std::cout << "\t" << std::setw(20) << "--" FLAG_UGLY << "Ignore instruction failures." << std::endl;
 
                 return 1;
             }
@@ -132,14 +133,27 @@ void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
     instruction instruction;
     std::string label;
 
-    const auto res = dbg->step_into(instruction, label, registers);
+    const auto err = dbg->step_into(instruction, label, registers);
 
-    std::cout << std::hex << std::setw(8) << instruction.address;
+    std::cout << std::hex << std::right <<
+#ifdef _WIN64
+        std::setw(16)
+#else
+        std::setw(8)
+#endif
+    << instruction.address;
 
     if (!registers.empty())
     {
         COUT(COL_REG, << "*");
     }
+    else std::cout << " ";
+    
+    if (err)
+    {
+        COUT(COL_FAIL, << "X");
+    }
+    else std::cout << " ";
 
     std::cout << "\t";
 
@@ -157,11 +171,6 @@ void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
     }
 
     std::cout << std::endl;
-
-    if (res)
-    {
-        COUT(COL_FAIL, << "Instruction failed." << std::endl);
-    }
 }
 void show_regs(std::map<std::string, uint64_t> registers)
 {
@@ -209,24 +218,43 @@ int main(const int argc, char* argv[])
         return -1;
     }
 
+    std::cout << std::string(68, '=') << std::endl;
+    std::cout << "Press...";
+    std::left(std::cout);
+    std::cout << " " << std::setw(10) << "SPACE" << "to debug the next instruction" << std::endl;
+    std::cout << "\t " << std::setw(10) << "r" << "to display recently accessed registers (* if any)" << std::endl;
+    std::cout << "\t " << std::setw(10) << "x" << "to quit" << std::endl;
+    std::cout << std::string(68, '=') << std::endl;
+    std::cout << std::endl;
+
     const auto loader = new loader_pe();
+
+    if (!global_flag_status.lazy)
+        std::cout << "Loading... ";
+
     const auto dbg = new debugger(loader, dump_file(file_name));
 
-    // delete loader; TODO
+    std::cout << "File: \"" << file_name << "\"" << std::endl << std::endl;
 
-    std::cout << "File loaded: \"" << file_name << "\"" << std::endl;
-        
     std::map<std::string, uint64_t> registers;
+
+    auto regs_shown = false;
 
     for (;;)
     {
         const char c = _getch();
 
         if (c == ' ')
+        {
             show_debug(dbg, registers);
+            regs_shown = false;
+        }
 
-        if (c == 'r' && !registers.empty())
+        if (c == 'r' && !registers.empty() && !regs_shown)
+        {
             show_regs(registers);
+            regs_shown = true;
+        }
 
         if (c == 'x')
             break;
