@@ -51,19 +51,11 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
     delete loader;
 }
 
-#ifdef _WIN64
-TEST(debugger_debug, x64)
+void test_x86(const flag_status flags)
 {
-    const std::vector<std::tuple<bool, bool, instruction, std::string>> expected =
-    {
-        { true, true, { 0x146, 0x401500, { 0x48, 0x83, 0xec, 0x28 }, "sub", "rsp, 0x28" }, { } }
-    };
-    
-    test_file(TEST_FOLDER "helloworld64.exe", expected);
-}
-#else
-TEST(debugger_debug, x86)
-{
+    printf("x86");
+    global_flag_status = flags;
+
     const std::vector<std::tuple<bool, bool, instruction, std::string>> expected =
     {
         { true,  true,  { 0x10a, 0x401000, { 0xeb, 0x10 },                         "jmp",  "0x401012",                  }, { }                           },
@@ -84,4 +76,126 @@ TEST(debugger_debug, x86)
     
     test_file(TEST_FOLDER "Test.exe", expected);
 }
+void test_x64(const flag_status flags)
+{
+    printf("x64");
+    global_flag_status = flags;
+
+    const std::vector<std::tuple<bool, bool, instruction, std::string>> expected =
+    {
+        { true, true, { 0x146, 0x401500, { 0x48, 0x83, 0xec, 0x28 }, "sub", "rsp, 0x28" }, { } }
+    };
+    
+    test_file(TEST_FOLDER "helloworld64.exe", expected);
+}
+
+namespace test_flag_consistency
+{
+    TEST(NF_NL_NU, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = false;
+        flags.lazy = false;
+        flags.ugly = false;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
 #endif
+    }
+
+    TEST(F_NL_NU, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = true;
+        flags.lazy = false;
+        flags.ugly = false;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+    TEST(NF_L_NU, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = false;
+        flags.lazy = true;
+        flags.ugly = false;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+    TEST(NF_NL_U, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = false;
+        flags.lazy = false;
+        flags.ugly = true;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+
+    TEST(F_L_NU, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = true;
+        flags.lazy = true;
+        flags.ugly = false;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+    TEST(F_NL_U, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = true;
+        flags.lazy = false;
+        flags.ugly = true;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+    TEST(NF_L_U, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = false;
+        flags.lazy = true;
+        flags.ugly = true;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+
+    TEST(F_L_U, debugger_debug)
+    {
+        flag_status flags;
+        flags.fat = true;
+        flags.lazy = true;
+        flags.ugly = true;
+
+#ifdef _WIN64
+        test_x64(flags);
+#else
+        test_x86(flags);
+#endif
+    }
+}
