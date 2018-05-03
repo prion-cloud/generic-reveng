@@ -189,10 +189,8 @@ loader_pe::loader_pe()
     defer_ = global_flag_status.lazy;
 }
 
-int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
+uint16_t loader_pe::load(std::vector<uint8_t> bytes)
 {
-    emulator_ = emulator;
-    
     // Reset data structures
     imported_dlls_ = std::map<std::string, header_pe>();
     deferred_dlls_ = std::map<uint64_t, std::string>();
@@ -201,7 +199,10 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
     import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
 
     // Bytes contain a valid PE header?
-    E_ERR(header_.try_parse(&bytes[0]));
+    if (header_.try_parse(&bytes[0]))
+        return 0x0;
+
+    emulator_ = new emulator(header_.machine);
 
     // Mem: All defined sections
     emulator_->mem_map(header_.image_base, &bytes[0], PAGE_SIZE);
@@ -221,12 +222,7 @@ int loader_pe::load(emulator* emulator, std::vector<uint8_t> bytes)
 
     defer_ = false;
 
-    return R_SUCCESS;
-}
-
-std::map<uint64_t, std::string> loader_pe::labels() const
-{
-    return labels_;
+    return header_.machine;
 }
 
 bool loader_pe::validate_availablility(const uint64_t address)
@@ -243,4 +239,14 @@ bool loader_pe::validate_availablility(const uint64_t address)
     //dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
 
     return true;
+}
+
+emulator* loader_pe::get_emulator() const
+{
+    return emulator_;
+}
+
+std::map<uint64_t, std::string> loader_pe::get_labels() const
+{
+    return labels_;
 }

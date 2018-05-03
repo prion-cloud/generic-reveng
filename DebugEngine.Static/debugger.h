@@ -16,7 +16,7 @@ class debugger
 public:
     
     // Uses a loader to make some machine code ready for debugging.
-    explicit debugger(loader* loader, uint16_t machine, std::vector<uint8_t> byte_vec);
+    explicit debugger(loader* loader, std::vector<uint8_t> byte_vec);
     // Ends debugging and releases resources.
     ~debugger();
 

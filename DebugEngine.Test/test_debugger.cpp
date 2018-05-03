@@ -2,7 +2,7 @@
 
 #include "../DebugEngine.Static/debugger.h"
 
-void test_file(const std::string file_name, const uint16_t machine, const std::vector<std::tuple<bool, bool, instruction, std::string>> expected)
+void test_file(const std::string file_name, const std::vector<std::tuple<bool, bool, instruction, std::string>> expected)
 {
     FILE* file;
     fopen_s(&file, file_name.c_str(), "rb");
@@ -21,7 +21,7 @@ void test_file(const std::string file_name, const uint16_t machine, const std::v
     free(buffer);
 
     const auto loader = new loader_pe();
-    const auto dbg = new debugger(loader, machine, bytes);
+    const auto dbg = new debugger(loader, bytes);
 
     // delete loader; TODO
 
@@ -60,7 +60,7 @@ TEST(debugger_debug, x64)
         { true, true, { 0x146, 0x401500, { 0x48, 0x83, 0xec, 0x28 }, "sub", "rsp, 0x28" }, { } }
     };
     
-    test_file(TEST_FOLDER "helloworld64.exe", IMAGE_FILE_MACHINE_AMD64, expected);
+    test_file(TEST_FOLDER "helloworld64.exe", expected);
 }
 #else
 TEST(debugger_debug, x86)
@@ -83,6 +83,6 @@ TEST(debugger_debug, x86)
         { false, true,  { 0x1ba, { },      { 0x8b, 0xff },                         "mov",  "edi, edi",                  }, "KERNELBASE.GetModuleHandleA" }
     };
     
-    test_file(TEST_FOLDER "Test.exe", IMAGE_FILE_MACHINE_I386, expected);
+    test_file(TEST_FOLDER "Test.exe", expected);
 }
 #endif

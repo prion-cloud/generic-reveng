@@ -200,15 +200,7 @@ int main(const int argc, char* argv[])
     }
 
     const auto loader = new loader_pe();
-    const auto dbg = new debugger(
-        loader,
-#ifdef _WIN64
-        IMAGE_FILE_MACHINE_AMD64,
-#else
-        IMAGE_FILE_MACHINE_I386,
-#endif
-        dump_file(file_name)
-    );
+    const auto dbg = new debugger(loader, dump_file(file_name));
 
     // delete loader; TODO
 
