@@ -35,8 +35,8 @@ struct flag_status
     bool fat = true;
     // Do any memory allocation once it is needed.
     bool lazy = false;
-    // TODO: Consider some sort of utility for this.
-    bool ugly = true;
+    // Ignore failed instructions.
+    bool ugly = false;
 };
 
 extern flag_status global_flag_status;

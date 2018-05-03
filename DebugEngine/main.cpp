@@ -24,6 +24,7 @@
 
 #define FLAG_NO_FAT "nofat"
 #define FLAG_LAZY "lazy"
+#define FLAG_UGLY "ugly"
 
 void init_console()
 {
@@ -50,6 +51,7 @@ void init_console()
 int inspect_args(std::vector<std::string> args, std::string& file_name, flag_status& flag_status)
 {
     auto got_file_name = false;
+    auto got_flag = false;
 
     for (const auto arg : args)
     {
@@ -76,9 +78,12 @@ int inspect_args(std::vector<std::string> args, std::string& file_name, flag_sta
                 flag_status.fat = false;
             else if (flag == FLAG_LAZY)
                 flag_status.lazy = true;
+            else if (flag == FLAG_UGLY)
+                flag_status.ugly = true;
             else return -1;
 
             std::cout << "Flag: " << flag << std::endl;
+            got_flag = true;
 
             continue;
         }
@@ -92,6 +97,11 @@ int inspect_args(std::vector<std::string> args, std::string& file_name, flag_sta
 
     if (!got_file_name)
         return -1;
+
+    if (!got_flag)
+        std::cout << "No flags specified." << std::endl;
+
+    std::cout << std::endl;
 
     return 0;
 }
@@ -122,7 +132,7 @@ void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
     instruction instruction;
     std::string label;
 
-    const auto res = dbg->debug(instruction, label, registers);
+    const auto res = dbg->step_into(instruction, label, registers);
 
     std::cout << std::hex << std::setw(8) << instruction.address;
 

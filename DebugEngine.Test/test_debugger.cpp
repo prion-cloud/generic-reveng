@@ -23,15 +23,13 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
     const auto loader = new loader_pe();
     const auto dbg = new debugger(loader, bytes);
 
-    // delete loader; TODO
-
     for (auto exp_ins : expected)
     {
         instruction ins;
         std::string label;
         std::map<std::string, uint64_t> registers;
 
-        ASSERT_FALSE(dbg->debug(ins, label, registers));
+        ASSERT_FALSE(dbg->step_into(ins, label, registers));
 
         if (std::get<0>(exp_ins))
             EXPECT_EQ(std::get<2>(exp_ins).address, ins.address);
@@ -50,6 +48,7 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
     }
 
     delete dbg;
+    delete loader;
 }
 
 #ifdef _WIN64

@@ -18,7 +18,7 @@ debugger::~debugger()
     delete emulator_;
 }
 
-int debugger::debug(instruction& instruction, std::string& label, std::map<std::string, uint64_t>& registers) const
+int debugger::step_into(instruction& instruction, std::string& label, std::map<std::string, uint64_t>& registers) const
 {
     const auto address = emulator_->address();
 
@@ -30,10 +30,10 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
 
     const auto res = emulator_->step_into();
 
-    if (res == 8 && loader_->validate_availablility(emulator_->address()))
+    if (res == UC_ERR_FETCH_UNMAPPED && loader_->validate_availablility(emulator_->address()))
     {
         emulator_->jump(address);
-        return debug(instruction, label, registers);
+        return step_into(instruction, label, registers);
     }
 
     for (const auto reg : regs)
@@ -43,6 +43,9 @@ int debugger::debug(instruction& instruction, std::string& label, std::map<std::
     label = labels.find(address) != labels.end()
         ? labels.at(address)
         : std::string();
+
+    if (res && global_flag_status.ugly)
+        emulator_->jump(address + instruction.bytes.size());
 
     return res;
 }
