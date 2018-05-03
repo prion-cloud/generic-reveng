@@ -36,7 +36,7 @@ disassembler::~disassembler()
     cs_close(&cs_);
 }
 
-uint64_t disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction, std::map<x86_reg, std::string>& registers) const
+void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction, std::map<x86_reg, std::string>& registers) const
 {
     cs_insn* insn;
     E_FAT(!cs_disasm(cs_, bytes, MAX_BYTES, address, 1, &insn));
@@ -67,25 +67,4 @@ uint64_t disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t addr
         default:;
         }
     }
-    
-    auto incr = true;
-    for (auto i = 0; i < insn->detail->groups_count; ++i)
-    {
-        switch (insn->detail->groups[i])
-        {
-        case CS_GRP_JUMP:
-        case CS_GRP_CALL:
-        case CS_GRP_RET:
-        case CS_GRP_INT:
-        case CS_GRP_IRET:
-            incr = false;
-            break;
-        default:;
-        }
-    }
-
-    if (incr)
-        return address + insn->size;
-
-    return 0x0;
 }

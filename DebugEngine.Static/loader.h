@@ -27,12 +27,12 @@ struct header_pe
 
     DWORD entry_point;
 
-    std::array<IMAGE_DATA_DIRECTORY, 16> data_directories;
+    IMAGE_DATA_DIRECTORY import_directory;
 
     std::vector<IMAGE_SECTION_HEADER> section_headers;
 
     // Inspects a range of bytes for a valid PE header and initializes all fields if successful.
-    int retrieve(const uint8_t* buffer);
+    int try_parse(const uint8_t* buffer);
 };
 
 // Initializer for machine code emulation of PE binaries
