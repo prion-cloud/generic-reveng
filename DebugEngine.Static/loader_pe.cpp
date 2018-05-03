@@ -2,7 +2,7 @@
 
 #include "loader.h"
 
-int header_pe::try_parse(const uint8_t* buffer)
+int loader_pe::header_pe::try_parse(const uint8_t* buffer)
 {
     size_t cursor = 0;
 

@@ -19,27 +19,27 @@ public:
     virtual std::map<uint64_t, std::string> get_labels() const = 0;
 };
 
-// Important properties of a PE file header
-struct header_pe
-{
-    WORD machine;
-
-    ULONGLONG image_base;
-    ULONGLONG stack_commit;
-
-    DWORD entry_point;
-
-    IMAGE_DATA_DIRECTORY import_directory;
-
-    std::vector<IMAGE_SECTION_HEADER> section_headers;
-
-    // Inspects a range of bytes for a valid PE header and initializes all fields if successful.
-    int try_parse(const uint8_t* buffer);
-};
-
 // Initializer for machine code emulation of PE binaries
 class loader_pe : public loader
 {
+    // Important properties of a PE file header
+    struct header_pe
+    {
+        WORD machine;
+
+        ULONGLONG image_base;
+        ULONGLONG stack_commit;
+
+        DWORD entry_point;
+
+        IMAGE_DATA_DIRECTORY import_directory;
+
+        std::vector<IMAGE_SECTION_HEADER> section_headers;
+
+        // Inspects a range of bytes for a valid PE header and initializes all fields if successful.
+        int try_parse(const uint8_t* buffer);
+    };
+
     bool defer_;
 
     emulator* emulator_ { };
