@@ -53,7 +53,7 @@ int loader_pe::header_pe::try_parse(const uint8_t* buffer)
     return R_SUCCESS;
 }
 
-void loader_pe::import_dll(const uint64_t base, std::string dll_name, const bool sub)
+void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, const bool sub)
 {
     // Get handle
     const auto dll_handle = sub // TODO: Validate necessity
@@ -109,7 +109,7 @@ void loader_pe::import_dll(const uint64_t base, std::string dll_name, const bool
         imported_dlls_.emplace(dll_name, dll_header);
 
         // "Recurse" to get sub DLLs
-        import_dlls(dll_header, true);
+        import_all_dlls(dll_header, true);
     }
 
     // Inspect import descriptor procs
@@ -122,16 +122,12 @@ void loader_pe::import_dll(const uint64_t base, std::string dll_name, const bool
         if (import_proc_name_address == 0x0)
             break;
 
+        if (!emulator_->mem_is_mapped(base + import_proc_name_address))
+            continue;
+
         // Read name
         std::string import_proc_name;
-        try // TODO: What is this error ?
-        {
-            import_proc_name = emulator_->mem_read_string(base + import_proc_name_address + sizeof(WORD));
-        }
-        catch (std::runtime_error)
-        {
-            continue;
-        }
+        import_proc_name = emulator_->mem_read_string(base + import_proc_name_address + sizeof(WORD));
 
         // Retrieve export address
         const auto dll_export_proc_address = reinterpret_cast<DWORD>(GetProcAddress(dll_handle, import_proc_name.c_str()));
@@ -150,7 +146,7 @@ void loader_pe::import_dll(const uint64_t base, std::string dll_name, const bool
     if (!sub)
         FreeLibrary(dll_handle);
 }
-void loader_pe::import_dlls(const header_pe header, const bool sub)
+void loader_pe::import_all_dlls(const header_pe header, const bool sub)
 {
     // Locate import table
     const auto imports_address = header.import_directory.VirtualAddress;
@@ -190,7 +186,7 @@ void loader_pe::import_dlls(const header_pe header, const bool sub)
                 deferred_dlls_.emplace(address, dll_name);
             }
         }
-        else import_dll(header.image_base, dll_name, sub);
+        else import_single_dll(header.image_base, dll_name, sub);
     }
 }
 
@@ -220,7 +216,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> bytes)
         emulator_->mem_map(header_.image_base + sec.VirtualAddress, &bytes[0] + sec.PointerToRawData, sec.SizeOfRawData);
 
     // DLL: All defined imports (start recursion)
-    import_dlls(header_, false);
+    import_all_dlls(header_, false);
 
     // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
@@ -244,7 +240,7 @@ bool loader_pe::validate_availablility(const uint64_t address)
 
     E_FAT(dll_name == STR_UNKNOWN);
     
-    import_dll(header_.image_base, dll_name, false);
+    import_single_dll(header_.image_base, dll_name, false);
 
     //dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
 

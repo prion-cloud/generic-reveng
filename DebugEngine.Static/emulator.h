@@ -6,7 +6,14 @@
 
 class emulator
 {
+    struct mem_region_less
+    {
+        bool operator()(uc_mem_region a, uc_mem_region b) const;
+    };
+
     uc_engine* uc_;
+
+    std::set<uc_mem_region, mem_region_less> mem_regions_;
 
     uint64_t scale_;
 
@@ -22,8 +29,10 @@ public:
 
     // Memory
 
-    void mem_map(uint64_t address, void* buffer, size_t size) const;
-    
+    void mem_map(uint64_t address, void* buffer, size_t size);
+
+    bool mem_is_mapped(uint64_t address) const;
+
     TPL T mem_read(uint64_t address) const;
     TPL T mem_read(uint64_t address, int index) const;
     

@@ -53,8 +53,8 @@ class loader_pe : public loader
 
     std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>> import_descriptors_ { };
 
-    void import_dll(uint64_t base, std::string dll_name, bool sub);
-    void import_dlls(header_pe header, bool sub);
+    void import_single_dll(uint64_t base, std::string dll_name, bool sub);
+    void import_all_dlls(header_pe header, bool sub);
 
 public:
 

@@ -2,9 +2,15 @@
 
 #include "emulator.h"
 
+bool emulator::mem_region_less::operator()(const uc_mem_region a, const uc_mem_region b) const
+{
+    return a.end <= b.begin;
+}
+
 emulator::emulator(const uint16_t machine)
 {
-    uc_arch arch;
+    mem_regions_ = std::set<uc_mem_region, mem_region_less>();
+
     uc_mode mode;
 
     switch (machine)
@@ -12,7 +18,6 @@ emulator::emulator(const uint16_t machine)
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
         
-        arch = UC_ARCH_X86;
         mode = UC_MODE_64;
 
         scale_ = UINT64_MAX;
@@ -26,7 +31,6 @@ emulator::emulator(const uint16_t machine)
 #else
     case IMAGE_FILE_MACHINE_I386:
 
-        arch = UC_ARCH_X86;
         mode = UC_MODE_32;
 
         scale_ = UINT32_MAX;
@@ -42,7 +46,7 @@ emulator::emulator(const uint16_t machine)
         THROW;
     }
 
-    E_FAT(uc_open(arch, mode, &uc_));
+    E_FAT(uc_open(UC_ARCH_X86, mode, &uc_));
 }
 emulator::~emulator()
 {
@@ -51,7 +55,7 @@ emulator::~emulator()
 
 // Memory
 
-void emulator::mem_map(const uint64_t address, void* buffer, const size_t size) const
+void emulator::mem_map(const uint64_t address, void* buffer, const size_t size)
 {
     if (size == 0x0)
         return;
@@ -60,12 +64,31 @@ void emulator::mem_map(const uint64_t address, void* buffer, const size_t size) 
     if (size % PAGE_SIZE > 0)
         virt_size += PAGE_SIZE;
 
-    E_FAT(uc_mem_map(uc_, address, virt_size, UC_PROT_ALL));
+    const uint32_t perms = UC_PROT_ALL;
+
+    E_FAT(uc_mem_map(uc_, address, virt_size, perms));
+
+    uc_mem_region region;
+    region.begin = address;
+    region.end = address + virt_size;
+    region.perms = perms;
+
+    mem_regions_.insert(region);
     
     if (buffer == nullptr)
         return;
 
     E_FAT(uc_mem_write(uc_, address, buffer, size));
+}
+
+bool emulator::mem_is_mapped(const uint64_t address) const
+{
+    uc_mem_region cmp_region;
+
+    cmp_region.begin = address;
+    cmp_region.end = address;
+
+    return mem_regions_.lower_bound(cmp_region) != mem_regions_.upper_bound(cmp_region);
 }
 
 void emulator::mem_read(const uint64_t address, void* buffer, const size_t size) const
