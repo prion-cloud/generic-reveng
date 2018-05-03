@@ -36,7 +36,7 @@ disassembler::~disassembler()
     cs_close(&cs_);
 }
 
-void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction, std::map<x86_reg, std::string>& registers) const
+void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction) const
 {
     cs_insn* insn;
     E_FAT(!cs_disasm(cs_, bytes, MAX_BYTES, address, 1, &insn));
@@ -62,7 +62,7 @@ void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address,
         {
         case X86_OP_REG:
         case X86_OP_MEM:
-            registers.emplace(reg, cs_reg_name(cs_, reg));
+            instruction.registers.emplace(reg, cs_reg_name(cs_, reg));
             break;
         default:;
         }

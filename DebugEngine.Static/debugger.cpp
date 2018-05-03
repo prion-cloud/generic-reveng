@@ -25,8 +25,7 @@ int debugger::step_into(instruction& instruction, std::string& label, std::map<s
     uint8_t bytes[MAX_BYTES];
     emulator_->mem_read(address, bytes, MAX_BYTES);
 
-    std::map<x86_reg, std::string> regs;
-    disassembler_->disassemble(bytes, address, instruction, regs);
+    disassembler_->disassemble(bytes, address, instruction);
 
     const auto res = emulator_->step_into();
 
@@ -36,7 +35,7 @@ int debugger::step_into(instruction& instruction, std::string& label, std::map<s
         return step_into(instruction, label, registers);
     }
 
-    for (const auto reg : regs)
+    for (const auto reg : instruction.registers)
         registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
     const auto labels = loader_->get_labels();

@@ -15,6 +15,8 @@ struct instruction
 
     std::string mnemonic { };
     std::string operands { };
+
+    std::map<x86_reg, std::string> registers { };
 };
 
 class disassembler
@@ -26,5 +28,5 @@ public:
     explicit disassembler(uint16_t machine);
     ~disassembler();
 
-    void disassemble(uint8_t bytes[MAX_BYTES], uint64_t address, instruction& instruction, std::map<x86_reg, std::string>& registers) const;
+    void disassemble(uint8_t bytes[MAX_BYTES], uint64_t address, instruction& instruction) const;
 };
