@@ -56,9 +56,7 @@ int loader_pe::header_pe::try_parse(const uint8_t* buffer)
 void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, const bool sub)
 {
     // Get handle
-    const auto dll_handle = sub // TODO: Validate necessity
-        ? GetModuleHandleA(dll_name.c_str())
-        : LoadLibraryA(dll_name.c_str());
+    const auto dll_handle = LoadLibraryA(dll_name.c_str());
     E_FAT(dll_handle == nullptr)
     const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
     
@@ -143,8 +141,7 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
     }
 
     // Release handle
-    if (!sub)
-        FreeLibrary(dll_handle);
+    FreeLibrary(dll_handle);
 }
 void loader_pe::import_all_dlls(const header_pe header, const bool sub)
 {
