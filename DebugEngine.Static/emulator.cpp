@@ -20,7 +20,7 @@ emulator::emulator(const uint16_t machine)
         
         mode = UC_MODE_64;
 
-        scale_ = UINT64_MAX;
+        max_scale_ = UINT64_MAX;
 
         reg_sp_id_ = UC_X86_REG_RSP;
         reg_bp_id_ = UC_X86_REG_RBP;
@@ -33,7 +33,7 @@ emulator::emulator(const uint16_t machine)
 
         mode = UC_MODE_32;
 
-        scale_ = UINT32_MAX;
+        max_scale_ = UINT32_MAX;
 
         reg_sp_id_ = UC_X86_REG_ESP;
         reg_bp_id_ = UC_X86_REG_EBP;

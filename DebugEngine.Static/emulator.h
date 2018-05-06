@@ -15,7 +15,7 @@ class emulator
 
     std::set<uc_mem_region, mem_region_less> mem_regions_;
 
-    uint64_t scale_;
+    uint64_t max_scale_;
 
     int reg_sp_id_;
     int reg_bp_id_;
