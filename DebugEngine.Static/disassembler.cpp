@@ -47,7 +47,7 @@ void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address,
     instruction.mnemonic = insn->mnemonic;
     instruction.operands = insn->op_str;
 
-    for (auto i = 0; i < insn->detail->x86.op_count; ++i) // TODO: Somehow enforce x86
+    for (auto i = 0; i < insn->detail->x86.op_count; ++i) // TODO: Enforce x86 ?
     {
         const auto operand = insn->detail->x86.operands[i];
         const auto reg = operand.reg;
