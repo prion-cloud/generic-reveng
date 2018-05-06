@@ -20,12 +20,12 @@
 #define R_FAILURE 1
 
 // Throw a runtime exception containing the file name and the code line.
-#define THROW throw std::runtime_error("ERROR [" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]")
+#define THROW if (global_flag_status.fat) { throw std::runtime_error("ERROR [" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]"); }
 
 // Non-fatal error; return as failure if condition is true.
-#define E_ERR(cond) if (cond) { return R_FAILURE; }
+#define E_ERR(expr) if (expr) { return R_FAILURE; }
 // Fatal error; throw exception if condition is true.
-#define E_FAT(cond) if (cond && global_flag_status.fat) { THROW; }
+#define E_FAT(expr) if (expr) { THROW }
 
 #define STR_UNKNOWN "???"
 

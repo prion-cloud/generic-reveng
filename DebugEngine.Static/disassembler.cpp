@@ -4,31 +4,28 @@
 
 disassembler::disassembler(const uint16_t machine)
 {
-    cs_arch arch;
-    cs_mode mode;
+    auto mode = static_cast<cs_mode>(0);
 
     switch (machine)
     {
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
 
-        arch = CS_ARCH_X86;
         mode = CS_MODE_64;
 
         break;
 #else
     case IMAGE_FILE_MACHINE_I386:
 
-        arch = CS_ARCH_X86;
         mode = CS_MODE_32;
 
         break;
 #endif
     default:
-        THROW;
+        THROW
     }
 
-    E_FAT(cs_open(arch, mode, &cs_))
+    E_FAT(cs_open(CS_ARCH_X86, mode, &cs_))
     E_FAT(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON))
 }
 disassembler::~disassembler()

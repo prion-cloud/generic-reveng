@@ -11,7 +11,7 @@ emulator::emulator(const uint16_t machine)
 {
     mem_regions_ = std::set<uc_mem_region, mem_region_less>();
 
-    uc_mode mode;
+    auto mode = static_cast<uc_mode>(0);
 
     switch (machine)
     {
@@ -43,7 +43,7 @@ emulator::emulator(const uint16_t machine)
         break;
 #endif
     default:
-        THROW;
+        THROW
     }
 
     E_FAT(uc_open(UC_ARCH_X86, mode, &uc_))
