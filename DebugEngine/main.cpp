@@ -160,12 +160,12 @@ void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
         col = COL_JUMP;
     if (instruction.id == 0x038 || instruction.id == 0x095)
         col = COL_CALL;
-    COUT(col, << instruction.mnemonic << " " << instruction.operands)
+    COUT(col, << instruction.mnemonic << " " << instruction.operands);
 
     if (!label.empty())
     {
         std::cout << " ";
-        COUT(COL_LABEL, << "<" << label << ">")
+        COUT(COL_LABEL, << "<" << label << ">");
     }
 
     std::cout << std::endl;
@@ -181,7 +181,7 @@ void show_regs(std::map<std::string, uint64_t> registers)
         auto reg_name = reg.first;
         std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
 
-        COUT(COL_REG, << reg_name << ": " << std::hex << reg.second)
+        COUT(COL_REG, << reg_name << ": " << std::hex << reg.second);
 
         first = false;
     }

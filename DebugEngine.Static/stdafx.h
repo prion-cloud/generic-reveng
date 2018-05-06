@@ -25,7 +25,7 @@
 // Non-fatal error; return as failure if condition is true.
 #define E_ERR(expr) if (expr) { return R_FAILURE; }
 // Fatal error; throw exception if condition is true.
-#define E_FAT(expr) if (expr) { THROW }
+#define E_FAT(expr) if (expr) { THROW; }
 
 #define STR_UNKNOWN "???"
 

@@ -22,11 +22,11 @@ disassembler::disassembler(const uint16_t machine)
         break;
 #endif
     default:
-        THROW
+        THROW;
     }
 
-    E_FAT(cs_open(CS_ARCH_X86, mode, &cs_))
-    E_FAT(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON))
+    E_FAT(cs_open(CS_ARCH_X86, mode, &cs_));
+    E_FAT(cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON));
 }
 disassembler::~disassembler()
 {
@@ -36,7 +36,7 @@ disassembler::~disassembler()
 void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction) const
 {
     cs_insn* insn;
-    E_FAT(!cs_disasm(cs_, bytes, MAX_BYTES, address, 1, &insn))
+    E_FAT(!cs_disasm(cs_, bytes, MAX_BYTES, address, 1, &insn));
 
     instruction.id = insn->id;
 
