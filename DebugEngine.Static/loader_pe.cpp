@@ -220,7 +220,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> bytes)
 
     // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
-    const auto stack_size = header_.stack_commit;
+    const auto stack_size = static_cast<size_t>(header_.stack_commit);
     emulator_->mem_map(stack_pointer - stack_size + 1, nullptr, stack_size);
 
     // Reg: Initialize
