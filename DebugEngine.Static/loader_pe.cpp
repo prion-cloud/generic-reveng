@@ -7,10 +7,10 @@ int loader_pe::header_pe::try_parse(const uint8_t* buffer)
     size_t cursor = 0;
 
     const auto head_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&buffer[cursor]);
-    E_ERR(head_dos.e_magic != 0x5a4d);
+    E_ERR(head_dos.e_magic != 0x5a4d)
 
     const auto pe_sig = *reinterpret_cast<const DWORD*>(&buffer[cursor += head_dos.e_lfanew]);
-    E_ERR(pe_sig != 0x4550);
+    E_ERR(pe_sig != 0x4550)
 
     const auto head_fil = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&buffer[cursor += sizeof(DWORD)]);
     cursor += sizeof head_fil;
@@ -59,7 +59,7 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
     const auto dll_handle = sub // TODO: Validate necessity
         ? GetModuleHandleA(dll_name.c_str())
         : LoadLibraryA(dll_name.c_str());
-    E_FAT(dll_handle == nullptr);
+    E_FAT(dll_handle == nullptr)
     const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
     
     // Retrieve import descriptor
@@ -86,9 +86,9 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
 
         // Create header from bytes
         auto dll_header = header_pe();
-        E_FAT(dll_header.try_parse(dll_header_buffer));
+        E_FAT(dll_header.try_parse(dll_header_buffer))
         free(dll_header_buffer);
-        E_FAT(dll_header.image_base != dll_address);
+        E_FAT(dll_header.image_base != dll_address)
 
         // Use header to write remaining sections to UC
         for (auto dll_sec : dll_header.section_headers)
@@ -238,7 +238,7 @@ bool loader_pe::validate_availablility(const uint64_t address)
 
     const auto dll_name = deferred_dlls_.at(address);
 
-    E_FAT(dll_name == STR_UNKNOWN);
+    E_FAT(dll_name == STR_UNKNOWN)
     
     import_single_dll(header_.image_base, dll_name, false);
 

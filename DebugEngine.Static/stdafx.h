@@ -23,9 +23,9 @@
 #define THROW throw std::runtime_error("ERROR [" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]")
 
 // Non-fatal error; return as failure if condition is true.
-#define E_ERR(cond) if (cond) return R_FAILURE
+#define E_ERR(cond) if (cond) { return R_FAILURE; }
 // Fatal error; throw exception if condition is true.
-#define E_FAT(cond) if (cond && global_flag_status.fat) THROW
+#define E_FAT(cond) if (cond && global_flag_status.fat) { THROW; }
 
 #define STR_UNKNOWN "???"
 
