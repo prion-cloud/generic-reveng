@@ -2,15 +2,14 @@
 
 #include "debugger.h"
 
-debugger::debugger(loader* loader, const std::vector<uint8_t> byte_vec)
+debugger::debugger(loader& loader, const std::vector<uint8_t> byte_vec)
+    : loader_(loader)
 {
-    loader_ = loader;
-
-    const auto machine = loader_->load(byte_vec);
+    const auto machine = loader_.load(byte_vec);
     E_FAT(machine == 0x0);
 
     disassembler_ = new disassembler(machine);
-    emulator_ = loader_->get_emulator();
+    emulator_ = loader_.get_emulator();
 }
 debugger::~debugger()
 {
@@ -31,7 +30,7 @@ debug_trace_entry debugger::step_into() const
 
     trace_entry.error = emulator_->step_into();
 
-    if (trace_entry.error == UC_ERR_FETCH_UNMAPPED && loader_->validate_availablility(emulator_->address()))
+    if (trace_entry.error == UC_ERR_FETCH_UNMAPPED && loader_.validate_availablility(emulator_->address()))
     {
         emulator_->jump(address);
         return step_into(); // TODO: Prevent stack overflow
@@ -40,7 +39,7 @@ debug_trace_entry debugger::step_into() const
     for (const auto reg : trace_entry.instruction.registers)
         trace_entry.registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
-    const auto labels = loader_->get_labels();
+    const auto labels = loader_.get_labels();
     trace_entry.label = labels.find(address) != labels.end()
         ? labels.at(address)
         : std::string();

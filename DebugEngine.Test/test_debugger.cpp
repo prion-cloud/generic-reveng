@@ -20,12 +20,11 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
     const auto bytes = std::vector<uint8_t>(buffer, buffer + length);
     free(buffer);
 
-    const auto loader = new loader_pe();
-    const auto dbg = new debugger(loader, bytes);
+    const debugger debugger(loader_pe(), bytes);
 
     for (auto exp_ins : expected)
     {
-        const auto trace_entry = dbg->step_into();
+        const auto trace_entry = debugger.step_into();
 
         ASSERT_FALSE(trace_entry.error);
 
@@ -46,9 +45,6 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
 
         EXPECT_EQ(std::get<3>(exp_ins), trace_entry.label);
     }
-
-    delete dbg;
-    delete loader;
 }
 
 void test_x86(const flag_status flags)

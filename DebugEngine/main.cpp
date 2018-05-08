@@ -167,7 +167,7 @@ void print_trace_entry(const debug_trace_entry trace_entry)
 
     std::cout << std::endl;
 }
-void print_registers(std::map<std::string, uint64_t> registers)
+void print_registers(const std::map<std::string, uint64_t> registers)
 {
     auto first = true;
     for (const auto reg : registers)
@@ -186,6 +186,7 @@ void print_registers(std::map<std::string, uint64_t> registers)
     std::cout << std::endl;
 }
 
+// Entry point
 int main(const int argc, char* argv[])
 {
     init_console();
@@ -220,12 +221,12 @@ int main(const int argc, char* argv[])
     std::cout << std::string(68, '=') << std::endl;
     std::cout << std::endl;
 
-    const auto loader = new loader_pe();
+    loader_pe loader;
 
     if (!global_flag_status.lazy)
         std::cout << "Loading... ";
 
-    const auto dbg = new debugger(loader, dump_file(file_name));
+    const debugger debugger(loader, dump_file(file_name));
 
     std::cout << "File: \"" << file_name << "\"" << std::endl << std::endl;
 
@@ -239,7 +240,7 @@ int main(const int argc, char* argv[])
 
         if (c == ' ')
         {
-            current_trace_entry = dbg->step_into();
+            current_trace_entry = debugger.step_into();
 
             print_trace_entry(current_trace_entry);
 
@@ -255,7 +256,4 @@ int main(const int argc, char* argv[])
         if (c == 'x')
             break;
     }
-
-    delete dbg;
-    delete loader;
 }
