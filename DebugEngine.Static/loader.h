@@ -37,7 +37,7 @@ class loader_pe : public loader
         std::vector<IMAGE_SECTION_HEADER> section_headers;
 
         // Inspects a range of bytes for a valid PE header and initializes all fields if successful.
-        int try_parse(const uint8_t* buffer);
+        int try_parse(std::vector<uint8_t> buffer);
     };
 
     bool defer_;

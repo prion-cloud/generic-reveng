@@ -2,53 +2,65 @@
 
 #include "loader.h"
 
-int loader_pe::header_pe::try_parse(const uint8_t* buffer)
+TPL T parse_to(std::vector<uint8_t>::const_iterator& iterator)
 {
-    size_t cursor = 0;
+    const auto next = iterator + sizeof(T);
+    const auto value = *reinterpret_cast<const T*>(iterator._Ptr);
+    
+    iterator = next;
 
-    const auto head_dos = *reinterpret_cast<const IMAGE_DOS_HEADER*>(&buffer[cursor]);
-    E_ERR(head_dos.e_magic != 0x5a4d);
+    return value;
+}
 
-    const auto pe_sig = *reinterpret_cast<const DWORD*>(&buffer[cursor += head_dos.e_lfanew]);
-    E_ERR(pe_sig != 0x4550);
+int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
+{
+    auto iterator = buffer.begin();
 
-    const auto head_fil = *reinterpret_cast<const IMAGE_FILE_HEADER*>(&buffer[cursor += sizeof(DWORD)]);
-    cursor += sizeof head_fil;
+    const auto dos_header = parse_to<IMAGE_DOS_HEADER>(iterator);
+    E_ERR(dos_header.e_magic != 0x5a4d);
 
-    machine = head_fil.Machine;
+    iterator = buffer.begin() + dos_header.e_lfanew;
 
-    switch (head_fil.SizeOfOptionalHeader)
+    const auto pe_signature = parse_to<DWORD>(iterator);
+    E_ERR(pe_signature != 0x4550);
+    
+    const auto file_header = parse_to<IMAGE_FILE_HEADER>(iterator);
+
+    machine = file_header.Machine;
+
+    switch (file_header.SizeOfOptionalHeader)
     {
     case sizeof(IMAGE_OPTIONAL_HEADER32):
-        const auto head_opt32 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER32*>(&buffer[cursor]);
 
-        image_base = head_opt32.ImageBase;
-        stack_commit = head_opt32.SizeOfStackCommit;
+        const auto optional_header32 = parse_to<IMAGE_OPTIONAL_HEADER32>(iterator);
 
-        entry_point = head_opt32.AddressOfEntryPoint;
+        image_base = optional_header32.ImageBase;
+        stack_commit = optional_header32.SizeOfStackCommit;
 
-        import_directory = head_opt32.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+        entry_point = optional_header32.AddressOfEntryPoint;
+
+        import_directory = optional_header32.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
 
         break;
     case sizeof(IMAGE_OPTIONAL_HEADER64):
-        const auto head_opt64 = *reinterpret_cast<const IMAGE_OPTIONAL_HEADER64*>(&buffer[cursor]);
 
-        image_base = head_opt64.ImageBase;
-        stack_commit = head_opt64.SizeOfStackCommit;
+        const auto optional_header64 = parse_to<IMAGE_OPTIONAL_HEADER64>(iterator);
 
-        entry_point = head_opt64.AddressOfEntryPoint;
+        image_base = optional_header64.ImageBase;
+        stack_commit = optional_header64.SizeOfStackCommit;
 
-        import_directory = head_opt64.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+        entry_point = optional_header64.AddressOfEntryPoint;
+
+        import_directory = optional_header64.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
 
         break;
     default:
         return R_FAILURE;
     }
-    cursor += head_fil.SizeOfOptionalHeader;
 
     section_headers = std::vector<IMAGE_SECTION_HEADER>();
-    for (unsigned i = 0; i < head_fil.NumberOfSections; ++i)
-        section_headers.push_back(*reinterpret_cast<const IMAGE_SECTION_HEADER*>(&buffer[cursor + i * sizeof(IMAGE_SECTION_HEADER)]));
+    for (unsigned i = 0; i < file_header.NumberOfSections; ++i)
+        section_headers.push_back(parse_to<IMAGE_SECTION_HEADER>(iterator));
 
     return R_SUCCESS;
 }
@@ -73,19 +85,16 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
     // Not yet imported?
     if (imported_dlls_.find(dll_name) == imported_dlls_.end())
     {
-        const auto dll_header_size = PAGE_SIZE;
-
         // Read bytes of header section
-        const auto dll_header_buffer = static_cast<uint8_t*>(malloc(dll_header_size));
-        ReadProcessMemory(GetCurrentProcess(), dll_handle, dll_header_buffer, dll_header_size, nullptr);
+        std::vector<uint8_t> dll_header_buffer(PAGE_SIZE);
+        ReadProcessMemory(GetCurrentProcess(), dll_handle, &dll_header_buffer.at(0), PAGE_SIZE, nullptr);
 
         // Initialize header section in UC
-        emulator_->mem_map(dll_address, dll_header_buffer, dll_header_size);
+        emulator_->mem_map(dll_address, dll_header_buffer);
 
         // Create header from bytes
         auto dll_header = header_pe();
         E_FAT(dll_header.try_parse(dll_header_buffer));
-        free(dll_header_buffer);
         E_FAT(dll_header.image_base != dll_address);
 
         // Use header to write remaining sections to UC
@@ -95,12 +104,10 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
             const auto dll_sec_handle = reinterpret_cast<HMODULE>(dll_sec_address);
             const auto dll_sec_size = dll_sec.SizeOfRawData;
 
-            const auto dll_sec_buffer = static_cast<char*>(malloc(dll_sec_size));
-            ReadProcessMemory(GetCurrentProcess(), dll_sec_handle, dll_sec_buffer, dll_sec_size, nullptr);
+            std::vector<uint8_t> dll_sec_buffer(dll_sec_size);
+            ReadProcessMemory(GetCurrentProcess(), dll_sec_handle, &dll_sec_buffer.at(0), dll_sec_size, nullptr);
 
-            emulator_->mem_map(dll_sec_address, dll_sec_buffer, dll_sec_size);
-
-            free(dll_sec_buffer);
+            emulator_->mem_map(dll_sec_address, dll_sec_buffer);
         }
 
         // Mark as imported
@@ -201,16 +208,19 @@ uint16_t loader_pe::load(std::vector<uint8_t> bytes)
 
     import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
 
-    // Bytes contain a valid PE header?
-    if (header_.try_parse(&bytes[0]))
-        return 0x0;
+    // Do the bytes define a valid PE header?
+    if (header_.try_parse(bytes))
+        return R_FAILURE;
 
     emulator_ = new emulator(header_.machine);
 
     // Mem: All defined sections
-    emulator_->mem_map(header_.image_base, &bytes[0], PAGE_SIZE);
+    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));
     for (auto sec : header_.section_headers)
-        emulator_->mem_map(header_.image_base + sec.VirtualAddress, &bytes[0] + sec.PointerToRawData, sec.SizeOfRawData);
+    {
+        const auto first = bytes.begin() + sec.PointerToRawData;
+        emulator_->mem_map(header_.image_base + sec.VirtualAddress, std::vector<uint8_t>(first, first + sec.SizeOfRawData));
+    }
 
     // DLL: All defined imports (start recursion)
     import_all_dlls(header_, false);
@@ -218,7 +228,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> bytes)
     // Mem: Stack
     const uint64_t stack_pointer = 0xffffffff;
     const auto stack_size = static_cast<size_t>(header_.stack_commit);
-    emulator_->mem_map(stack_pointer - stack_size + 1, nullptr, stack_size);
+    emulator_->mem_map(stack_pointer - stack_size + 1, std::vector<uint8_t>(stack_size));
 
     // Reg: Initialize
     emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);

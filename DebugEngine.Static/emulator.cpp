@@ -55,13 +55,13 @@ emulator::~emulator()
 
 // Memory
 
-void emulator::mem_map(const uint64_t address, void* buffer, const size_t size)
+void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer)
 {
-    if (size == 0x0)
+    if (buffer.size() == 0)
         return;
 
-    auto virt_size = PAGE_SIZE * (size / PAGE_SIZE);
-    if (size % PAGE_SIZE > 0)
+    auto virt_size = PAGE_SIZE * (buffer.size() / PAGE_SIZE);
+    if (buffer.size() % PAGE_SIZE > 0)
         virt_size += PAGE_SIZE;
 
     const uint32_t perms = UC_PROT_ALL;
@@ -74,11 +74,8 @@ void emulator::mem_map(const uint64_t address, void* buffer, const size_t size)
     region.perms = perms;
 
     mem_regions_.insert(region);
-    
-    if (buffer == nullptr)
-        return;
 
-    E_FAT(uc_mem_write(uc_, address, buffer, size));
+    E_FAT(uc_mem_write(uc_, address, &buffer.at(0), buffer.size()));
 }
 
 bool emulator::mem_is_mapped(const uint64_t address) const

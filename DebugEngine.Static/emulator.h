@@ -29,7 +29,7 @@ public:
 
     // Memory
 
-    void mem_map(uint64_t address, void* buffer, size_t size);
+    void mem_map(uint64_t address, std::vector<uint8_t> buffer);
 
     bool mem_is_mapped(uint64_t address) const;
 
