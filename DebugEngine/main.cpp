@@ -128,14 +128,11 @@ std::vector<uint8_t> dump_file(const std::string file_name)
     return byte_vec;
 }
 
-void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
+void print_trace_entry(const debug_trace_entry trace_entry)
 {
-    registers.clear();
-
-    instruction instruction;
-    std::string label;
-
-    const auto err = dbg->step_into(instruction, label, registers);
+    const auto instruction = trace_entry.instruction;
+    const auto label = trace_entry.label;
+    const auto registers = trace_entry.registers;
 
     std::cout << std::hex << std::right <<
 #ifdef _WIN64
@@ -149,7 +146,7 @@ void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
         COUT(COL_REG, << "*")
     else std::cout << " ";
     
-    if (err)
+    if (trace_entry.error)
         COUT(COL_FAIL, << "X")
     else std::cout << " ";
 
@@ -170,7 +167,7 @@ void show_debug(debugger* dbg, std::map<std::string, uint64_t>& registers)
 
     std::cout << std::endl;
 }
-void show_regs(std::map<std::string, uint64_t> registers)
+void print_registers(std::map<std::string, uint64_t> registers)
 {
     auto first = true;
     for (const auto reg : registers)
@@ -185,8 +182,6 @@ void show_regs(std::map<std::string, uint64_t> registers)
 
         first = false;
     }
-
-    registers.clear();
 
     std::cout << std::endl;
 }
@@ -234,7 +229,7 @@ int main(const int argc, char* argv[])
 
     std::cout << "File: \"" << file_name << "\"" << std::endl << std::endl;
 
-    std::map<std::string, uint64_t> registers;
+    debug_trace_entry current_trace_entry;
 
     auto regs_shown = false;
 
@@ -244,13 +239,16 @@ int main(const int argc, char* argv[])
 
         if (c == ' ')
         {
-            show_debug(dbg, registers);
+            current_trace_entry = dbg->step_into();
+
+            print_trace_entry(current_trace_entry);
+
             regs_shown = false;
         }
 
-        if (c == 'r' && !registers.empty() && !regs_shown)
+        if (c == 'r' && !current_trace_entry.registers.empty() && !regs_shown)
         {
-            show_regs(registers);
+            print_registers(current_trace_entry.registers);
             regs_shown = true;
         }
 

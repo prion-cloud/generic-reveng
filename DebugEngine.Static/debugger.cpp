@@ -18,33 +18,35 @@ debugger::~debugger()
     delete emulator_;
 }
 
-int debugger::step_into(instruction& instruction, std::string& label, std::map<std::string, uint64_t>& registers) const
+debug_trace_entry debugger::step_into() const
 {
+    debug_trace_entry trace_entry;
+
     const auto address = emulator_->address();
 
     uint8_t bytes[MAX_BYTES];
     emulator_->mem_read(address, bytes, MAX_BYTES);
 
-    disassembler_->disassemble(bytes, address, instruction);
+    disassembler_->disassemble(bytes, address, trace_entry.instruction);
 
-    const auto res = emulator_->step_into();
+    trace_entry.error = emulator_->step_into();
 
-    if (res == UC_ERR_FETCH_UNMAPPED && loader_->validate_availablility(emulator_->address()))
+    if (trace_entry.error == UC_ERR_FETCH_UNMAPPED && loader_->validate_availablility(emulator_->address()))
     {
         emulator_->jump(address);
-        return step_into(instruction, label, registers);
+        return step_into(); // TODO: Prevent stack overflow
     }
 
-    for (const auto reg : instruction.registers)
-        registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
+    for (const auto reg : trace_entry.instruction.registers)
+        trace_entry.registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
     const auto labels = loader_->get_labels();
-    label = labels.find(address) != labels.end()
+    trace_entry.label = labels.find(address) != labels.end()
         ? labels.at(address)
         : std::string();
 
-    if (res && global_flag_status.ugly)
-        emulator_->jump(address + instruction.bytes.size());
+    if (trace_entry.error && global_flag_status.ugly)
+        emulator_->jump(address + trace_entry.instruction.bytes.size());
 
-    return res;
+    return trace_entry;
 }

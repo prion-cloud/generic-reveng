@@ -5,6 +5,17 @@
 
 #include "loader.h"
 
+struct debug_trace_entry
+{
+    int error;
+
+    instruction instruction;
+
+    std::string label;
+
+    std::map<std::string, uint64_t> registers;
+};
+
 // Low-level debugger of executable binaries
 class debugger
 {
@@ -21,5 +32,5 @@ public:
     ~debugger();
 
     // Emulates the next machine code instruction.
-    int step_into(instruction& instruction, std::string& label, std::map<std::string, uint64_t>& registers) const;
+    debug_trace_entry step_into() const;
 };
