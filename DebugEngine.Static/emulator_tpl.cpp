@@ -1,48 +1,6 @@
 #include "stdafx.h"
 
-TPL T emulator::mem_read(const uint64_t address) const
-{
-    return mem_read<T>(address, 0);
-}
-TPL T emulator::mem_read(const uint64_t address, const int index) const
-{
-    const auto size = sizeof(T);
-
-    T value;
-    E_FAT(uc_mem_read(uc_, address + index * size, &value, size));
-
-    return value;
-}
-
-TPL void emulator::mem_write(const uint64_t address, const T value) const
-{
-    mem_write(address, value, 0);
-}
-TPL void emulator::mem_write(const uint64_t address, const T value, const int index) const
-{
-    const auto size = sizeof(T);
-    E_FAT(uc_mem_write(uc_, address + index * size, &value, size));
-}
-
-TPL T emulator::reg_read(const int regid) const
-{
-    T value;
-    E_FAT(uc_reg_read(uc_, regid, &value));
-
-    uint64_t scale = max_scale_;
-
-    const auto uc_reg = static_cast<uc_x86_reg>(regid);
-    if (reg_scales_.find(uc_reg) != reg_scales_.end())
-        scale = reg_scales_.at(uc_reg);
-
-    return value & scale;
-}
-TPL void emulator::reg_write(const int regid, T value) const
-{
-    E_FAT(uc_reg_write(uc_, regid, &value));
-}
-
-static std::map<uc_x86_reg, uint64_t> reg_scales_ =
+static std::map<uc_x86_reg, uint64_t> reg_scales =
 {
     { UC_X86_REG_RAX, UINT64_MAX },
     { UC_X86_REG_EAX, UINT32_MAX },
@@ -88,6 +46,46 @@ static std::map<uc_x86_reg, uint64_t> reg_scales_ =
     { UC_X86_REG_SP, UINT16_MAX },
     { UC_X86_REG_SPL, UINT8_MAX },
 
+    { UC_X86_REG_R8, UINT64_MAX },
+    { UC_X86_REG_R8D, UINT32_MAX },
+    { UC_X86_REG_R8W, UINT16_MAX },
+    { UC_X86_REG_R8B, UINT8_MAX },
+
+    { UC_X86_REG_R9, UINT64_MAX },
+    { UC_X86_REG_R9D, UINT32_MAX },
+    { UC_X86_REG_R9W, UINT16_MAX },
+    { UC_X86_REG_R9B, UINT8_MAX },
+
+    { UC_X86_REG_R10, UINT64_MAX },
+    { UC_X86_REG_R10D, UINT32_MAX },
+    { UC_X86_REG_R10W, UINT16_MAX },
+    { UC_X86_REG_R10B, UINT8_MAX },
+
+    { UC_X86_REG_R11, UINT64_MAX },
+    { UC_X86_REG_R11D, UINT32_MAX },
+    { UC_X86_REG_R11W, UINT16_MAX },
+    { UC_X86_REG_R11B, UINT8_MAX },
+
+    { UC_X86_REG_R12, UINT64_MAX },
+    { UC_X86_REG_R12D, UINT32_MAX },
+    { UC_X86_REG_R12W, UINT16_MAX },
+    { UC_X86_REG_R12B, UINT8_MAX },
+
+    { UC_X86_REG_R13, UINT64_MAX },
+    { UC_X86_REG_R13D, UINT32_MAX },
+    { UC_X86_REG_R13W, UINT16_MAX },
+    { UC_X86_REG_R13B, UINT8_MAX },
+
+    { UC_X86_REG_R14, UINT64_MAX },
+    { UC_X86_REG_R14D, UINT32_MAX },
+    { UC_X86_REG_R14W, UINT16_MAX },
+    { UC_X86_REG_R14B, UINT8_MAX },
+
+    { UC_X86_REG_R15, UINT64_MAX },
+    { UC_X86_REG_R15D, UINT32_MAX },
+    { UC_X86_REG_R15W, UINT16_MAX },
+    { UC_X86_REG_R15B, UINT8_MAX },
+
     { UC_X86_REG_ES, UINT16_MAX },
     { UC_X86_REG_CS, UINT16_MAX },
     { UC_X86_REG_SS, UINT16_MAX },
@@ -95,3 +93,45 @@ static std::map<uc_x86_reg, uint64_t> reg_scales_ =
     { UC_X86_REG_FS, UINT16_MAX },
     { UC_X86_REG_GS, UINT16_MAX }
 };
+
+TPL T emulator::mem_read(const uint64_t address) const
+{
+    return mem_read<T>(address, 0);
+}
+TPL T emulator::mem_read(const uint64_t address, const int index) const
+{
+    const auto size = sizeof(T);
+
+    T value;
+    E_FAT(uc_mem_read(uc_, address + index * size, &value, size));
+
+    return value;
+}
+
+TPL void emulator::mem_write(const uint64_t address, const T value) const
+{
+    mem_write(address, value, 0);
+}
+TPL void emulator::mem_write(const uint64_t address, const T value, const int index) const
+{
+    const auto size = sizeof(T);
+    E_FAT(uc_mem_write(uc_, address + index * size, &value, size));
+}
+
+TPL T emulator::reg_read(const int regid) const
+{
+    T value;
+    E_FAT(uc_reg_read(uc_, regid, &value));
+
+    auto scale = max_scale_;
+
+    const auto uc_reg = static_cast<uc_x86_reg>(regid);
+    if (reg_scales.find(uc_reg) != reg_scales.end())
+        scale = reg_scales.at(uc_reg);
+
+    return value & scale;
+}
+TPL void emulator::reg_write(const int regid, T value) const
+{
+    E_FAT(uc_reg_write(uc_, regid, &value));
+}
