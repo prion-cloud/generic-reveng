@@ -15,7 +15,7 @@
 #define COL_LABEL FOREGROUND_GREEN
 #define COL_REG FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
 
-#define COUT(color, stream) \
+#define COUT_COL(color, stream) \
     { \
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color); \
         std::cout stream; \
@@ -27,6 +27,8 @@
 #define FLAG_NO_FAT "nofat"
 #define FLAG_LAZY "lazy"
 #define FLAG_UGLY "ugly"
+
+std::vector<debug_trace_entry> trace;
 
 void init_console()
 {
@@ -143,11 +145,11 @@ void print_trace_entry(const debug_trace_entry trace_entry)
     << instruction.address;
 
     if (!registers.empty())
-        COUT(COL_REG, << "*")
+        COUT_COL(COL_REG, << "*")
     else std::cout << " ";
     
     if (trace_entry.error)
-        COUT(COL_FAIL, << "X")
+        COUT_COL(COL_FAIL, << "X")
     else std::cout << " ";
 
     std::cout << "\t";
@@ -157,12 +159,12 @@ void print_trace_entry(const debug_trace_entry trace_entry)
         col = COL_JUMP;
     if (instruction.id == 0x038 || instruction.id == 0x095)
         col = COL_CALL;
-    COUT(col, << instruction.mnemonic << " " << instruction.operands);
+    COUT_COL(col, << instruction.mnemonic << " " << instruction.operands);
 
     if (!label.empty())
     {
         std::cout << " ";
-        COUT(COL_LABEL, << "<" << label << ">");
+        COUT_COL(COL_LABEL, << "<" << label << ">");
     }
 
     std::cout << std::endl;
@@ -178,12 +180,54 @@ void print_registers(const std::map<std::string, uint64_t> registers)
         auto reg_name = reg.first;
         std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
 
-        COUT(COL_REG, << reg_name << ": " << std::hex << reg.second);
+        COUT_COL(COL_REG, << reg_name << ": " << std::hex << reg.second);
 
         first = false;
     }
 
     std::cout << std::endl;
+}
+
+void debug(const std::string file_name)
+{
+    loader_pe loader;
+
+    if (!global_flag_status.lazy)
+        std::cout << "Loading... ";
+
+    const debugger debugger(loader, dump_file(file_name));
+
+    std::cout << "File: \"" << file_name << "\"" << std::endl << std::endl;
+
+    debug_trace_entry current_trace_entry;
+
+    auto regs_shown = false;
+
+    for (;;)
+    {
+        const char c = _getch();
+
+        if (c == ' ')
+        {
+            current_trace_entry = debugger.step_into();
+
+            trace.push_back(current_trace_entry);
+            print_trace_entry(current_trace_entry);
+
+            regs_shown = false;
+
+            //THROW;
+        }
+
+        if (c == 'r' && !current_trace_entry.registers.empty() && !regs_shown)
+        {
+            print_registers(current_trace_entry.registers);
+            regs_shown = true;
+        }
+
+        if (c == 'x')
+            break;
+    }
 }
 
 // Entry point
@@ -221,39 +265,12 @@ int main(const int argc, char* argv[])
     std::cout << std::string(68, '=') << std::endl;
     std::cout << std::endl;
 
-    loader_pe loader;
-
-    if (!global_flag_status.lazy)
-        std::cout << "Loading... ";
-
-    const debugger debugger(loader, dump_file(file_name));
-
-    std::cout << "File: \"" << file_name << "\"" << std::endl << std::endl;
-
-    debug_trace_entry current_trace_entry;
-
-    auto regs_shown = false;
-
-    for (;;)
+    try
     {
-        const char c = _getch();
-
-        if (c == ' ')
-        {
-            current_trace_entry = debugger.step_into();
-
-            print_trace_entry(current_trace_entry);
-
-            regs_shown = false;
-        }
-
-        if (c == 'r' && !current_trace_entry.registers.empty() && !regs_shown)
-        {
-            print_registers(current_trace_entry.registers);
-            regs_shown = true;
-        }
-
-        if (c == 'x')
-            break;
+        debug(file_name);
+    }
+    catch (std::runtime_error err)
+    {
+        COUT_COL(COL_FAIL, << err.what());
     }
 }
