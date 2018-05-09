@@ -28,12 +28,17 @@ debug_trace_entry debugger::step_into() const
 
     disassembler_->disassemble(bytes, address, trace_entry.instruction);
 
-    trace_entry.error = emulator_->step_into();
-
-    if (trace_entry.error == UC_ERR_FETCH_UNMAPPED && loader_.validate_availablility(emulator_->address()))
+    switch (trace_entry.error = emulator_->step_into())
     {
-        emulator_->jump(address);
-        return step_into(); // TODO: Prevent stack overflow
+    case UC_ERR_READ_UNMAPPED:
+    case UC_ERR_WRITE_UNMAPPED:
+    case UC_ERR_FETCH_UNMAPPED:
+        if (loader_.ensure_availablility(emulator_->address()))
+        {
+            emulator_->jump(address);
+            return step_into(); // TODO: Prevent stack overflow
+        }
+    default:;
     }
 
     for (const auto reg : trace_entry.instruction.registers)

@@ -9,14 +9,16 @@ public:
 
     virtual ~loader() = default;
 
-    // Initializes a new emulator according to a set of machine code.
-    virtual uint16_t load(std::vector<uint8_t> bytes) = 0;
-
-    virtual bool validate_availablility(uint64_t address) = 0;
-
     virtual emulator* get_emulator() const = 0;
 
     virtual std::map<uint64_t, std::string> get_labels() const = 0;
+
+    // Initializes a new emulator according to a set of machine code.
+    virtual uint16_t load(std::vector<uint8_t> bytes) = 0;
+
+    // Provides certanity that a specified address contains mapped memory.
+    // Returns 'true' if previously unmapped memory is now mapped, otherwise 'false'.
+    virtual bool ensure_availablility(uint64_t address) = 0;
 };
 
 // Initializer for machine code emulation of PE binaries
@@ -60,11 +62,11 @@ public:
 
     loader_pe();
 
-    uint16_t load(std::vector<uint8_t> bytes) override;
-
-    bool validate_availablility(uint64_t address) override;
-
     emulator* get_emulator() const override;
 
     std::map<uint64_t, std::string> get_labels() const override;
+
+    uint16_t load(std::vector<uint8_t> bytes) override;
+
+    bool ensure_availablility(uint64_t address) override;
 };

@@ -14,17 +14,17 @@ TPL T parse_to(std::vector<uint8_t>::const_iterator& iterator)
 
 int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
 {
-    auto iterator = buffer.begin();
+    auto it = buffer.begin();
 
-    const auto dos_header = parse_to<IMAGE_DOS_HEADER>(iterator);
+    const auto dos_header = parse_to<IMAGE_DOS_HEADER>(it);
     E_ERR(dos_header.e_magic != 0x5a4d);
 
-    iterator = buffer.begin() + dos_header.e_lfanew;
+    it = buffer.begin() + dos_header.e_lfanew;
 
-    const auto pe_signature = parse_to<DWORD>(iterator);
+    const auto pe_signature = parse_to<DWORD>(it);
     E_ERR(pe_signature != 0x4550);
     
-    const auto file_header = parse_to<IMAGE_FILE_HEADER>(iterator);
+    const auto file_header = parse_to<IMAGE_FILE_HEADER>(it);
 
     machine = file_header.Machine;
 
@@ -32,7 +32,7 @@ int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
     {
     case sizeof(IMAGE_OPTIONAL_HEADER32):
 
-        const auto optional_header32 = parse_to<IMAGE_OPTIONAL_HEADER32>(iterator);
+        const auto optional_header32 = parse_to<IMAGE_OPTIONAL_HEADER32>(it);
 
         image_base = optional_header32.ImageBase;
         stack_commit = optional_header32.SizeOfStackCommit;
@@ -44,7 +44,7 @@ int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
         break;
     case sizeof(IMAGE_OPTIONAL_HEADER64):
 
-        const auto optional_header64 = parse_to<IMAGE_OPTIONAL_HEADER64>(iterator);
+        const auto optional_header64 = parse_to<IMAGE_OPTIONAL_HEADER64>(it);
 
         image_base = optional_header64.ImageBase;
         stack_commit = optional_header64.SizeOfStackCommit;
@@ -60,7 +60,7 @@ int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
 
     section_headers = std::vector<IMAGE_SECTION_HEADER>();
     for (unsigned i = 0; i < file_header.NumberOfSections; ++i)
-        section_headers.push_back(parse_to<IMAGE_SECTION_HEADER>(iterator));
+        section_headers.push_back(parse_to<IMAGE_SECTION_HEADER>(it));
 
     return R_SUCCESS;
 }
@@ -199,61 +199,6 @@ loader_pe::loader_pe()
     defer_ = global_flag_status.lazy;
 }
 
-uint16_t loader_pe::load(std::vector<uint8_t> bytes)
-{
-    // Reset data structures
-    imported_dlls_ = std::map<std::string, header_pe>();
-    deferred_dlls_ = std::map<uint64_t, std::string>();
-    labels_ = std::map<uint64_t, std::string>();
-
-    import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
-
-    // Do the bytes define a valid PE header?
-    if (header_.try_parse(bytes))
-        return R_FAILURE;
-
-    emulator_ = new emulator(header_.machine);
-
-    // Mem: All defined sections
-    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));
-    for (auto sec : header_.section_headers)
-    {
-        const auto first = bytes.begin() + sec.PointerToRawData;
-        emulator_->mem_map(header_.image_base + sec.VirtualAddress, std::vector<uint8_t>(first, first + sec.SizeOfRawData));
-    }
-
-    // DLL: All defined imports (start recursion)
-    import_all_dlls(header_, false);
-
-    // Mem: Stack
-    const uint64_t stack_pointer = 0xffffffff;
-    const auto stack_size = static_cast<size_t>(header_.stack_commit);
-    emulator_->mem_map(stack_pointer - stack_size + 1, std::vector<uint8_t>(stack_size));
-
-    // Reg: Initialize
-    emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);
-
-    defer_ = false;
-
-    return header_.machine;
-}
-
-bool loader_pe::validate_availablility(const uint64_t address)
-{
-    if (deferred_dlls_.find(address) == deferred_dlls_.end())
-        return false;
-
-    const auto dll_name = deferred_dlls_.at(address);
-
-    E_FAT(dll_name == STR_UNKNOWN);
-    
-    import_single_dll(header_.image_base, dll_name, false);
-
-    //dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
-
-    return true;
-}
-
 emulator* loader_pe::get_emulator() const
 {
     return emulator_;
@@ -262,4 +207,77 @@ emulator* loader_pe::get_emulator() const
 std::map<uint64_t, std::string> loader_pe::get_labels() const
 {
     return labels_;
+}
+
+uint16_t loader_pe::load(std::vector<uint8_t> bytes)
+{
+    // Reset data structures
+    imported_dlls_ = std::map<std::string, header_pe>();
+    deferred_dlls_ = std::map<uint64_t, std::string>();
+    labels_ = std::map<uint64_t, std::string>();
+    import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
+
+    // Do the bytes define a valid PE header?
+    if (header_.try_parse(bytes))
+        return R_FAILURE;
+
+    // Create emulator
+    emulator_ = new emulator(header_.machine);
+
+    // Map all sections
+    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));
+    for (auto sec : header_.section_headers)
+    {
+        const auto start = bytes.begin() + sec.PointerToRawData;
+        emulator_->mem_map(header_.image_base + sec.VirtualAddress, std::vector<uint8_t>(start, start + sec.SizeOfRawData));
+    }
+
+    // Import all DLLs (or defer them)
+    import_all_dlls(header_, false);
+
+    // Map stack
+    const uint64_t stack_pointer = 0xffffffff;
+    const auto stack_size = static_cast<size_t>(header_.stack_commit);
+    emulator_->mem_map(stack_pointer - stack_size + 1, std::vector<uint8_t>(stack_size));
+
+    // Retrieve and map 'Thread Information Block' (TIB)
+    uint64_t tib_address;
+#ifdef _M_IX86
+    tib_address = __readfsdword(0x18);
+#elif _M_AMD64
+    tib_address = __readgsqword(0x30);
+#endif
+    std::vector<uint8_t> tib_buffer(PAGE_SIZE);
+    ReadProcessMemory(GetCurrentProcess(), reinterpret_cast<LPCVOID>(tib_address), &tib_buffer.at(0), PAGE_SIZE, nullptr);
+    emulator_->mem_map(tib_address, tib_buffer);
+
+    // Initialize registers
+    emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);
+
+    // Do not defer any more
+    defer_ = false;
+
+    // Return the file's machine specification
+    return header_.machine;
+}
+
+bool loader_pe::ensure_availablility(const uint64_t address)
+{
+    if (emulator_->mem_is_mapped(address))
+        return false;
+
+    if (deferred_dlls_.find(address) != deferred_dlls_.end())
+    {
+        const auto dll_name = deferred_dlls_.at(address);
+
+        E_FAT(dll_name == STR_UNKNOWN);
+        
+        import_single_dll(header_.image_base, dll_name, false);
+
+        //dll_name_ptr = STR_UNKNOWN; // TODO: dll_name = ?
+
+        return true;
+    }
+
+    return false;
 }
