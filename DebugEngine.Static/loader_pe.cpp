@@ -209,7 +209,7 @@ std::map<uint64_t, std::string> loader_pe::get_labels() const
     return labels_;
 }
 
-uint16_t loader_pe::load(std::vector<uint8_t> bytes)
+uint16_t loader_pe::load(std::vector<uint8_t> code)
 {
     // Reset data structures
     imported_dlls_ = std::map<std::string, header_pe>();
@@ -218,17 +218,17 @@ uint16_t loader_pe::load(std::vector<uint8_t> bytes)
     import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
 
     // Do the bytes define a valid PE header?
-    if (header_.try_parse(bytes))
+    if (header_.try_parse(code))
         return R_FAILURE;
 
     // Create emulator
     emulator_ = new emulator(header_.machine);
 
     // Map all sections
-    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));
+    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(code.begin(), code.begin() + PAGE_SIZE));
     for (auto sec : header_.section_headers)
     {
-        const auto start = bytes.begin() + sec.PointerToRawData;
+        const auto start = code.begin() + sec.PointerToRawData;
         emulator_->mem_map(header_.image_base + sec.VirtualAddress, std::vector<uint8_t>(start, start + sec.SizeOfRawData));
     }
 
@@ -240,7 +240,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> bytes)
     const auto stack_size = static_cast<size_t>(header_.stack_commit);
     emulator_->mem_map(stack_pointer - stack_size + 1, std::vector<uint8_t>(stack_size));
 
-    // Retrieve and map 'Thread Information Block' (TIB)
+    // Retrieve and map 'Thread Information Block' (TIB) TODO: Unused
     uint64_t tib_address;
 #ifdef _M_IX86
     tib_address = __readfsdword(0x18);

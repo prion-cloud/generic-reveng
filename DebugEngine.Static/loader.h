@@ -14,7 +14,7 @@ public:
     virtual std::map<uint64_t, std::string> get_labels() const = 0;
 
     // Initializes a new emulator according to a set of machine code.
-    virtual uint16_t load(std::vector<uint8_t> bytes) = 0;
+    virtual uint16_t load(std::vector<uint8_t> code) = 0;
 
     // Provides certanity that a specified address contains mapped memory.
     // Returns 'true' if previously unmapped memory is now mapped, otherwise 'false'.
@@ -66,7 +66,7 @@ public:
 
     std::map<uint64_t, std::string> get_labels() const override;
 
-    uint16_t load(std::vector<uint8_t> bytes) override;
+    uint16_t load(std::vector<uint8_t> code) override;
 
     bool ensure_availablility(uint64_t address) override;
 };

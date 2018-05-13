@@ -2,10 +2,10 @@
 
 #include "debugger.h"
 
-debugger::debugger(loader& loader, const std::vector<uint8_t> byte_vec)
+debugger::debugger(loader& loader, const std::vector<uint8_t> code)
     : loader_(loader)
 {
-    const auto machine = loader_.load(byte_vec);
+    const auto machine = loader_.load(code);
     E_FAT(machine == 0x0);
 
     disassembler_ = new disassembler(machine);

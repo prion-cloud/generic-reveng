@@ -6,6 +6,9 @@
 
 #include "../DebugEngine.Static/debugger.h"
 
+#define ARG_SUCCESS 0
+#define ARG_FAILURE 1
+
 #define COL_DEF FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
 
 #define COL_FAIL FOREGROUND_RED | FOREGROUND_INTENSITY
@@ -52,65 +55,6 @@ void init_console()
     SetConsoleCursorInfo(h_console, &info);
 }
 
-int inspect_args(std::vector<std::string> args, std::string& file_name, flag_status& flag_status)
-{
-    auto got_file_name = false;
-    auto got_flag = false;
-
-    for (const auto arg : args)
-    {
-        if (arg[0] == '-' && arg[1] == '-')
-        {
-            std::string flag = &arg[2];
-            std::transform(flag.begin(), flag.end(), flag.begin(), tolower);
-
-            if (flag == FLAG_HELP)
-            {
-                std::cout << "This is kind of a reverse engineering tool, I guess." << std::endl << std::endl;
-                
-                std::left(std::cout);
-
-                std::cout << "\t" << std::setw(20) << "--" FLAG_HELP << "Print this help." << std::endl << std::endl;
-                
-                std::cout << "\t" << std::setw(20) << "--" FLAG_NO_FAT << "Disable fatal errors." << std::endl;
-                std::cout << "\t" << std::setw(20) << "--" FLAG_LAZY << "Do any memory allocation once it is needed." << std::endl;
-                std::cout << "\t" << std::setw(20) << "--" FLAG_UGLY << "Ignore instruction failures." << std::endl;
-
-                return 1;
-            }
-            
-            if (flag == FLAG_NO_FAT)
-                flag_status.fat = false;
-            else if (flag == FLAG_LAZY)
-                flag_status.lazy = true;
-            else if (flag == FLAG_UGLY)
-                flag_status.ugly = true;
-            else return -1;
-
-            std::cout << "Flag: " << flag << std::endl;
-            got_flag = true;
-
-            continue;
-        }
-
-        if (got_file_name)
-            return -1;
-
-        file_name = arg;
-        got_file_name = true;
-    }
-
-    if (!got_file_name)
-        return -1;
-
-    if (!got_flag)
-        std::cout << "No flags specified." << std::endl;
-
-    std::cout << std::endl;
-
-    return 0;
-}
-
 std::vector<uint8_t> dump_file(const std::string file_name)
 {
     FILE* file;
@@ -128,6 +72,34 @@ std::vector<uint8_t> dump_file(const std::string file_name)
     free(buffer);
 
     return byte_vec;
+}
+
+void print_help()
+{
+    std::ostringstream help;
+    help << "This is kind of a reverse engineering tool, I guess." << std::endl << std::endl;
+    std::left(help);
+    help << "\t" << std::setw(20) << "--" FLAG_HELP << "Print this help." << std::endl << std::endl;
+    help << "\t" << std::setw(20) << "--" FLAG_NO_FAT << "Disable fatal errors." << std::endl;
+    help << "\t" << std::setw(20) << "--" FLAG_LAZY << "Do any memory allocation once it is needed." << std::endl;
+    help << "\t" << std::setw(20) << "--" FLAG_UGLY << "Ignore instruction failures." << std::endl;
+
+    std::cout << help.str();
+}
+
+void print_manual()
+{
+    std::ostringstream manual;
+    manual << std::string(68, '=') << std::endl;
+    manual << "Press...";
+    std::left(manual);
+    manual << " " << std::setw(10) << "SPACE" << "to debug the next instruction" << std::endl;
+    manual << "\t " << std::setw(10) << "r" << "to display recently accessed registers (* if any)" << std::endl;
+    manual << "\t " << std::setw(10) << "x" << "to quit" << std::endl;
+    manual << std::string(68, '=') << std::endl;
+    manual << std::endl;
+
+    std::cout << manual.str();
 }
 
 void print_trace_entry(const debug_trace_entry trace_entry)
@@ -188,6 +160,56 @@ void print_registers(const std::map<std::string, uint64_t> registers)
     std::cout << std::endl;
 }
 
+int inspect_args(std::vector<std::string> args, std::string& file_name, flag_status& flag_status)
+{
+    auto got_file_name = false;
+    auto got_flag = false;
+
+    for (const auto arg : args)
+    {
+        if (arg[0] == '-' && arg[1] == '-')
+        {
+            std::string flag = &arg[2];
+            std::transform(flag.begin(), flag.end(), flag.begin(), tolower);
+
+            if (flag == FLAG_HELP)
+            {
+                print_help();
+                exit(EXIT_SUCCESS);
+            }
+            
+            if (flag == FLAG_NO_FAT)
+                flag_status.fat = false;
+            else if (flag == FLAG_LAZY)
+                flag_status.lazy = true;
+            else if (flag == FLAG_UGLY)
+                flag_status.ugly = true;
+            else return ARG_FAILURE;
+
+            std::cout << "Flag: " << flag << std::endl;
+            got_flag = true;
+
+            continue;
+        }
+
+        if (got_file_name)
+            return ARG_FAILURE;
+
+        file_name = arg;
+        got_file_name = true;
+    }
+
+    if (!got_file_name)
+        return ARG_FAILURE;
+
+    if (!got_flag)
+        std::cout << "No flags specified." << std::endl;
+
+    std::cout << std::endl;
+
+    return ARG_SUCCESS;
+}
+
 void debug(const std::string file_name)
 {
     loader_pe loader;
@@ -237,33 +259,20 @@ int main(const int argc, char* argv[])
     
     std::string file_name;
     const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flag_status);
-    if (res < 0)
+    if (res == ARG_FAILURE)
     {
         std::cout << "Invalid arguments.";
-        return -1;
-    }
-    if (res > 0)
-    {
-        std::cout << std::endl << "Press any key to exit...";
-        _getch();
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     struct stat buf;
     if (stat(file_name.c_str(), &buf))
     {
         std::cout << "Specified file does not exist.";
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
-    std::cout << std::string(68, '=') << std::endl;
-    std::cout << "Press...";
-    std::left(std::cout);
-    std::cout << " " << std::setw(10) << "SPACE" << "to debug the next instruction" << std::endl;
-    std::cout << "\t " << std::setw(10) << "r" << "to display recently accessed registers (* if any)" << std::endl;
-    std::cout << "\t " << std::setw(10) << "x" << "to quit" << std::endl;
-    std::cout << std::string(68, '=') << std::endl;
-    std::cout << std::endl;
+    print_manual();
 
     try
     {
