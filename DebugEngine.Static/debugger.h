@@ -8,6 +8,7 @@
 struct debug_trace_entry
 {
     int error;
+    std::string error_str;
 
     instruction instruction;
 

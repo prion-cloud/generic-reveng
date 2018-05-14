@@ -6,7 +6,6 @@ debugger::debugger(loader& loader, const std::vector<uint8_t> code)
     : loader_(loader)
 {
     const auto machine = loader_.load(code);
-    E_FAT(machine == 0x0);
 
     disassembler_ = new disassembler(machine);
     emulator_ = loader_.get_emulator();
@@ -28,7 +27,10 @@ debug_trace_entry debugger::step_into() const
 
     disassembler_->disassemble(bytes, address, trace_entry.instruction);
 
-    switch (trace_entry.error = emulator_->step_into())
+    trace_entry.error = emulator_->step_into();
+    trace_entry.error_str = uc_strerror(static_cast<uc_err>(trace_entry.error));
+
+    switch (trace_entry.error)
     {
     case UC_ERR_READ_UNMAPPED:
     case UC_ERR_WRITE_UNMAPPED:
