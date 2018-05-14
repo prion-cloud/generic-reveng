@@ -12,17 +12,18 @@ TPL T parse_to(std::vector<uint8_t>::const_iterator& iterator)
     return value;
 }
 
-int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
+loader_pe::header_pe::header_pe() = default;
+loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
 {
     auto it = buffer.begin();
 
     const auto dos_header = parse_to<IMAGE_DOS_HEADER>(it);
-    E_ERR(dos_header.e_magic != 0x5a4d);
+    E_FAT(dos_header.e_magic != 0x5a4d);
 
     it = buffer.begin() + dos_header.e_lfanew;
 
     const auto pe_signature = parse_to<DWORD>(it);
-    E_ERR(pe_signature != 0x4550);
+    E_FAT(pe_signature != 0x4550);
     
     const auto file_header = parse_to<IMAGE_FILE_HEADER>(it);
 
@@ -55,14 +56,12 @@ int loader_pe::header_pe::try_parse(const std::vector<uint8_t> buffer)
 
         break;
     default:
-        return R_FAILURE;
+        THROW;
     }
 
     section_headers = std::vector<IMAGE_SECTION_HEADER>();
     for (unsigned i = 0; i < file_header.NumberOfSections; ++i)
         section_headers.push_back(parse_to<IMAGE_SECTION_HEADER>(it));
-
-    return R_SUCCESS;
 }
 
 void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, const bool sub)
@@ -93,8 +92,7 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
         emulator_->mem_map(dll_address, dll_header_buffer);
 
         // Create header from bytes
-        auto dll_header = header_pe();
-        E_FAT(dll_header.try_parse(dll_header_buffer));
+        auto dll_header = header_pe(dll_header_buffer);
         E_FAT(dll_header.image_base != dll_address);
 
         // Use header to write remaining sections to UC
@@ -218,8 +216,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> code)
     import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
 
     // Do the bytes define a valid PE header?
-    if (header_.try_parse(code))
-        return R_FAILURE;
+    header_ = header_pe(code);
 
     // Create emulator
     emulator_ = new emulator(header_.machine);
