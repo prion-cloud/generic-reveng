@@ -117,14 +117,14 @@ int main(const int argc, char* argv[])
     const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flag_status);
     if (res == ARG_FAILURE)
     {
-        std::cout << "Invalid arguments.";
+        COUT_COL(COL_FAIL, << "Invalid arguments.");
         exit(EXIT_FAILURE);
     }
 
     struct stat buf;
     if (stat(file_name.c_str(), &buf))
     {
-        std::cout << "Specified file does not exist.";
+        COUT_COL(COL_FAIL, << "Specified file does not exist.");
         exit(EXIT_FAILURE);
     }
 
@@ -148,8 +148,11 @@ int main(const int argc, char* argv[])
             case ' ':
                 cli_debug.step_into(false);
                 break;
+            case 'b':
+                // TODO: Print bytes.
+                break;
             case 'r':
-                cli_debug.step_into(true);
+                cli_debug.step_into(true); // TODO: Replace
                 break;
             case '\r':
                 cli_debug.process_command();
@@ -161,5 +164,6 @@ int main(const int argc, char* argv[])
     catch (std::runtime_error err)
     {
         COUT_COL(COL_FAIL, << err.what());
+        exit(EXIT_FAILURE);
     }
 }

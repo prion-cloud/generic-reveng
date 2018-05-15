@@ -8,8 +8,6 @@ class cli_debug
 
     std::unique_ptr<debugger> debugger_;
 
-    std::vector<debug_trace_entry> trace_;
-    debug_trace_entry cur_trace_entry_;
 
     bool endl_;
 

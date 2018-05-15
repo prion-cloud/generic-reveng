@@ -103,8 +103,6 @@ cli_debug::cli_debug(const HANDLE h_console, const std::string file_name)
     std::cout << std::endl;
     print_next_instruction();
 
-    cur_trace_entry_ = { };
-
     erase_size_ = 0;
 }
 
@@ -122,18 +120,18 @@ void cli_debug::step_into(const bool registers)
     if (endl_)
         cout_erase(arrow.size());
 
-    cur_trace_entry_ = debugger_->step_into();
-    trace_.push_back(cur_trace_entry_);
+    const auto cur_instruction = debugger_->next_instruction();
+    const auto trace_entry = debugger_->step_into();
 
-    if (cur_trace_entry_.error)
-        COUT_COL(COL_FAIL, << std::endl << cur_trace_entry_.error_str << " <" << cur_trace_entry_.error << ">");
+    if (trace_entry.error)
+        COUT_COL(COL_FAIL, << std::endl << trace_entry.error_str << " <" << trace_entry.error << ">");
 
-    if (registers && !cur_trace_entry_.registers.empty())
+    if (registers && !trace_entry.registers.empty())
     {
         std::cout << std::endl;
 
         auto first = true;
-        for (const auto reg : cur_trace_entry_.registers)
+        for (const auto reg : trace_entry.registers)
         {
             if (!first)
                 std::cout << " ";
@@ -156,9 +154,10 @@ void cli_debug::step_into(const bool registers)
 void cli_debug::process_command()
 {
     if (endl_)
+    {
         cout_erase(arrow.size());
-
-    std::cout << std::endl;
+        std::cout << std::endl;
+    }
 
     const std::string line = ">> ";
 
