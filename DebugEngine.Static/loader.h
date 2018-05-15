@@ -9,7 +9,7 @@ public:
 
     virtual ~loader() = default;
 
-    virtual emulator* get_emulator() const = 0;
+    virtual std::shared_ptr<emulator> get_emulator() const = 0;
 
     virtual std::string label_at(uint64_t address) const = 0;
 
@@ -46,7 +46,7 @@ class loader_pe : public loader
 
     bool defer_;
 
-    emulator* emulator_ { };
+    std::shared_ptr<emulator> emulator_ { };
 
     header_pe header_ { };
 
@@ -64,7 +64,7 @@ public:
 
     loader_pe();
 
-    emulator* get_emulator() const override;
+    std::shared_ptr<emulator> get_emulator() const override;
 
     std::string label_at(uint64_t address) const override;
 

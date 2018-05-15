@@ -7,15 +7,10 @@ debugger::debugger(loader& loader, const std::vector<uint8_t> code)
 {
     const auto machine = loader_.load(code);
 
-    disassembler_ = new disassembler(machine);
+    disassembler_ = std::make_unique<disassembler>(machine);
     emulator_ = loader_.get_emulator();
 
     next_instruction_ = disassemble_at(emulator_->address());
-}
-debugger::~debugger()
-{
-    delete disassembler_;
-    delete emulator_;
 }
 
 instruction debugger::disassemble_at(const uint64_t address) const

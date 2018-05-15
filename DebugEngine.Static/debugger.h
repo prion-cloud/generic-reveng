@@ -18,8 +18,8 @@ class debugger
 {
     loader& loader_;
 
-    disassembler* disassembler_;
-    emulator* emulator_;
+    std::unique_ptr<disassembler> disassembler_;
+    std::shared_ptr<emulator> emulator_;
 
     instruction next_instruction_;
 
@@ -29,8 +29,6 @@ public:
     
     // Uses a loader to make some machine code ready for debugging.
     explicit debugger(loader& loader, std::vector<uint8_t> code);
-    // Ends debugging and releases resources.
-    ~debugger();
 
     instruction next_instruction() const;
 

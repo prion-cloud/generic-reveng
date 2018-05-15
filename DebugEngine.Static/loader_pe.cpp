@@ -197,7 +197,7 @@ loader_pe::loader_pe()
     defer_ = global_flag_status.lazy;
 }
 
-emulator* loader_pe::get_emulator() const
+std::shared_ptr<emulator> loader_pe::get_emulator() const
 {
     return emulator_;
 }
@@ -222,7 +222,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> code)
     header_ = header_pe(code);
 
     // Create emulator
-    emulator_ = new emulator(header_.machine);
+    emulator_ = std::make_shared<emulator>(header_.machine);
 
     // Map all sections
     emulator_->mem_map(header_.image_base, std::vector<uint8_t>(code.begin(), code.begin() + PAGE_SIZE));
