@@ -6,14 +6,9 @@
 
 class emulator
 {
-    struct mem_region_less
-    {
-        bool operator()(uc_mem_region a, uc_mem_region b) const;
-    };
-
     uc_engine* uc_;
 
-    std::set<uc_mem_region, mem_region_less> mem_regions_;
+    std::set<uc_mem_region> mem_regions_;
 
     uint64_t max_scale_;
 

@@ -2,15 +2,13 @@
 
 #include "emulator.h"
 
-bool emulator::mem_region_less::operator()(const uc_mem_region a, const uc_mem_region b) const
+bool operator<(const uc_mem_region a, const uc_mem_region b)
 {
     return a.end <= b.begin;
 }
 
 emulator::emulator(const uint16_t machine)
 {
-    mem_regions_ = std::set<uc_mem_region, mem_region_less>();
-
     auto mode = static_cast<uc_mode>(0);
 
     switch (machine)
