@@ -51,7 +51,7 @@ public:
     TPL void reg_write(int regid, T value) const;
 
     uint64_t address() const;
-    void jump(uint64_t address) const;
+    void jump_to(uint64_t address) const;
 
     // Emulation
 

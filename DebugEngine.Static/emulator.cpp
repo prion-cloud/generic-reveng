@@ -116,14 +116,14 @@ void emulator::init_regs(const uint64_t stack_pointer, const uint64_t instructio
     reg_write(reg_sp_id_, stack_pointer);
     reg_write(reg_bp_id_, stack_pointer);
 
-    jump(instruction_pointer);
+    jump_to(instruction_pointer);
 }
 
 uint64_t emulator::address() const
 {
     return reg_read<uint64_t>(reg_ip_id_);
 }
-void emulator::jump(const uint64_t address) const
+void emulator::jump_to(const uint64_t address) const
 {
     reg_write(reg_ip_id_, address);
 }

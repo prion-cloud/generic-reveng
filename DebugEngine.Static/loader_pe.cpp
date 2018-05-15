@@ -202,9 +202,12 @@ emulator* loader_pe::get_emulator() const
     return emulator_;
 }
 
-std::map<uint64_t, std::string> loader_pe::get_labels() const
+std::string loader_pe::label_at(const uint64_t address) const
 {
-    return labels_;
+    if (labels_.find(address) == labels_.end())
+        return { };
+
+    return labels_.at(address);
 }
 
 uint16_t loader_pe::load(std::vector<uint8_t> code)

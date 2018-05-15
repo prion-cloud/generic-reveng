@@ -11,7 +11,7 @@ public:
 
     virtual emulator* get_emulator() const = 0;
 
-    virtual std::map<uint64_t, std::string> get_labels() const = 0;
+    virtual std::string label_at(uint64_t address) const = 0;
 
     // Initializes a new emulator according to a set of machine code.
     virtual uint16_t load(std::vector<uint8_t> code) = 0;
@@ -66,7 +66,7 @@ public:
 
     emulator* get_emulator() const override;
 
-    std::map<uint64_t, std::string> get_labels() const override;
+    std::string label_at(uint64_t address) const override;
 
     uint16_t load(std::vector<uint8_t> code) override;
 

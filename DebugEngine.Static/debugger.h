@@ -10,10 +10,6 @@ struct debug_trace_entry
     int error;
     std::string error_str;
 
-    instruction instruction;
-
-    std::string label;
-
     std::map<std::string, uint64_t> registers;
 };
 
@@ -25,6 +21,10 @@ class debugger
     disassembler* disassembler_;
     emulator* emulator_;
 
+    instruction next_instruction_;
+
+    instruction disassemble_at(uint64_t address) const;
+
 public:
     
     // Uses a loader to make some machine code ready for debugging.
@@ -32,6 +32,11 @@ public:
     // Ends debugging and releases resources.
     ~debugger();
 
+    instruction next_instruction() const;
+
     // Emulates the next machine code instruction.
-    debug_trace_entry step_into() const;
+    debug_trace_entry step_into();
+
+    void jump_to(uint64_t address);
+    void skip();
 };

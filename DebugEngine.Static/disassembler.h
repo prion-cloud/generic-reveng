@@ -16,6 +16,8 @@ struct instruction
     std::string mnemonic { };
     std::string operands { };
 
+    std::string label;
+
     std::map<x86_reg, std::string> registers { };
 };
 

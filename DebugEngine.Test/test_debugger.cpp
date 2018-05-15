@@ -20,30 +20,29 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
     const auto bytes = std::vector<uint8_t>(buffer, buffer + length);
     free(buffer);
 
-    const debugger debugger(loader_pe(), bytes);
+    debugger debugger(loader_pe(), bytes);
 
     for (auto exp_ins : expected)
     {
-        const auto trace_entry = debugger.step_into();
-
-        ASSERT_FALSE(trace_entry.error);
-
-        const auto ins = trace_entry.instruction;
+        const auto instruction = debugger.next_instruction();
 
         if (std::get<0>(exp_ins))
-            EXPECT_EQ(std::get<2>(exp_ins).address, ins.address);
+            EXPECT_EQ(std::get<2>(exp_ins).address, instruction.address);
 
         if (std::get<1>(exp_ins))
         {
-            EXPECT_EQ(std::get<2>(exp_ins).bytes, ins.bytes);
-            EXPECT_EQ(std::get<2>(exp_ins).operands, ins.operands);
+            EXPECT_EQ(std::get<2>(exp_ins).bytes, instruction.bytes);
+            EXPECT_EQ(std::get<2>(exp_ins).operands, instruction.operands);
         }
         
-        EXPECT_EQ(std::get<2>(exp_ins).id, ins.id);
+        EXPECT_EQ(std::get<2>(exp_ins).id, instruction.id);
 
-        EXPECT_EQ(std::get<2>(exp_ins).mnemonic, ins.mnemonic);
+        EXPECT_EQ(std::get<2>(exp_ins).mnemonic, instruction.mnemonic);
 
-        EXPECT_EQ(std::get<3>(exp_ins), trace_entry.label);
+        EXPECT_EQ(std::get<3>(exp_ins), instruction.label);
+        
+        const auto trace_entry = debugger.step_into();
+        ASSERT_FALSE(trace_entry.error);
     }
 }
 
