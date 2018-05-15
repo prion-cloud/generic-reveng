@@ -33,10 +33,10 @@ disassembler::~disassembler()
     cs_close(&cs_);
 }
 
-void disassembler::disassemble(uint8_t bytes[MAX_BYTES], const uint64_t address, instruction& instruction) const
+void disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t address, instruction& instruction) const
 {
     cs_insn* insn;
-    E_FAT(!cs_disasm(cs_, bytes, MAX_BYTES, address, 1, &insn));
+    E_FAT(!cs_disasm(cs_, &bytes.at(0), MAX_BYTES, address, 1, &insn));
 
     instruction.id = insn->id;
 

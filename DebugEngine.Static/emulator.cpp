@@ -88,9 +88,9 @@ bool emulator::mem_is_mapped(const uint64_t address) const
     return mem_regions_.lower_bound(cmp_region) != mem_regions_.upper_bound(cmp_region);
 }
 
-void emulator::mem_read(const uint64_t address, void* buffer, const size_t size) const
+void emulator::mem_read(const uint64_t address, std::vector<uint8_t>& buffer) const
 {
-    E_FAT(uc_mem_read(uc_, address, buffer, size));
+    E_FAT(uc_mem_read(uc_, address, &buffer.at(0), buffer.size()));
 }
 
 std::string emulator::mem_read_string(const uint64_t address) const

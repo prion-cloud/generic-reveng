@@ -36,7 +36,7 @@ public:
     TPL T mem_read(uint64_t address) const;
     TPL T mem_read(uint64_t address, int index) const;
     
-    void mem_read(uint64_t address, void* buffer, size_t size) const;
+    void mem_read(uint64_t address, std::vector<uint8_t>& buffer) const;
     
     std::string mem_read_string(uint64_t address) const;
 

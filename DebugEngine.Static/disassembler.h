@@ -30,5 +30,5 @@ public:
     explicit disassembler(uint16_t machine);
     ~disassembler();
 
-    void disassemble(uint8_t bytes[MAX_BYTES], uint64_t address, instruction& instruction) const;
+    void disassemble(std::vector<uint8_t> bytes, uint64_t address, instruction& instruction) const;
 };

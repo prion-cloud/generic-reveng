@@ -20,8 +20,8 @@ debugger::~debugger()
 
 instruction debugger::disassemble_at(const uint64_t address) const
 {
-    uint8_t bytes[MAX_BYTES];
-    emulator_->mem_read(address, bytes, MAX_BYTES);
+    std::vector<uint8_t> bytes(MAX_BYTES);
+    emulator_->mem_read(address, bytes);
 
     instruction instruction;
     disassembler_->disassemble(bytes, address, instruction);
