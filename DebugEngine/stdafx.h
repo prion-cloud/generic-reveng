@@ -7,6 +7,7 @@
 #include <conio.h>
 #include <iomanip>
 #include <iostream>
+#include <functional>
 #include <memory>
 
 #define COL_DEF FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE

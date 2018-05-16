@@ -32,6 +32,7 @@ void print_manual()
     manual << " " << std::setw(10) << "SPACE" << "to debug the next instruction" << std::endl;
     manual << "\t " << std::setw(10) << "ENTER" << "to execute a command" << std::endl;
     manual << "\t " << std::setw(10) << "r" << "to display recently accessed registers (* if any)" << std::endl;
+    manual << "\t " << std::setw(10) << "b" << "to show an instruction's bytes" << std::endl;
     manual << "\t " << std::setw(10) << "x" << "to quit" << std::endl;
     manual << std::string(68, '=') << std::endl;
     manual << std::endl;
@@ -121,8 +122,6 @@ int main(const int argc, char* argv[])
         {
             const char c = _getch();
 
-            cli_debug.reset();
-            
             if (c == 'x')
                 break;
 
@@ -131,14 +130,14 @@ int main(const int argc, char* argv[])
             case ' ':
                 cli_debug.step_into(false);
                 break;
-            case 'b':
-                // TODO: Print bytes.
-                break;
             case 'r':
-                cli_debug.step_into(true); // TODO: Replace
+                cli_debug.step_into(true);
                 break;
             case '\r':
                 cli_debug.process_command();
+                break;
+            case 'b':
+                cli_debug.show_bytes();
                 break;
             default:;
             }

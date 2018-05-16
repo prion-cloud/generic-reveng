@@ -2,7 +2,13 @@
 
 #include "cli_debug.h"
 
-static const std::string arrow = "->  ";
+#ifdef _WIN64
+#define ADDR_SIZE 16
+#else
+#define ADDR_SIZE 8
+#endif
+
+static const std::string arrow = "-> ";
 
 static std::vector<uint8_t> dump_file(const std::string file_name)
 {
@@ -23,32 +29,9 @@ static std::vector<uint8_t> dump_file(const std::string file_name)
     return byte_vec;
 }
 
-static void cout_replace(const std::string str)
+static int get_instruction_color(const int id)
 {
-    std::cout << '\r' << str << '\r';
-}
-static void cout_erase(const size_t size)
-{
-    cout_replace(std::string(size, ' '));
-}
-
-static void print_instruction(const instruction instruction)
-{
-    std::cout << std::hex << std::right <<
-#ifdef _WIN64
-        std::setw(16)
-#else
-        std::setw(8)
-#endif
-    << instruction.address;
-
-    if (!instruction.registers.empty())
-        COUT_COL(COL_REG, << "*");
-
-    std::cout << "\t";
-
-    auto col = COL_DEF;
-    switch (instruction.id)
+    switch (id)
     {
     case X86_INS_JMP:
     case X86_INS_JO:
@@ -68,27 +51,27 @@ static void print_instruction(const instruction instruction)
     case X86_INS_JP:
     case X86_INS_JNP:
     case X86_INS_JCXZ:
-        col = COL_JUMP;
-        break;
+        return COL_JUMP;
     case X86_INS_CALL:
     case X86_INS_RET:
-        col = COL_CALL;
-        break;
-    default:;
+        return COL_CALL;
+    default:
+        return COL_DEF;
     }
+}
 
-    COUT_COL(col, << instruction.mnemonic << " " << instruction.operands);
-
-    if (!instruction.label.empty())
-    {
-        std::cout << " ";
-        COUT_COL(COL_LABEL, << "<" << instruction.label << ">");
-    }
+static void erase(const size_t size)
+{
+    std::cout << '\r' << std::string(size, ' ') << '\r';
 }
 
 cli_debug::cli_debug(const HANDLE h_console, const std::string file_name)
     : h_console_(h_console)
 {
+    arrow_line_ = -1;
+
+    bytes_shown_ = false;
+
     update_cursor(false);
 
     static loader_pe loader;
@@ -100,36 +83,24 @@ cli_debug::cli_debug(const HANDLE h_console, const std::string file_name)
 
     std::cout << "File: \"" << file_name << "\"" << std::endl;
 
+    std::cout << std::setfill('0');
+
     std::cout << std::endl;
     print_next_instruction();
-
-    erase_size_ = 0;
-}
-
-void cli_debug::reset()
-{
-    if (erase_size_ > 0)
-    {
-        cout_erase(erase_size_);
-        erase_size_ = 0;
-    }
 }
 
 void cli_debug::step_into(const bool registers)
 {
-    if (endl_)
-        cout_erase(arrow.size());
-
     const auto cur_instruction = debugger_->next_instruction();
     const auto trace_entry = debugger_->step_into();
 
+    bytes_shown_ = false;
+
     if (trace_entry.error)
-        COUT_COL(COL_FAIL, << std::endl << trace_entry.error_str << " <" << trace_entry.error << ">");
+        COUT_COL(COL_FAIL, << trace_entry.error_str << " <" << trace_entry.error << ">" << std::endl);
 
     if (registers && !trace_entry.new_registers.empty())
     {
-        std::cout << std::endl;
-
         auto first = true;
         for (const auto reg : trace_entry.new_registers)
         {
@@ -143,9 +114,11 @@ void cli_debug::step_into(const bool registers)
 
             first = false;
         }
+
+        std::cout << std::endl;
     }
 
-    if (endl_)
+    if (cur_instruction.address + cur_instruction.bytes.size() != debugger_->next_instruction().address)
         std::cout << std::endl;
 
     print_next_instruction();
@@ -153,96 +126,194 @@ void cli_debug::step_into(const bool registers)
 
 void cli_debug::process_command()
 {
-    if (endl_)
+    const std::map<std::string, std::function<int(std::vector<std::string>)>> commands =
     {
-        cout_erase(arrow.size());
-        std::cout << std::endl;
-    }
+        {
+            "break",
+            [this](const std::vector<std::string> ops)
+            {
+                // TODO
+                return R_FAILURE;
+            }
+        },
+        {
+            "jump",
+            [this](const std::vector<std::string> ops)
+            {
+                E_ERR(ops.size() != 1);
 
-    const std::string line = ">> ";
+                char* end;
+                const auto address = strtoull(ops.at(0).c_str(), &end, 16);
+                E_ERR(*end != '\0');
 
-    std::cout << line;
+                debugger_->jump_to(address); // TODO: Error!
 
+                update_arrow();
+                print_next_instruction();
+
+                return R_SUCCESS;
+            }
+        },
+        {
+            "skip",
+            [this](const std::vector<std::string> ops)
+            {
+                E_ERR(!ops.empty());
+                
+                debugger_->skip(); // TODO: Error?
+                
+                update_arrow();
+                print_next_instruction();
+
+                return R_SUCCESS;
+            }
+        }
+    };
+
+    const std::string prompt = "$ ";
+
+    const auto line = get_cursor();
+    const auto top = floor_cursor();
+
+    std::cout << prompt;
+    
     update_cursor(true);
 
+    const char qualifier = std::cin.get();
+
     std::string command;
-    for (;;)
+    std::string ops_string;
+    if (qualifier != '\n')
     {
-        _getch();
-        const char cmd_c = _getch();
-
-        if (cmd_c == '\r')
-            break;
-
-        std::cout << cmd_c;
-
-        if (cmd_c == '\b')
-        {
-            command = command.substr(0, command.size() - 1);
-            std::cout << " \b";
-            continue;
-        }
-
-        command += cmd_c;
+        std::cin >> command;
+        command = qualifier + command;
+        std::getline(std::cin, ops_string);
     }
     _getch();
+    set_cursor(top);
 
     update_cursor(false);
 
-    cout_erase(line.size() + command.size());
+    floor_cursor();
+    reprint_instruction(get_cursor(), prompt.size() + command.size() + ops_string.size());
 
-    std::istringstream cmd_stream(command);
+    set_cursor(line);
 
-    std::string name;
-    cmd_stream >> name;
-    
-    std::transform(name.begin(), name.end(), name.begin(), tolower);
+    if (command.empty())
+        return;
 
-    std::string error;
+    std::transform(command.begin(), command.end(), command.begin(), tolower);
 
-    auto valid = true;
-    
-    endl_ = false;
-    
-    if (name == "jump")
+    if (commands.find(command) == commands.end())
     {
-        std::string address_str;
-        cmd_stream >> address_str;
-
-        char* end;
-        const auto address = strtoumax(address_str.c_str(), &end, 16);
-
-        if (*end == '\0')
-        {
-            std::cout << "JUMP" << std::endl;
-            debugger_->jump_to(address);
-            print_next_instruction();
-        }
-        else valid = false;
+        print_error("UKNOWN COMMAND");
+        return;
     }
-    else if (name == "skip")
-    {
-        std::cout << "SKIP" << std::endl;
-        debugger_->skip();
-        print_next_instruction();
-    }
-    else error = "Command \"" + name + "\" unknown.";
+    
+    std::stringstream ops_stream(ops_string);
+    const std::vector<std::string> ops(std::istream_iterator<std::string>(ops_stream), { });
 
-    if (!valid)
-        error = "Command \"" + name + "\" has invalid operators.";
-
-    if (!error.empty())
-    {
-        std::cout << error << '\r';
-        erase_size_ = error.size();
-    }
+    if (commands.at(command)(ops) != R_SUCCESS)
+        print_error("INVALID OPERATOR(S)");
 }
 
+void cli_debug::show_bytes()
+{
+    if (bytes_shown_)
+        return;
+
+    std::cout << std::string(ADDR_SIZE, ' ') << "\t(";
+
+    auto sep = false;
+    for (const auto byte : debugger_->next_instruction().bytes)
+    {
+        if (sep)
+            std::cout << "'";
+        std::cout << std::setw(2) << std::hex << +byte;
+        sep = true;
+    }
+
+    std::cout << ")" << std::endl;
+
+    bytes_shown_ = true;
+}
+
+void cli_debug::update_arrow()
+{
+    const auto line = get_cursor();
+
+    if (arrow_line_ >= 0)
+    {
+        set_cursor(arrow_line_);
+        erase(arrow.size());
+
+        set_cursor(line);
+    }
+
+    std::cout << arrow;
+
+    arrow_line_ = line;
+}
+
+void cli_debug::print_instruction(const instruction instruction)
+{
+    const auto line = get_cursor();
+
+    const auto it1 = line_by_ins_.find(instruction.address);
+    if (it1 == line_by_ins_.end())
+        line_by_ins_.emplace(instruction.address, get_cursor());
+    else set_cursor(it1->second);
+
+    const auto it2 = ins_by_line_.find(line);
+    if (it2 == ins_by_line_.end())
+        ins_by_line_.emplace(line, instruction);
+    else it2->second = instruction;
+
+    std::cout << std::string(arrow.size(), ' ') << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
+
+    if (!instruction.registers.empty())
+        COUT_COL(COL_REG, << "*");
+
+    std::cout << "\t";
+    
+    COUT_COL(get_instruction_color(instruction.id), << instruction.mnemonic << " " << instruction.operands);
+
+    if (!instruction.label.empty())
+    {
+        std::cout << " ";
+        COUT_COL(COL_LABEL, << "<" << instruction.label << ">");
+    }
+
+    std::cout << std::endl;
+}
 void cli_debug::print_next_instruction()
 {
+    update_arrow();
     print_instruction(debugger_->next_instruction());
-    cout_replace(arrow);
-    endl_ = true;
+}
+
+void cli_debug::reprint_instruction(const int16_t line, const size_t erase_size = 0)
+{
+    erase(erase_size);
+
+    const auto it = ins_by_line_.find(line);
+    if (it != ins_by_line_.end())
+        print_instruction(it->second);
+}
+
+void cli_debug::print_error(const std::string message)
+{
+    const auto line = get_cursor();
+    const auto top = floor_cursor();
+
+    COUT_COL(COL_FAIL, << message);
+    _getch();
+    set_cursor(top);
+
+    floor_cursor();
+    reprint_instruction(get_cursor(), message.size());
+
+    set_cursor(line);
 }
 
 void cli_debug::update_cursor(const bool visible) const
@@ -251,4 +322,26 @@ void cli_debug::update_cursor(const bool visible) const
     GetConsoleCursorInfo(h_console_, &info);
     info.bVisible = visible;
     SetConsoleCursorInfo(h_console_, &info);
+}
+
+int16_t cli_debug::get_cursor() const
+{
+    CONSOLE_SCREEN_BUFFER_INFO info { };
+    GetConsoleScreenBufferInfo(h_console_, &info);
+    return info.dwCursorPosition.Y;
+}
+void cli_debug::set_cursor(const int16_t line) const
+{
+    if (line < 0)
+        return;
+
+    SetConsoleCursorPosition(h_console_, { 0, line });
+}
+
+int16_t cli_debug::floor_cursor() const
+{
+    CONSOLE_SCREEN_BUFFER_INFO info { };
+    GetConsoleScreenBufferInfo(h_console_, &info);
+    set_cursor(info.srWindow.Bottom);
+    return info.srWindow.Top;
 }
