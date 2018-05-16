@@ -126,12 +126,12 @@ void cli_debug::step_into(const bool registers)
     if (trace_entry.error)
         COUT_COL(COL_FAIL, << std::endl << trace_entry.error_str << " <" << trace_entry.error << ">");
 
-    if (registers && !trace_entry.registers.empty())
+    if (registers && !trace_entry.new_registers.empty())
     {
         std::cout << std::endl;
 
         auto first = true;
-        for (const auto reg : trace_entry.registers)
+        for (const auto reg : trace_entry.new_registers)
         {
             if (!first)
                 std::cout << " ";

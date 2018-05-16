@@ -3,6 +3,7 @@
 // ReSharper disable CppUnusedIncludeDirective
 
 #include <array>
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
