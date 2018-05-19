@@ -27,19 +27,19 @@ void test_file(const std::string file_name, const std::vector<std::tuple<bool, b
         const auto instruction = debugger.next_instruction();
 
         if (std::get<0>(exp_ins))
-            EXPECT_EQ(std::get<2>(exp_ins).address, instruction.address);
+            EXPECT_EQ(std::get<2>(exp_ins).address, instruction->address);
 
         if (std::get<1>(exp_ins))
         {
-            EXPECT_EQ(std::get<2>(exp_ins).bytes, instruction.bytes);
-            EXPECT_EQ(std::get<2>(exp_ins).operands, instruction.operands);
+            EXPECT_EQ(std::get<2>(exp_ins).bytes, instruction->bytes);
+            EXPECT_EQ(std::get<2>(exp_ins).operands, instruction->operands);
         }
         
-        EXPECT_EQ(std::get<2>(exp_ins).id, instruction.id);
+        EXPECT_EQ(std::get<2>(exp_ins).id, instruction->id);
 
-        EXPECT_EQ(std::get<2>(exp_ins).mnemonic, instruction.mnemonic);
+        EXPECT_EQ(std::get<2>(exp_ins).mnemonic, instruction->mnemonic);
 
-        EXPECT_EQ(std::get<3>(exp_ins), instruction.label);
+        EXPECT_EQ(std::get<3>(exp_ins), instruction->label);
         
         const auto trace_entry = debugger.step_into();
         ASSERT_FALSE(trace_entry.error);

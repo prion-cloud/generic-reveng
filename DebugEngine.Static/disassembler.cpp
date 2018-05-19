@@ -33,19 +33,21 @@ disassembler::~disassembler()
     cs_close(&cs_);
 }
 
-void disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t address, instruction& instruction) const
+std::shared_ptr<instruction> disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t address) const
 {
     cs_insn* insn;
     E_FAT(!cs_disasm(cs_, &bytes.at(0), MAX_BYTES, address, 1, &insn));
 
-    instruction.id = insn->id;
+    const auto instruction_ptr = std::make_shared<instruction>();
 
-    instruction.address = address;
+    instruction_ptr->id = insn->id;
 
-    instruction.bytes = std::vector<uint8_t>(insn->bytes, insn->bytes + insn->size);
+    instruction_ptr->address = address;
 
-    instruction.mnemonic = insn->mnemonic;
-    instruction.operands = insn->op_str;
+    instruction_ptr->bytes = std::vector<uint8_t>(insn->bytes, insn->bytes + insn->size);
+
+    instruction_ptr->mnemonic = insn->mnemonic;
+    instruction_ptr->operands = insn->op_str;
 
     for (auto i = 0; i < insn->detail->x86.op_count; ++i) // TODO: Enforce x86 ?
     {
@@ -59,9 +61,11 @@ void disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t addres
         {
         case X86_OP_REG:
         case X86_OP_MEM:
-            instruction.registers.emplace(reg, cs_reg_name(cs_, reg));
+            instruction_ptr->registers.emplace(reg, cs_reg_name(cs_, reg));
             break;
         default:;
         }
     }
+
+    return instruction_ptr;
 }

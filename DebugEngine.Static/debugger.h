@@ -26,7 +26,7 @@ class debugger
     std::unique_ptr<disassembler> disassembler_;
     std::shared_ptr<emulator> emulator_;
 
-    instruction next_instruction_;
+    std::shared_ptr<instruction> next_instruction_;
 
     std::deque<debug_trace_entry> trace_;
 
@@ -37,7 +37,7 @@ public:
     // Uses a loader to make some machine code ready for debugging.
     explicit debugger(loader& loader, std::vector<uint8_t> code);
 
-    instruction next_instruction() const;
+    std::shared_ptr<instruction> next_instruction() const;
 
     // Emulates the next machine code instruction.
     debug_trace_entry step_into();
@@ -51,5 +51,5 @@ public:
 
 private:
 
-    instruction disassemble_at(uint64_t address) const;
+    std::shared_ptr<instruction> disassemble_at(uint64_t address) const;
 };

@@ -13,7 +13,7 @@ debugger::debugger(loader& loader, const std::vector<uint8_t> code)
     next_instruction_ = disassemble_at(emulator_->address());
 }
 
-instruction debugger::next_instruction() const
+std::shared_ptr<instruction> debugger::next_instruction() const
 {
     return next_instruction_;
 }
@@ -24,7 +24,7 @@ debug_trace_entry debugger::step_into()
 
     const auto instruction = next_instruction_;
 
-    for (const auto reg : instruction.registers)
+    for (const auto reg : instruction->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 
     trace_entry.error = emulator_->step_into();
@@ -37,13 +37,13 @@ debug_trace_entry debugger::step_into()
     case UC_ERR_FETCH_UNMAPPED:
         if (loader_.ensure_availablility(emulator_->address()))
         {
-            emulator_->jump_to(instruction.address);
+            emulator_->jump_to(instruction->address);
             return step_into(); // TODO: Prevent stack overflow
         }
     default:;
     }
 
-    for (const auto reg : instruction.registers)
+    for (const auto reg : instruction->registers)
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
     if (trace_entry.error && global_flag_status.ugly)
@@ -86,18 +86,16 @@ void debugger::jump_to(const uint64_t address)
 }
 void debugger::skip()
 {
-    jump_to(next_instruction_.address + next_instruction_.bytes.size());
+    jump_to(next_instruction_->address + next_instruction_->bytes.size());
 }
 
-instruction debugger::disassemble_at(const uint64_t address) const
+std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const
 {
     std::vector<uint8_t> bytes(MAX_BYTES);
     emulator_->mem_read(address, bytes);
 
-    instruction instruction;
-    disassembler_->disassemble(bytes, address, instruction);
-
-    instruction.label = loader_.label_at(address);
+    const auto instruction = disassembler_->disassemble(bytes, address);
+    instruction->label = loader_.label_at(address);
 
     return instruction;
 }

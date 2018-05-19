@@ -30,5 +30,5 @@ public:
     explicit disassembler(uint16_t machine);
     ~disassembler();
 
-    void disassemble(std::vector<uint8_t> bytes, uint64_t address, instruction& instruction) const;
+    std::shared_ptr<instruction> disassemble(std::vector<uint8_t> bytes, uint64_t address) const;
 };
