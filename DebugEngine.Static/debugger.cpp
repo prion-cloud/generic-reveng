@@ -22,9 +22,9 @@ debug_trace_entry debugger::step_into()
 {
     debug_trace_entry trace_entry;
 
-    const auto instruction = next_instruction_;
+    trace_entry.address = next_instruction_->address;
 
-    for (const auto reg : instruction->registers)
+    for (const auto reg : next_instruction_->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 
     trace_entry.error = emulator_->step_into();
@@ -37,20 +37,20 @@ debug_trace_entry debugger::step_into()
     case UC_ERR_FETCH_UNMAPPED:
         if (loader_.ensure_availablility(emulator_->address()))
         {
-            emulator_->jump_to(instruction->address);
+            emulator_->jump_to(next_instruction_->address);
             return step_into(); // TODO: Prevent stack overflow
         }
     default:;
     }
 
-    for (const auto reg : instruction->registers)
+    for (const auto reg : next_instruction_->registers)
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
     if (trace_entry.error && global_flag_status.ugly)
         skip();
     else next_instruction_ = disassemble_at(emulator_->address());
 
-    trace_.push_back(trace_entry);
+    trace_.push_back(std::make_unique<debug_trace_entry>(trace_entry));
     if (trace_.size() > MAX_TRACE)
         trace_.pop_front();
 
@@ -59,30 +59,29 @@ debug_trace_entry debugger::step_into()
 
 int debugger::step_back()
 {
-    ERROR_IF(trace_.size() < 2);
+    ERROR_IF(trace_.size() == 0);
 
-    const auto cur = trace_.at(trace_.size() - 1);
-    const auto prev = trace_.at(trace_.size() - 2);
+    const auto& prev = trace_.at(trace_.size() - 1);
 
-    trace_.pop_back();
+    ERROR_IF(jump_to(prev->address));
 
-    for (const auto old_reg : cur.old_registers)
+    for (const auto old_reg : prev->old_registers)
         emulator_->reg_write(old_reg.first, old_reg.second);
 
-    ERROR_IF(jump_to(prev.address));
+    trace_.pop_back();
 
     return RES_SUCCESS;
 }
 int debugger::set_breakpoint(const uint64_t address)
 {
-    ERROR_IF(emulator_->mem_is_mapped(address));
+    ERROR_IF(!emulator_->mem_is_mapped(address));
 
     breakpoints_.insert(address);
     return RES_SUCCESS;
 }
 int debugger::jump_to(const uint64_t address)
 {
-    ERROR_IF(emulator_->mem_is_mapped(address));
+    ERROR_IF(!emulator_->mem_is_mapped(address));
 
     emulator_->jump_to(address);
     next_instruction_ = disassemble_at(address);

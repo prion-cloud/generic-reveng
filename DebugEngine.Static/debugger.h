@@ -28,7 +28,7 @@ class debugger
 
     std::shared_ptr<instruction> next_instruction_;
 
-    std::deque<debug_trace_entry> trace_;
+    std::deque<std::unique_ptr<debug_trace_entry>> trace_;
 
     std::set<uint64_t> breakpoints_;
 
