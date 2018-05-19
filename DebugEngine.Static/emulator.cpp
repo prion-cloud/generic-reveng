@@ -41,7 +41,7 @@ emulator::emulator(const uint16_t machine)
         break;
 #endif
     default:
-        THROW;
+        THROW("Invalid machine specification.");
     }
 
     FATAL_IF(uc_open(UC_ARCH_X86, mode, &uc_));
@@ -130,7 +130,7 @@ void emulator::jump_to(const uint64_t address) const
 
 int emulator::run() const
 {
-    return R_FAILURE; // TODO
+    return RES_FAILURE; // TODO
 }
 
 int emulator::step_into() const
@@ -139,5 +139,5 @@ int emulator::step_into() const
 }
 int emulator::step_over() const
 {
-    return R_FAILURE; // TODO
+    return RES_FAILURE; // TODO
 }

@@ -32,31 +32,21 @@ loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
     switch (file_header.SizeOfOptionalHeader)
     {
     case sizeof(IMAGE_OPTIONAL_HEADER32):
-
         const auto optional_header32 = parse_to<IMAGE_OPTIONAL_HEADER32>(it);
-
         image_base = optional_header32.ImageBase;
         stack_commit = optional_header32.SizeOfStackCommit;
-
         entry_point = optional_header32.AddressOfEntryPoint;
-
         import_directory = optional_header32.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-
         break;
     case sizeof(IMAGE_OPTIONAL_HEADER64):
-
         const auto optional_header64 = parse_to<IMAGE_OPTIONAL_HEADER64>(it);
-
         image_base = optional_header64.ImageBase;
         stack_commit = optional_header64.SizeOfStackCommit;
-
         entry_point = optional_header64.AddressOfEntryPoint;
-
         import_directory = optional_header64.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-
         break;
     default:
-        THROW;
+        THROW("Invalid machine specification.");
     }
 
     section_headers = std::vector<IMAGE_SECTION_HEADER>();

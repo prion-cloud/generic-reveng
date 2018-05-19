@@ -71,14 +71,14 @@ int debugger::step_back()
 
     ERROR_IF(jump_to(prev.address));
 
-    return R_SUCCESS;
+    return RES_SUCCESS;
 }
 int debugger::set_breakpoint(const uint64_t address)
 {
     ERROR_IF(emulator_->mem_is_mapped(address));
 
     breakpoints_.insert(address);
-    return R_SUCCESS;
+    return RES_SUCCESS;
 }
 int debugger::jump_to(const uint64_t address)
 {
@@ -86,7 +86,7 @@ int debugger::jump_to(const uint64_t address)
 
     emulator_->jump_to(address);
     next_instruction_ = disassemble_at(address);
-    return R_SUCCESS;
+    return RES_SUCCESS;
 }
 int debugger::skip()
 {

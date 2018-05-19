@@ -159,7 +159,7 @@ void cli_debug::process_command()
         return;
     }
 
-    if (commands_.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != R_SUCCESS)
+    if (commands_.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != RES_SUCCESS)
         printer_.bottom_out("INVALID OPERATOR(S)");
 }
 
@@ -209,7 +209,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 ERROR_IF(debugger_->step_back());
 
                 print_next_instruction();
-                return R_SUCCESS;
+                return RES_SUCCESS;
             }
         },
         {
@@ -225,7 +225,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                     ERROR_IF(debugger_->set_breakpoint(address));
                 }
 
-                return R_SUCCESS;
+                return RES_SUCCESS;
             }
         },
         {
@@ -241,7 +241,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 ERROR_IF(debugger_->jump_to(address));
 
                 print_next_instruction();
-                return R_SUCCESS;
+                return RES_SUCCESS;
             }
         },
         {
@@ -253,7 +253,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 ERROR_IF(debugger_->skip());
 
                 print_next_instruction();
-                return R_SUCCESS;
+                return RES_SUCCESS;
             }
         }
     };

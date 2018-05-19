@@ -22,7 +22,7 @@ disassembler::disassembler(const uint16_t machine)
         break;
 #endif
     default:
-        THROW;
+        THROW("Invalid machine specification.");
     }
 
     FATAL_IF(cs_open(CS_ARCH_X86, mode, &cs_));
