@@ -2,6 +2,8 @@
 
 #include "cli_debug.h"
 
+#include "console.h"
+
 #ifdef _WIN64
 #define ADDR_SIZE 16
 #else
@@ -9,25 +11,6 @@
 #endif
 
 static const std::string arrow = "-> ";
-
-static std::vector<uint8_t> dump_file(const std::string file_name)
-{
-    FILE* file;
-    fopen_s(&file, file_name.c_str(), "rb");
-
-    fseek(file, 0, SEEK_END);
-    const auto length = ftell(file);
-    rewind(file);
-
-    const auto buffer = static_cast<char*>(malloc(length));
-    fread(buffer, sizeof(char), length, file);
-    fclose(file);
-
-    const auto byte_vec = std::vector<uint8_t>(buffer, buffer + length);
-    free(buffer);
-
-    return byte_vec;
-}
 
 static int get_instruction_color(const int id)
 {
@@ -60,33 +43,89 @@ static int get_instruction_color(const int id)
     }
 }
 
-static void erase(const size_t size)
+static std::function<void(std::vector<uint8_t>)> print_bytes = [](const std::vector<uint8_t> bytes)
 {
-    std::cout << '\r' << std::string(size, ' ') << '\r';
-}
+/*
+    const auto line = get_line();
 
-cli_debug::cli_debug(const HANDLE h_console, const std::string file_name)
-    : h_console_(h_console)
+    const auto it = printed_.find(line);
+    if (it == printed_.end())
+        printed_.emplace(line, )
+*/
+    std::cout << std::string(ADDR_SIZE, ' ') << "\t(";
+
+    auto sep = false;
+    for (const auto byte : bytes)
+    {
+        if (sep)
+            std::cout << "'";
+        std::cout << std::setw(2) << std::hex << +byte;
+        sep = true;
+    }
+
+    std::cout << ")" << std::endl;
+};
+static std::function<void(instruction)> print_instruction = [](const instruction instruction)
 {
-    arrow_line_ = -1;
+    const auto pos = get_cursor();
+    set_cursor(pos.first, pos.second + static_cast<int16_t>(arrow.size()));
 
-    bytes_shown_ = false;
+    std::cout << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
 
-    update_cursor(false);
+    if (!instruction.registers.empty())
+        COUT_COL(COL_REG, << "*");
 
-    static loader_pe loader;
+    std::cout << "\t";
+    
+    COUT_COL(get_instruction_color(instruction.id), << instruction.mnemonic << " " << instruction.operands);
 
-    if (!global_flag_status.lazy)
-        std::cout << "Loading... ";
-
-    debugger_ = std::make_unique<debugger>(loader, dump_file(file_name));
-
-    std::cout << "File: \"" << file_name << "\"" << std::endl;
-
-    std::cout << std::setfill('0');
+    if (!instruction.label.empty())
+    {
+        std::cout << " ";
+        COUT_COL(COL_LABEL, << "<" << instruction.label << ">");
+    }
 
     std::cout << std::endl;
-    print_next_instruction();
+};
+static std::function<void(std::map<std::string, uint64_t>)> print_registers = [](const std::map<std::string, uint64_t> registers)
+{
+    auto first = true;
+    for (const auto reg : registers)
+    {
+        if (!first)
+            std::cout << " ";
+
+        auto reg_name = reg.first;
+        std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
+
+        COUT_COL(COL_REG, << reg_name << ": " << std::hex << reg.second);
+
+        first = false;
+    }
+
+    std::cout << std::endl;
+};
+static std::function<void(std::pair<int, std::string>)> print_run_error = [](const std::pair<int, std::string> error)
+{
+    COUT_COL(COL_FAIL, << error.second << " <" << error.first << ">" << std::endl);
+};
+
+cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
+    : debugger_(debugger)
+{
+    printer_.register_func(print_bytes);
+    printer_.register_func(print_instruction);
+    printer_.register_func(print_registers);
+    printer_.register_func(print_run_error);
+    
+    arrow_line_ = -1;
+    
+    bytes_shown_ = false;
+
+    std::cout << std::setfill('0');
+    
+    update_arrow();
+    printer_.print(debugger_->next_instruction());
 }
 
 void cli_debug::step_into(const bool registers)
@@ -97,31 +136,16 @@ void cli_debug::step_into(const bool registers)
     bytes_shown_ = false;
 
     if (trace_entry.error)
-        COUT_COL(COL_FAIL, << trace_entry.error_str << " <" << trace_entry.error << ">" << std::endl);
+        printer_.print(std::make_shared<std::pair<int, std::string>>(trace_entry.error, trace_entry.error_str));
 
     if (registers && !trace_entry.new_registers.empty())
-    {
-        auto first = true;
-        for (const auto reg : trace_entry.new_registers)
-        {
-            if (!first)
-                std::cout << " ";
+        printer_.print(std::make_shared<std::map<std::string, uint64_t>>(trace_entry.new_registers));
 
-            auto reg_name = reg.first;
-            std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
-
-            COUT_COL(COL_REG, << reg_name << ": " << std::hex << reg.second);
-
-            first = false;
-        }
-
-        std::cout << std::endl;
-    }
-
-    if (cur_instruction.address + cur_instruction.bytes.size() != debugger_->next_instruction().address)
-        std::cout << std::endl;
-
-    print_next_instruction();
+    if (cur_instruction->address + cur_instruction->bytes.size() != debugger_->next_instruction()->address)
+        printer_.print_blank();
+    
+    update_arrow();
+    printer_.print(debugger_->next_instruction());
 }
 
 void cli_debug::process_command()
@@ -148,8 +172,7 @@ void cli_debug::process_command()
 
                 debugger_->jump_to(address); // TODO: Error!
 
-                update_arrow();
-                print_next_instruction();
+                printer_.print(debugger_->next_instruction());
 
                 return R_SUCCESS;
             }
@@ -161,60 +184,33 @@ void cli_debug::process_command()
                 E_ERR(!ops.empty());
                 
                 debugger_->skip(); // TODO: Error?
-                
-                update_arrow();
-                print_next_instruction();
+
+                printer_.print(debugger_->next_instruction());
 
                 return R_SUCCESS;
             }
         }
     };
 
-    const std::string prompt = "$ ";
+    const auto input = printer_.bottom_in("$ ");
 
-    const auto line = get_cursor();
-    const auto top = floor_cursor();
-
-    std::cout << prompt;
-    
-    update_cursor(true);
-
-    const char qualifier = std::cin.get();
-
-    std::string command;
-    std::string ops_string;
-    if (qualifier != '\n')
-    {
-        std::cin >> command;
-        command = qualifier + command;
-        std::getline(std::cin, ops_string);
-    }
-    _getch();
-    set_cursor(top);
-
-    update_cursor(false);
-
-    floor_cursor();
-    reprint_instruction(get_cursor(), prompt.size() + command.size() + ops_string.size());
-
-    set_cursor(line);
-
-    if (command.empty())
+    if (input.empty())
         return;
+    
+    std::stringstream in_stream(input);
+    const std::vector<std::string> split(std::istream_iterator<std::string>(in_stream), { });
 
+    auto command = split.at(0);
     std::transform(command.begin(), command.end(), command.begin(), tolower);
 
     if (commands.find(command) == commands.end())
     {
-        print_error("UKNOWN COMMAND");
+        printer_.bottom_out("UKNOWN COMMAND");
         return;
     }
-    
-    std::stringstream ops_stream(ops_string);
-    const std::vector<std::string> ops(std::istream_iterator<std::string>(ops_stream), { });
 
-    if (commands.at(command)(ops) != R_SUCCESS)
-        print_error("INVALID OPERATOR(S)");
+    if (commands.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != R_SUCCESS)
+        printer_.bottom_out("INVALID OPERATOR(S)");
 }
 
 void cli_debug::show_bytes()
@@ -222,126 +218,24 @@ void cli_debug::show_bytes()
     if (bytes_shown_)
         return;
 
-    std::cout << std::string(ADDR_SIZE, ' ') << "\t(";
-
-    auto sep = false;
-    for (const auto byte : debugger_->next_instruction().bytes)
-    {
-        if (sep)
-            std::cout << "'";
-        std::cout << std::setw(2) << std::hex << +byte;
-        sep = true;
-    }
-
-    std::cout << ")" << std::endl;
+    printer_.print(std::make_shared<std::vector<uint8_t>>(debugger_->next_instruction()->bytes));
 
     bytes_shown_ = true;
 }
 
 void cli_debug::update_arrow()
 {
-    const auto line = get_cursor();
+    const auto line = get_cursor_line();
 
     if (arrow_line_ >= 0)
     {
-        set_cursor(arrow_line_);
+        set_cursor(arrow_line_, 0);
         erase(arrow.size());
 
-        set_cursor(line);
+        set_cursor(line, 0);
     }
 
-    std::cout << arrow;
+    replace(arrow);
 
     arrow_line_ = line;
-}
-
-void cli_debug::print_instruction(const instruction instruction)
-{
-    const auto line = get_cursor();
-
-    const auto it1 = line_by_ins_.find(instruction.address);
-    if (it1 == line_by_ins_.end())
-        line_by_ins_.emplace(instruction.address, get_cursor());
-    else set_cursor(it1->second);
-
-    const auto it2 = ins_by_line_.find(line);
-    if (it2 == ins_by_line_.end())
-        ins_by_line_.emplace(line, instruction);
-    else it2->second = instruction;
-
-    std::cout << std::string(arrow.size(), ' ') << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
-
-    if (!instruction.registers.empty())
-        COUT_COL(COL_REG, << "*");
-
-    std::cout << "\t";
-    
-    COUT_COL(get_instruction_color(instruction.id), << instruction.mnemonic << " " << instruction.operands);
-
-    if (!instruction.label.empty())
-    {
-        std::cout << " ";
-        COUT_COL(COL_LABEL, << "<" << instruction.label << ">");
-    }
-
-    std::cout << std::endl;
-}
-void cli_debug::print_next_instruction()
-{
-    update_arrow();
-    print_instruction(debugger_->next_instruction());
-}
-
-void cli_debug::reprint_instruction(const int16_t line, const size_t erase_size = 0)
-{
-    erase(erase_size);
-
-    const auto it = ins_by_line_.find(line);
-    if (it != ins_by_line_.end())
-        print_instruction(it->second);
-}
-
-void cli_debug::print_error(const std::string message)
-{
-    const auto line = get_cursor();
-    const auto top = floor_cursor();
-
-    COUT_COL(COL_FAIL, << message);
-    _getch();
-    set_cursor(top);
-
-    floor_cursor();
-    reprint_instruction(get_cursor(), message.size());
-
-    set_cursor(line);
-}
-
-void cli_debug::update_cursor(const bool visible) const
-{
-    CONSOLE_CURSOR_INFO info;
-    GetConsoleCursorInfo(h_console_, &info);
-    info.bVisible = visible;
-    SetConsoleCursorInfo(h_console_, &info);
-}
-
-int16_t cli_debug::get_cursor() const
-{
-    CONSOLE_SCREEN_BUFFER_INFO info { };
-    GetConsoleScreenBufferInfo(h_console_, &info);
-    return info.dwCursorPosition.Y;
-}
-void cli_debug::set_cursor(const int16_t line) const
-{
-    if (line < 0)
-        return;
-
-    SetConsoleCursorPosition(h_console_, { 0, line });
-}
-
-int16_t cli_debug::floor_cursor() const
-{
-    CONSOLE_SCREEN_BUFFER_INFO info { };
-    GetConsoleScreenBufferInfo(h_console_, &info);
-    set_cursor(info.srWindow.Bottom);
-    return info.srWindow.Top;
 }

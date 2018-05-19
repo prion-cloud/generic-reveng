@@ -9,6 +9,7 @@
 #include <iostream>
 #include <functional>
 #include <memory>
+#include <typeinfo>
 
 #define COL_DEF FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
 
@@ -25,3 +26,5 @@
         std::cout stream; \
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), COL_DEF); \
     }
+
+extern HANDLE h_console;
