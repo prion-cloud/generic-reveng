@@ -12,6 +12,8 @@ class cli_debug
     int16_t arrow_line_;
     bool bytes_shown_;
 
+    std::map<std::string, std::function<int(std::vector<std::string>)>> commands_;
+
 public:
 
     explicit cli_debug(std::shared_ptr<debugger> debugger);
@@ -24,5 +26,9 @@ public:
 
 private:
 
+    void print_next_instruction();
+
     void update_arrow();
+
+    std::map<std::string, std::function<int(std::vector<std::string>)>> create_commands();
 };

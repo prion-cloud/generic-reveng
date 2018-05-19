@@ -103,7 +103,7 @@ TPL T emulator::mem_read(const uint64_t address, const int index) const
     const auto size = sizeof(T);
 
     T value;
-    E_FAT(uc_mem_read(uc_, address + index * size, &value, size));
+    FATAL_IF(uc_mem_read(uc_, address + index * size, &value, size));
 
     return value;
 }
@@ -115,13 +115,13 @@ TPL void emulator::mem_write(const uint64_t address, const T value) const
 TPL void emulator::mem_write(const uint64_t address, const T value, const int index) const
 {
     const auto size = sizeof(T);
-    E_FAT(uc_mem_write(uc_, address + index * size, &value, size));
+    FATAL_IF(uc_mem_write(uc_, address + index * size, &value, size));
 }
 
 TPL T emulator::reg_read(const int regid) const
 {
     T value;
-    E_FAT(uc_reg_read(uc_, regid, &value));
+    FATAL_IF(uc_reg_read(uc_, regid, &value));
 
     auto scale = max_scale_;
 
@@ -133,5 +133,5 @@ TPL T emulator::reg_read(const int regid) const
 }
 TPL void emulator::reg_write(const int regid, T value) const
 {
-    E_FAT(uc_reg_write(uc_, regid, &value));
+    FATAL_IF(uc_reg_write(uc_, regid, &value));
 }

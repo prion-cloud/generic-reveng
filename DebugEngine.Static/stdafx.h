@@ -25,9 +25,9 @@
 #define THROW if (global_flag_status.fat) { throw std::runtime_error("ERROR [" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]"); }
 
 // Non-fatal error; return as failure if condition is true.
-#define E_ERR(expr) if (expr) { return R_FAILURE; }
+#define ERROR_IF(expr) { const int __RES__ = expr; if (__RES__) return __RES__; }
 // Fatal error; throw exception if condition is true.
-#define E_FAT(expr) if (expr) { THROW; }
+#define FATAL_IF(expr) if (expr) { THROW; }
 
 #define STR_UNKNOWN "???"
 

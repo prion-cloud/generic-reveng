@@ -57,9 +57,9 @@ debug_trace_entry debugger::step_into()
     return trace_entry;
 }
 
-debug_trace_entry debugger::step_back()
+int debugger::step_back()
 {
-    E_FAT(trace_.size() < 2);
+    ERROR_IF(trace_.size() < 2);
 
     const auto cur = trace_.at(trace_.size() - 1);
     const auto prev = trace_.at(trace_.size() - 2);
@@ -69,24 +69,28 @@ debug_trace_entry debugger::step_back()
     for (const auto old_reg : cur.old_registers)
         emulator_->reg_write(old_reg.first, old_reg.second);
 
-    jump_to(prev.address);
+    ERROR_IF(jump_to(prev.address));
 
-    return prev;
+    return R_SUCCESS;
 }
-
-void debugger::set_breakpoint(const uint64_t address)
+int debugger::set_breakpoint(const uint64_t address)
 {
+    ERROR_IF(emulator_->mem_is_mapped(address));
+
     breakpoints_.insert(address);
+    return R_SUCCESS;
 }
-
-void debugger::jump_to(const uint64_t address)
+int debugger::jump_to(const uint64_t address)
 {
+    ERROR_IF(emulator_->mem_is_mapped(address));
+
     emulator_->jump_to(address);
     next_instruction_ = disassemble_at(address);
+    return R_SUCCESS;
 }
-void debugger::skip()
+int debugger::skip()
 {
-    jump_to(next_instruction_->address + next_instruction_->bytes.size());
+    return jump_to(next_instruction_->address + next_instruction_->bytes.size());
 }
 
 std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const

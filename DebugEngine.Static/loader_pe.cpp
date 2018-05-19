@@ -18,12 +18,12 @@ loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
     auto it = buffer.begin();
 
     const auto dos_header = parse_to<IMAGE_DOS_HEADER>(it);
-    E_FAT(dos_header.e_magic != 0x5a4d);
+    FATAL_IF(dos_header.e_magic != 0x5a4d);
 
     it = buffer.begin() + dos_header.e_lfanew;
 
     const auto pe_signature = parse_to<DWORD>(it);
-    E_FAT(pe_signature != 0x4550);
+    FATAL_IF(pe_signature != 0x4550);
     
     const auto file_header = parse_to<IMAGE_FILE_HEADER>(it);
 
@@ -68,7 +68,7 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
 {
     // Get handle
     const auto dll_handle = LoadLibraryA(dll_name.c_str());
-    E_FAT(dll_handle == nullptr);
+    FATAL_IF(dll_handle == nullptr);
     const auto dll_address = reinterpret_cast<uint64_t>(dll_handle);
     
     // Retrieve import descriptor
@@ -93,7 +93,7 @@ void loader_pe::import_single_dll(const uint64_t base, std::string dll_name, con
 
         // Create header from bytes
         auto dll_header = header_pe(dll_header_buffer);
-        E_FAT(dll_header.image_base != dll_address);
+        FATAL_IF(dll_header.image_base != dll_address);
 
         // Use header to write remaining sections to UC
         for (auto dll_sec : dll_header.section_headers)
@@ -270,7 +270,7 @@ bool loader_pe::ensure_availablility(const uint64_t address)
     {
         const auto dll_name = deferred_dlls_.at(address);
 
-        E_FAT(dll_name == STR_UNKNOWN);
+        FATAL_IF(dll_name == STR_UNKNOWN);
         
         import_single_dll(header_.image_base, dll_name, false);
 

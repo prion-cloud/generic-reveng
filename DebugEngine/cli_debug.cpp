@@ -100,7 +100,7 @@ static std::function<void(std::map<std::string, uint64_t>)> print_registers = []
 };
 static std::function<void(std::pair<int, std::string>)> print_run_error = [](const std::pair<int, std::string> error)
 {
-    COUT_COL(COL_FAIL, << error.second << " <" << error.first << ">" << std::endl);
+    COUT_COL(COL_FAIL, << std::string(ADDR_SIZE, ' ') << '\t' << error.second << " <" << error.first << ">" << std::endl);
 };
 
 cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
@@ -114,10 +114,11 @@ cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
     arrow_line_ = -1;
     bytes_shown_ = false;
 
+    commands_ = create_commands();
+
     std::cout << std::setfill('0');
-    
-    update_arrow();
-    printer_.print(debugger_->next_instruction());
+
+    print_next_instruction();
 }
 
 void cli_debug::step_into(const bool registers)
@@ -136,54 +137,11 @@ void cli_debug::step_into(const bool registers)
     if (cur_instruction->address + cur_instruction->bytes.size() != debugger_->next_instruction()->address)
         printer_.print_blank();
     
-    update_arrow();
-    printer_.print(debugger_->next_instruction());
+    print_next_instruction();
 }
 
 void cli_debug::process_command()
 {
-    const std::map<std::string, std::function<int(std::vector<std::string>)>> commands =
-    {
-        {
-            "break",
-            [this](const std::vector<std::string> ops)
-            {
-                // TODO
-                return R_FAILURE;
-            }
-        },
-        {
-            "jump",
-            [this](const std::vector<std::string> ops)
-            {
-                E_ERR(ops.size() != 1);
-
-                char* end;
-                const auto address = strtoull(ops.at(0).c_str(), &end, 16);
-                E_ERR(*end != '\0');
-
-                debugger_->jump_to(address); // TODO: Error!
-
-                printer_.print(debugger_->next_instruction());
-
-                return R_SUCCESS;
-            }
-        },
-        {
-            "skip",
-            [this](const std::vector<std::string> ops)
-            {
-                E_ERR(!ops.empty());
-                
-                debugger_->skip(); // TODO: Error?
-
-                printer_.print(debugger_->next_instruction());
-
-                return R_SUCCESS;
-            }
-        }
-    };
-
     const auto input = printer_.bottom_in("$ ");
 
     if (input.empty())
@@ -195,13 +153,13 @@ void cli_debug::process_command()
     auto command = split.at(0);
     std::transform(command.begin(), command.end(), command.begin(), tolower);
 
-    if (commands.find(command) == commands.end())
+    if (commands_.find(command) == commands_.end())
     {
         printer_.bottom_out("UKNOWN COMMAND");
         return;
     }
 
-    if (commands.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != R_SUCCESS)
+    if (commands_.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != R_SUCCESS)
         printer_.bottom_out("INVALID OPERATOR(S)");
 }
 
@@ -213,6 +171,12 @@ void cli_debug::show_bytes()
     printer_.print(std::make_shared<std::vector<uint8_t>>(debugger_->next_instruction()->bytes));
 
     bytes_shown_ = true;
+}
+
+void cli_debug::print_next_instruction()
+{
+    update_arrow();
+    printer_.print(debugger_->next_instruction());
 }
 
 void cli_debug::update_arrow()
@@ -230,4 +194,67 @@ void cli_debug::update_arrow()
     replace(arrow);
 
     arrow_line_ = line;
+}
+
+std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::create_commands()
+{
+    return std::map<std::string, std::function<int(std::vector<std::string>)>>
+    {
+        {
+            "back",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(!ops.empty());
+
+                ERROR_IF(debugger_->step_back());
+
+                print_next_instruction();
+                return R_SUCCESS;
+            }
+        },
+        {
+            "break",
+            [this](const std::vector<std::string> ops)
+            {
+                for (const auto op : ops)
+                {
+                    char* end;
+                    const auto address = strtoull(op.c_str(), &end, 16);
+                    ERROR_IF(*end != '\0');
+
+                    ERROR_IF(debugger_->set_breakpoint(address));
+                }
+
+                return R_SUCCESS;
+            }
+        },
+        {
+            "jump",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(ops.size() != 1);
+
+                char* end;
+                const auto address = strtoull(ops.at(0).c_str(), &end, 16);
+                ERROR_IF(*end != '\0');
+
+                ERROR_IF(debugger_->jump_to(address));
+
+                print_next_instruction();
+                return R_SUCCESS;
+            }
+        },
+        {
+            "skip",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(!ops.empty());
+                
+                ERROR_IF(debugger_->skip());
+
+                print_next_instruction();
+                return R_SUCCESS;
+            }
+        }
+    };
 }

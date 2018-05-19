@@ -42,12 +42,10 @@ public:
     // Emulates the next machine code instruction.
     debug_trace_entry step_into();
 
-    debug_trace_entry step_back();
-
-    void set_breakpoint(uint64_t address);
-
-    void jump_to(uint64_t address);
-    void skip();
+    int step_back();
+    int set_breakpoint(uint64_t address);
+    int jump_to(uint64_t address);
+    int skip();
 
 private:
 

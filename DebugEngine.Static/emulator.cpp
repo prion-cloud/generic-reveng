@@ -44,7 +44,7 @@ emulator::emulator(const uint16_t machine)
         THROW;
     }
 
-    E_FAT(uc_open(UC_ARCH_X86, mode, &uc_));
+    FATAL_IF(uc_open(UC_ARCH_X86, mode, &uc_));
 }
 emulator::~emulator()
 {
@@ -64,7 +64,7 @@ void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer
 
     const uint32_t perms = UC_PROT_ALL;
 
-    E_FAT(uc_mem_map(uc_, address, virt_size, perms));
+    FATAL_IF(uc_mem_map(uc_, address, virt_size, perms));
 
     uc_mem_region region;
     region.begin = address;
@@ -73,7 +73,7 @@ void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer
 
     mem_regions_.insert(region);
 
-    E_FAT(uc_mem_write(uc_, address, &buffer.at(0), buffer.size()));
+    FATAL_IF(uc_mem_write(uc_, address, &buffer.at(0), buffer.size()));
 }
 
 bool emulator::mem_is_mapped(const uint64_t address) const
@@ -88,7 +88,7 @@ bool emulator::mem_is_mapped(const uint64_t address) const
 
 void emulator::mem_read(const uint64_t address, std::vector<uint8_t>& buffer) const
 {
-    E_FAT(uc_mem_read(uc_, address, &buffer.at(0), buffer.size()));
+    FATAL_IF(uc_mem_read(uc_, address, &buffer.at(0), buffer.size()));
 }
 
 std::string emulator::mem_read_string(const uint64_t address) const
