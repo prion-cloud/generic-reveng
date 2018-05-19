@@ -11,7 +11,7 @@
 #define FLAG_LAZY "lazy"
 #define FLAG_UGLY "ugly"
 
-void print_help()
+static void print_help()
 {
     std::ostringstream help;
     help << "This is kind of a reverse engineering tool, I guess." << std::endl << std::endl;
@@ -23,7 +23,7 @@ void print_help()
 
     std::cout << help.str();
 }
-void print_manual()
+static void print_manual()
 {
     std::ostringstream manual;
     manual << std::string(68, '=') << std::endl;
@@ -40,7 +40,26 @@ void print_manual()
     std::cout << manual.str();
 }
 
-int inspect_args(std::vector<std::string> args, std::string& file_name, flag_status& flag_status)
+static std::vector<uint8_t> dump_file(const std::string file_name)
+{
+    FILE* file;
+    fopen_s(&file, file_name.c_str(), "rb");
+
+    fseek(file, 0, SEEK_END);
+    const auto length = ftell(file);
+    rewind(file);
+
+    const auto buffer = static_cast<char*>(malloc(length));
+    fread(buffer, sizeof(char), length, file);
+    fclose(file);
+
+    const auto byte_vec = std::vector<uint8_t>(buffer, buffer + length);
+    free(buffer);
+
+    return byte_vec;
+}
+
+static int inspect_args(std::vector<std::string> args, std::string& file_name, flag_status& flag_status)
 {
     auto got_file_name = false;
     auto got_flag = false;
@@ -93,7 +112,7 @@ int inspect_args(std::vector<std::string> args, std::string& file_name, flag_sta
 // Entry point
 int main(const int argc, char* argv[])
 {
-    const auto h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+    h_console = GetStdHandle(STD_OUTPUT_HANDLE);
 
     SetConsoleTextAttribute(h_console, COL_DEF);
 
@@ -114,17 +133,24 @@ int main(const int argc, char* argv[])
 
     print_manual();
 
+    static loader_pe loader;
+
+    if (!global_flag_status.lazy)
+        std::cout << "Loading... ";
+
+    const auto deb = std::make_shared<debugger>(loader, dump_file(file_name));
+
+    std::cout << "File: \"" << file_name << "\"" << std::endl;
+
+    std::cin.get();
+    system("cls");
+    
+    cli_debug cli_debug(deb);
+
     try
-    {
-        cli_debug cli_debug(h_console, file_name);
-        
-        for (;;)
+    {   
+        for (char c = 0; c != 'x'; c = _getch())
         {
-            const char c = _getch();
-
-            if (c == 'x')
-                break;
-
             switch (c)
             {
             case ' ':
