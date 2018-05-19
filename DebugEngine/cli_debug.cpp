@@ -66,7 +66,7 @@ static std::function<void(instruction)> print_instruction = [](const instruction
     std::cout << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
 
     if (!instruction.registers.empty())
-        COUT_COL(COL_REG, << "*");
+        COUT_COL(COL_REG, << " *");
 
     std::cout << "\t";
     
@@ -80,23 +80,14 @@ static std::function<void(instruction)> print_instruction = [](const instruction
 
     std::cout << std::endl;
 };
-static std::function<void(std::map<std::string, uint64_t>)> print_registers = [](const std::map<std::string, uint64_t> registers)
+static std::function<void(std::pair<std::string, uint64_t>)> print_register = [](const std::pair<std::string, uint64_t> reg)
 {
-    auto first = true;
-    for (const auto reg : registers)
-    {
-        if (!first)
-            std::cout << " ";
+    std::cout << std::string(ADDR_SIZE, ' ') << '\t';
 
-        auto reg_name = reg.first;
-        std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
+    auto reg_name = reg.first;
+    std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
 
-        COUT_COL(COL_REG, << reg_name << ": " << std::hex << reg.second);
-
-        first = false;
-    }
-
-    std::cout << std::endl;
+    COUT_COL(COL_REG, << reg_name << ": " << std::hex << reg.second << std::endl);
 };
 static std::function<void(std::pair<int, std::string>)> print_run_error = [](const std::pair<int, std::string> error)
 {
@@ -108,7 +99,7 @@ cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
 {
     printer_.register_func(print_bytes);
     printer_.register_func(print_instruction);
-    printer_.register_func(print_registers);
+    printer_.register_func(print_register);
     printer_.register_func(print_run_error);
     
     arrow_line_ = -1;
@@ -132,7 +123,10 @@ void cli_debug::step_into(const bool registers)
         printer_.print(std::make_shared<std::pair<int, std::string>>(trace_entry.error, trace_entry.error_str));
 
     if (registers && !trace_entry.new_registers.empty())
-        printer_.print(std::make_shared<std::map<std::string, uint64_t>>(trace_entry.new_registers));
+    {
+        for (const auto reg : trace_entry.new_registers)
+            printer_.print(std::make_shared<std::pair<std::string, uint64_t>>(reg.first, reg.second));
+    }
 
     if (cur_instruction->address + cur_instruction->bytes.size() != debugger_->next_instruction()->address)
         printer_.print_blank();
@@ -160,7 +154,7 @@ void cli_debug::process_command()
     }
 
     if (commands_.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != RES_SUCCESS)
-        printer_.bottom_out("INVALID OPERATOR(S)");
+        printer_.bottom_out("COMMAND FAILED");
 }
 
 void cli_debug::show_bytes()
