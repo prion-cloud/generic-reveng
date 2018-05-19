@@ -17,14 +17,14 @@
     <ClInclude Include="cli_debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="printer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="printer_tpl.cpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="console.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="console_printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="console_printer_tpl.cpp">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -37,10 +37,10 @@
     <ClCompile Include="cli_debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="printer.cpp">
+    <ClCompile Include="console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="console.cpp">
+    <ClCompile Include="console_printer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

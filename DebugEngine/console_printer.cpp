@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "printer.h"
+#include "console_printer.h"
 
 #include "console.h"
 
@@ -12,36 +12,36 @@ static void update_cursor(const bool visible)
     SetConsoleCursorInfo(h_console, &info);
 }
 
-printer::printer()
+console_printer::console_printer()
 {
     line0_ = get_cursor_line();
 
     update_cursor(false);
 }
 
-void printer::print_blank()
+void console_printer::print_blank()
 {
     print(-1, nullptr,
         [](std::shared_ptr<const void>) { std::cout << std::endl; });
 }
 
-void printer::bottom_out(const std::string message)
+void console_printer::bottom_out(const std::string message)
 {
     print_bottom(message, false);
 }
-std::string printer::bottom_in(const std::string prompt)
+std::string console_printer::bottom_in(const std::string prompt)
 {
     return print_bottom(prompt, true);
 }
 
-void printer::print(const size_t hash, const std::shared_ptr<void> raw_object_ptr, const std::function<void(std::shared_ptr<const void>)> raw_func)
+void console_printer::print(const size_t hash, const std::shared_ptr<void> raw_object_ptr, const std::function<void(std::shared_ptr<const void>)> raw_func)
 { 
     set_cursor(static_cast<int16_t>(printed_.size()) + line0_, 0); // TODO: Print max?
 
     raw_func(raw_object_ptr);
     printed_.push_back(std::make_pair(hash, raw_object_ptr));
 }
-void printer::reprint()
+void console_printer::reprint()
 {
     const auto line = get_cursor_line() - line0_;
 
@@ -55,7 +55,7 @@ void printer::reprint()
     else print_funcs_.at(print.first)(print.second);
 }
 
-std::string printer::print_bottom(const std::string text, const bool await_input)
+std::string console_printer::print_bottom(const std::string text, const bool await_input)
 {
     const auto buffer_info = get_buffer_info();
 

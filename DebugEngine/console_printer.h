@@ -2,7 +2,7 @@
 
 #define CANCEL_IN '\n'
 
-class printer
+class console_printer
 {
     std::vector<std::pair<const size_t, std::shared_ptr<const void>>> printed_;
     std::map<const size_t, const std::function<void(std::shared_ptr<const void>)>> print_funcs_;
@@ -11,7 +11,7 @@ class printer
 
 public:
 
-    explicit printer();
+    explicit console_printer();
 
     TPL void register_func(std::function<void(T)> func);
 
@@ -29,4 +29,4 @@ private:
     std::string print_bottom(std::string text, bool await_input);
 };
 
-#include "printer_tpl.cpp"
+#include "console_printer_tpl.cpp"

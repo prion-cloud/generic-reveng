@@ -45,13 +45,6 @@ static int get_instruction_color(const int id)
 
 static std::function<void(std::vector<uint8_t>)> print_bytes = [](const std::vector<uint8_t> bytes)
 {
-/*
-    const auto line = get_line();
-
-    const auto it = printed_.find(line);
-    if (it == printed_.end())
-        printed_.emplace(line, )
-*/
     std::cout << std::string(ADDR_SIZE, ' ') << "\t(";
 
     auto sep = false;
@@ -119,7 +112,6 @@ cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
     printer_.register_func(print_run_error);
     
     arrow_line_ = -1;
-    
     bytes_shown_ = false;
 
     std::cout << std::setfill('0');
