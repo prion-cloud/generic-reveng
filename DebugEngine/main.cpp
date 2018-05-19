@@ -2,6 +2,8 @@
 
 #include "cli_debug.h"
 
+#include "console.h"
+
 #define ARG_SUCCESS 0
 #define ARG_FAILURE 1
 
@@ -171,7 +173,7 @@ int main(const int argc, char* argv[])
     }
     catch (std::runtime_error err)
     {
-        COUT_COL(COL_FAIL, << err.what());
+        COUT_COL(COL_FAIL, << '\r' << std::endl << err.what() << std::endl);
         exit(EXIT_FAILURE);
     }
 }

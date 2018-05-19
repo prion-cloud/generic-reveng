@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+HANDLE h_console;
+
 void replace(const std::string text)
 {
     std::cout << '\r' << text << '\r';
