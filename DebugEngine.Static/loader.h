@@ -39,26 +39,21 @@ class loader_pe : public loader
         std::vector<IMAGE_SECTION_HEADER> section_headers;
 
         header_pe();
-
-        // Inspects a range of bytes for a valid PE header and initializes all fields if successful.
         explicit header_pe(std::vector<uint8_t> buffer);
     };
 
     bool defer_;
 
-    std::shared_ptr<emulator> emulator_ { };
+    std::shared_ptr<emulator> emulator_;
 
-    header_pe header_ { };
+    header_pe header_;
 
-    std::map<std::string, header_pe> imported_dlls_ { };
-    std::map<uint64_t, std::string> deferred_dlls_ { };
+    std::map<std::string, header_pe> imported_dlls_;
+    std::map<uint64_t, std::string> deferred_dlls_;
 
-    std::map<uint64_t, std::string> labels_ { };
+    std::map<uint64_t, std::string> labels_;
 
-    std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>> import_descriptors_ { };
-
-    void import_single_dll(uint64_t base, std::string dll_name, bool sub);
-    void import_all_dlls(header_pe header, bool sub);
+    std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>> import_descriptors_;
 
 public:
 
@@ -71,4 +66,11 @@ public:
     uint16_t load(std::vector<uint8_t> code) override;
 
     bool ensure_availablility(uint64_t address) override;
+
+private:
+    
+    int import_single_dll(uint64_t base, std::string dll_name, bool sub);
+    void import_all_dlls(header_pe header, bool sub);
+
+    uint64_t to_raw_address(uint64_t virtual_address) const;
 };

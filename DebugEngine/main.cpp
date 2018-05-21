@@ -122,35 +122,35 @@ int main(const int argc, char* argv[])
     const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flag_status);
     if (res == ARG_FAILURE)
     {
-        COUT_COL(COL_FAIL, << "Invalid arguments.");
-        exit(EXIT_FAILURE);
+        std::cout << "Invalid arguments." << std::endl;
+        return EXIT_FAILURE;
     }
 
     struct stat buf;
     if (stat(file_name.c_str(), &buf))
     {
-        COUT_COL(COL_FAIL, << "Specified file does not exist.");
-        exit(EXIT_FAILURE);
+        std::cout << "Specified file does not exist." << std::endl;
+        return EXIT_FAILURE;
     }
 
     print_manual();
 
-    static loader_pe loader;
-
-    if (!global_flag_status.lazy)
-        std::cout << "Loading... ";
-
-    const auto deb = std::make_shared<debugger>(loader, dump_file(file_name));
-
-    std::cout << "File: \"" << file_name << "\"" << std::endl;
-
-    std::cin.get();
-    system("cls");
-    
-    cli_debug cli_debug(deb);
-
     try
-    {   
+    {
+        loader_pe loader;
+
+        if (!global_flag_status.lazy)
+            std::cout << "Loading... ";
+
+        const auto dbg = std::make_shared<debugger>(loader, dump_file(file_name));
+
+        std::cout << "File: \"" << file_name << "\"" << std::endl;
+
+        std::cin.get();
+        system("cls");
+        
+        cli_debug cli_debug(dbg);
+
         for (char c = 0; c != 'x'; c = _getch())
         {
             switch (c)
@@ -173,7 +173,7 @@ int main(const int argc, char* argv[])
     }
     catch (std::runtime_error err)
     {
-        COUT_COL(COL_FAIL, << '\r' << std::endl << err.what() << std::endl);
-        exit(EXIT_FAILURE);
+        COUT_COL(COL_FAIL, << std::endl << err.what() << std::endl);
+        return EXIT_FAILURE;
     }
 }
