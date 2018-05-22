@@ -63,7 +63,7 @@ static std::function<void(instruction)> print_instruction = [](const instruction
     const auto pos = get_cursor();
     set_cursor(pos.first, pos.second + static_cast<int16_t>(arrow.size()));
 
-    std::cout << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
+    std::cout << std::uppercase << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
 
     if (!instruction.registers.empty())
         COUT_COL(COL_REG, << " *");
@@ -87,7 +87,7 @@ static std::function<void(std::pair<std::string, uint64_t>)> print_register = []
     auto reg_name = reg.first;
     std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
 
-    COUT_COL(COL_REG, << reg_name << ": " << std::hex << reg.second << std::endl);
+    COUT_COL(COL_REG, << reg_name << ": " << std::uppercase << std::hex << reg.second << std::endl);
 };
 static std::function<void(std::pair<int, std::string>)> print_run_error = [](const std::pair<int, std::string> error)
 {
@@ -167,12 +167,6 @@ void cli_debug::show_bytes()
     bytes_shown_ = true;
 }
 
-void cli_debug::print_next_instruction()
-{
-    update_arrow();
-    printer_.print(debugger_->next_instruction());
-}
-
 void cli_debug::update_arrow()
 {
     const auto line = get_cursor_line();
@@ -188,6 +182,11 @@ void cli_debug::update_arrow()
     replace(arrow);
 
     arrow_line_ = line;
+}
+void cli_debug::print_next_instruction()
+{
+    update_arrow();
+    printer_.print(debugger_->next_instruction());
 }
 
 std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::create_commands()
