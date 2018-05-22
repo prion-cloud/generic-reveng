@@ -128,16 +128,11 @@ void emulator::jump_to(const uint64_t address) const
 
 // Emulation
 
-int emulator::run() const
+int emulator::emulate_any() const
 {
     return RES_FAILURE; // TODO
 }
-
-int emulator::step_into() const
+int emulator::emulate_once() const
 {
     return uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 1);
-}
-int emulator::step_over() const
-{
-    return RES_FAILURE; // TODO
 }

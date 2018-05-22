@@ -50,10 +50,8 @@ public:
 
     // Emulation
 
-    int run() const;
-
-    int step_into() const;
-    int step_over() const;
+    int emulate_any() const;
+    int emulate_once() const;
 };
 
 #include "emulator_tpl.cpp"

@@ -27,8 +27,9 @@ debug_trace_entry debugger::step_into()
     for (const auto reg : next_instruction_->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 
-    trace_entry.error = emulator_->step_into();
-    trace_entry.error_str = uc_strerror(static_cast<uc_err>(trace_entry.error));
+    trace_entry.error = emulator_->emulate_once();
+    if (trace_entry.error != UC_ERR_OK)
+        trace_entry.error_str = uc_strerror(static_cast<uc_err>(trace_entry.error));
 
     switch (trace_entry.error)
     {
