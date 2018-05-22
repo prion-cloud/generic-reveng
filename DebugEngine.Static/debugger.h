@@ -39,13 +39,21 @@ public:
 
     std::shared_ptr<instruction> next_instruction() const;
 
+    debug_trace_entry run();
+
     // Emulates the next machine code instruction.
     debug_trace_entry step_into();
 
     int step_back();
+
     int set_breakpoint(uint64_t address);
+    int remove_breakpoint(uint64_t address);
+
     int jump_to(uint64_t address);
+    int get_raw(uint64_t virtual_address, uint64_t& raw_address) const;
     int skip();
+
+    bool is_breakpoint(uint64_t address) const;
 
 private:
 

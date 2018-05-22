@@ -19,6 +19,8 @@ public:
     // Provides certanity that a specified address contains mapped memory.
     // Returns 'true' if previously unmapped memory is now mapped, otherwise 'false'.
     virtual bool ensure_availablility(uint64_t address) = 0;
+
+    virtual uint64_t to_raw_address(uint64_t virtual_address) const = 0;
 };
 
 // Initializer for machine code emulation of PE binaries
@@ -66,11 +68,11 @@ public:
     uint16_t load(std::vector<uint8_t> code) override;
 
     bool ensure_availablility(uint64_t address) override;
+    
+    uint64_t to_raw_address(uint64_t virtual_address) const override;
 
 private:
     
     int import_single_dll(uint64_t base, std::string dll_name, bool sub);
     void import_all_dlls(header_pe header, bool sub);
-
-    uint64_t to_raw_address(uint64_t virtual_address) const;
 };

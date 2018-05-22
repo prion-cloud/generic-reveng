@@ -18,6 +18,19 @@ std::shared_ptr<instruction> debugger::next_instruction() const
     return next_instruction_;
 }
 
+debug_trace_entry debugger::run()
+{
+    debug_trace_entry trace_entry;
+    
+    do
+    {
+        trace_entry = step_into();
+    }
+    while (breakpoints_.find(next_instruction_->address) == breakpoints_.end());
+
+    return trace_entry;
+}
+
 debug_trace_entry debugger::step_into()
 {
     debug_trace_entry trace_entry;
@@ -28,7 +41,7 @@ debug_trace_entry debugger::step_into()
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 
     trace_entry.error = emulator_->emulate_once();
-    if (trace_entry.error != UC_ERR_OK)
+    if (trace_entry.error)
         trace_entry.error_str = uc_strerror(static_cast<uc_err>(trace_entry.error));
 
     switch (trace_entry.error)
@@ -73,6 +86,7 @@ int debugger::step_back()
 
     return RES_SUCCESS;
 }
+
 int debugger::set_breakpoint(const uint64_t address)
 {
     ERROR_IF(!emulator_->mem_is_mapped(address));
@@ -80,6 +94,14 @@ int debugger::set_breakpoint(const uint64_t address)
     breakpoints_.insert(address);
     return RES_SUCCESS;
 }
+int debugger::remove_breakpoint(const uint64_t address)
+{
+    ERROR_IF(!is_breakpoint(address));
+
+    breakpoints_.erase(address);
+    return RES_SUCCESS;
+}
+
 int debugger::jump_to(const uint64_t address)
 {
     ERROR_IF(!emulator_->mem_is_mapped(address));
@@ -88,9 +110,21 @@ int debugger::jump_to(const uint64_t address)
     next_instruction_ = disassemble_at(address);
     return RES_SUCCESS;
 }
+int debugger::get_raw(const uint64_t address, uint64_t& raw_address) const
+{
+    raw_address = loader_.to_raw_address(address);
+
+    ERROR_IF(raw_address == -1);
+    return RES_SUCCESS;
+}
 int debugger::skip()
 {
     return jump_to(next_instruction_->address + next_instruction_->bytes.size());
+}
+
+bool debugger::is_breakpoint(const uint64_t address) const
+{
+    return breakpoints_.find(address) != breakpoints_.end();
 }
 
 std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const

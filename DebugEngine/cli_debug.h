@@ -26,7 +26,6 @@ public:
 
 private:
 
-    void update_arrow();
     void print_next_instruction();
 
     std::map<std::string, std::function<int(std::vector<std::string>)>> create_commands();

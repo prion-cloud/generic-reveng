@@ -77,8 +77,6 @@ static std::function<void(instruction)> print_instruction = [](const instruction
         std::cout << " ";
         COUT_COL(COL_LABEL, << "<" << instruction.label << ">");
     }
-
-    std::cout << std::endl;
 };
 static std::function<void(std::pair<std::string, uint64_t>)> print_register = [](const std::pair<std::string, uint64_t> reg)
 {
@@ -167,26 +165,24 @@ void cli_debug::show_bytes()
     bytes_shown_ = true;
 }
 
-void cli_debug::update_arrow()
+void cli_debug::print_next_instruction()
 {
-    const auto line = get_cursor_line();
+    const auto next = debugger_->next_instruction();
 
     if (arrow_line_ >= 0)
     {
         set_cursor(arrow_line_, 0);
         erase(arrow.size());
-
-        set_cursor(line, 0);
     }
 
-    replace(arrow);
+    printer_.print(next);
 
-    arrow_line_ = line;
-}
-void cli_debug::print_next_instruction()
-{
-    update_arrow();
-    printer_.print(debugger_->next_instruction());
+    if (debugger_->is_breakpoint(next->address))
+        SetConsoleTextAttribute(h_console, COL_BREAK);
+    replace(arrow);
+    SetConsoleTextAttribute(h_console, COL_DEF);
+
+    arrow_line_ = get_cursor_line();
 }
 
 std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::create_commands()
@@ -233,7 +229,47 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
 
                 ERROR_IF(debugger_->jump_to(address));
 
+                printer_.print_blank();
+
                 print_next_instruction();
+                return RES_SUCCESS;
+            }
+        },
+        {
+            "raw",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(ops.size() != 1);
+                
+                char* end;
+                const auto address = strtoull(ops.at(0).c_str(), &end, 16);
+                ERROR_IF(*end != '\0');
+
+                uint64_t raw;
+                ERROR_IF(debugger_->get_raw(address, raw));
+
+                std::ostringstream stream;
+                stream << std::uppercase << std::hex << raw;
+
+                printer_.bottom_out(stream.str());
+
+                return RES_SUCCESS;
+            }
+        },
+        {
+            "run",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(!ops.empty());
+
+                printer_.print_blank();
+
+                const auto trace_entry = debugger_->run();
+                if (trace_entry.error)
+                    printer_.print(std::make_shared<std::pair<int, std::string>>(trace_entry.error, trace_entry.error_str));
+                
+                print_next_instruction();
+
                 return RES_SUCCESS;
             }
         },
