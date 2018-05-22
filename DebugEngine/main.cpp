@@ -9,7 +9,8 @@
 
 #define FLAG_HELP "help"
 
-#define FLAG_NO_FAT "nofat"
+#define FLAG_FAT "fat"
+#define FLAG_HOT "hot"
 #define FLAG_LAZY "lazy"
 #define FLAG_UGLY "ugly"
 
@@ -19,7 +20,8 @@ static void print_help()
     help << "This is kind of a reverse engineering tool, I guess." << std::endl << std::endl;
     std::left(help);
     help << "\t" << std::setw(20) << "--" FLAG_HELP << "Print this help." << std::endl << std::endl;
-    help << "\t" << std::setw(20) << "--" FLAG_NO_FAT << "Disable fatal errors." << std::endl;
+    help << "\t" << std::setw(20) << "--" FLAG_FAT << "Disable fatal errors." << std::endl;
+    help << "\t" << std::setw(20) << "--" FLAG_HOT << "Enable instruction counting." << std::endl;
     help << "\t" << std::setw(20) << "--" FLAG_LAZY << "Do any memory allocation once it is needed." << std::endl;
     help << "\t" << std::setw(20) << "--" FLAG_UGLY << "Ignore instruction failures." << std::endl;
 
@@ -79,8 +81,10 @@ static int inspect_args(std::vector<std::string> args, std::string& file_name, f
                 exit(EXIT_SUCCESS);
             }
             
-            if (flag == FLAG_NO_FAT)
+            if (flag == FLAG_FAT)
                 flag_status.fat = false;
+            else if (flag == FLAG_HOT)
+                flag_status.hot = true;
             else if (flag == FLAG_LAZY)
                 flag_status.lazy = true;
             else if (flag == FLAG_UGLY)
@@ -119,7 +123,7 @@ int main(const int argc, char* argv[])
     SetConsoleTextAttribute(h_console, COL_DEF);
 
     std::string file_name;
-    const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flag_status);
+    const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flags);
     if (res == ARG_FAILURE)
     {
         std::cout << "Invalid arguments." << std::endl;
@@ -139,7 +143,7 @@ int main(const int argc, char* argv[])
     {
         loader_pe loader;
 
-        if (!global_flag_status.lazy)
+        if (!global_flags.lazy)
             std::cout << "Loading... ";
 
         const auto dbg = std::make_shared<debugger>(loader, dump_file(file_name));

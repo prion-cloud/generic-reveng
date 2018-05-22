@@ -23,7 +23,7 @@
 #define RES_FAILURE 1
 
 // Throw a runtime exception containing the file name and the code line.
-#define THROW(message) if (global_flag_status.fat) { throw std::runtime_error("ERROR: " + std::string(message) + "\n[" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]"); }
+#define THROW(message) if (!global_flags.fat) { throw std::runtime_error("ERROR: " + std::string(message) + "\n[" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]"); }
 
 // Non-fatal error; return if expression evaluates to 'true'.
 #define ERROR_IF(expr) { const int __RES__ = expr; if (__RES__) return __RES__; }
@@ -34,12 +34,14 @@
 
 struct flag_status
 {
-    // Enable fatal errors.
-    bool fat = true;
+    // Disable fatal errors.
+    bool fat;
+    // Count most used ("hot") instructions.
+    bool hot;
     // Do any memory allocation once it is needed.
-    bool lazy = false;
+    bool lazy;
     // Ignore failed instructions.
-    bool ugly = false;
+    bool ugly;
 };
 
-extern flag_status global_flag_status;
+extern flag_status global_flags;

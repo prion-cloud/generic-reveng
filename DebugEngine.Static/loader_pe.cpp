@@ -55,7 +55,7 @@ loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
 
 loader_pe::loader_pe()
 {
-    defer_ = global_flag_status.lazy;
+    defer_imports_ = global_flags.lazy;
 }
 
 std::shared_ptr<emulator> loader_pe::get_emulator() const
@@ -116,7 +116,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> code)
     emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);
 
     // Do not defer any more
-    defer_ = false;
+    defer_imports_ = false;
 
     // Return the file's machine specification
     return header_.machine;
@@ -259,7 +259,7 @@ void loader_pe::import_all_dlls(const header_pe header, const bool sub)
         import_descriptors_.at(header.image_base).emplace(dll_name, import_descriptor);
 
         // Defer any imports now?
-        if (defer_)
+        if (defer_imports_)
         {
             for (auto j = 0;; ++j)
             {

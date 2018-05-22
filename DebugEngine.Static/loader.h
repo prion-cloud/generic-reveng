@@ -44,7 +44,7 @@ class loader_pe : public loader
         explicit header_pe(std::vector<uint8_t> buffer);
     };
 
-    bool defer_;
+    bool defer_imports_;
 
     std::shared_ptr<emulator> emulator_;
 

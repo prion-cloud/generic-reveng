@@ -60,6 +60,9 @@ debug_trace_entry debugger::step_into()
 
     trace_entry.address = next_instruction_->address;
 
+    if (global_flags.hot)
+        ++counter_[trace_entry.address];
+
     for (const auto reg : next_instruction_->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 
@@ -83,7 +86,7 @@ debug_trace_entry debugger::step_into()
     for (const auto reg : next_instruction_->registers)
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 
-    if (trace_entry.error && global_flag_status.ugly)
+    if (trace_entry.error && global_flags.ugly)
         skip();
     else next_instruction_ = disassemble_at(emulator_->address());
 

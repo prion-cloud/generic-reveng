@@ -39,6 +39,8 @@ class debugger
 
     std::map<uint64_t, debug_point> debug_points_;
 
+    std::map<uint64_t, int> counter_;
+
 public:
     
     // Uses a loader to make some machine code ready for debugging.
