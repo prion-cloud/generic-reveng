@@ -43,6 +43,13 @@ static int get_instruction_color(const int id)
     }
 }
 
+static int parse_string(const std::string string, uint64_t& number, const int base)
+{
+    char* end;
+    number = strtoull(string.c_str(), &end, base);
+    return *end != '\0';
+}
+
 static std::function<void(std::vector<uint8_t>)> print_bytes = [](const std::vector<uint8_t> bytes)
 {
     std::cout << std::string(ADDR_SIZE, ' ') << "\t(";
@@ -205,12 +212,12 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             "break",
             [this](const std::vector<std::string> ops)
             {
+                ERROR_IF(ops.empty());
+
                 for (const auto op : ops)
                 {
-                    char* end;
-                    const auto address = strtoull(op.c_str(), &end, 16);
-                    ERROR_IF(*end != '\0');
-
+                    uint64_t address;
+                    ERROR_IF(parse_string(op, address, 16));
                     ERROR_IF(debugger_->set_debug_point(address, dp_break));
                 }
 
@@ -223,10 +230,8 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             {
                 ERROR_IF(ops.size() != 1);
 
-                char* end;
-                const auto address = strtoull(ops.at(0).c_str(), &end, 16);
-                ERROR_IF(*end != '\0');
-
+                uint64_t address;
+                ERROR_IF(parse_string(ops.at(0), address, 16));
                 ERROR_IF(debugger_->jump_to(address));
 
                 printer_.print_blank();
@@ -240,10 +245,9 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             [this](const std::vector<std::string> ops)
             {
                 ERROR_IF(ops.size() != 1);
-                
-                char* end;
-                const auto address = strtoull(ops.at(0).c_str(), &end, 16);
-                ERROR_IF(*end != '\0');
+
+                uint64_t address;
+                ERROR_IF(parse_string(ops.at(0), address, 16));
 
                 uint64_t raw;
                 ERROR_IF(debugger_->get_raw(address, raw));
@@ -260,16 +264,24 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             "run",
             [this](const std::vector<std::string> ops)
             {
-                ERROR_IF(!ops.empty());
+                ERROR_IF(ops.size() > 1);
+
+                debug_trace_entry trace_entry;
+                if (ops.empty())
+                    trace_entry = debugger_->run();
+                else
+                {
+                    uint64_t count;
+                    ERROR_IF(parse_string(ops.at(0), count, 10));
+                    trace_entry = debugger_->run(count);
+                }
 
                 printer_.print_blank();
 
-                const auto trace_entry = debugger_->run();
                 if (trace_entry.error)
                     printer_.print(std::make_shared<std::pair<int, std::string>>(trace_entry.error, trace_entry.error_str));
                 
                 print_next_instruction();
-
                 return RES_SUCCESS;
             }
         },
@@ -286,10 +298,8 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 {
                     for (const auto op : ops)
                     {
-                        char* end;
-                        const auto address = strtoull(op.c_str(), &end, 16);
-                        ERROR_IF(*end != '\0');
-
+                        uint64_t address;
+                        ERROR_IF(parse_string(op, address, 16));
                         ERROR_IF(debugger_->set_debug_point(address, dp_skip));
                     }
                 }
@@ -311,10 +321,8 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 {
                     for (const auto op : ops)
                     {
-                        char* end;
-                        const auto address = strtoull(op.c_str(), &end, 16);
-                        ERROR_IF(*end != '\0');
-
+                        uint64_t address;
+                        ERROR_IF(parse_string(op, address, 16));
                         ERROR_IF(debugger_->set_debug_point(address, dp_take));
                     }
                 }

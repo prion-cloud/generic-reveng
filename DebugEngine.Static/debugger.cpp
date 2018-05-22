@@ -18,12 +18,13 @@ std::shared_ptr<instruction> debugger::next_instruction() const
     return next_instruction_;
 }
 
-debug_trace_entry debugger::run()
+debug_trace_entry debugger::run(const size_t count)
 {
     debug_trace_entry trace_entry;
 
+    size_t i = 0;
+
     bool cont;
-    
     do
     {
         trace_entry = step_into();
@@ -48,6 +49,9 @@ debug_trace_entry debugger::run()
                 break;
             }
         }
+
+        if (count > 0 && ++i >= count)
+            break;
     }
     while (cont);
 

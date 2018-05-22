@@ -39,7 +39,7 @@ class debugger
 
     std::map<uint64_t, debug_point> debug_points_;
 
-    std::map<uint64_t, int> counter_;
+    std::map<uint64_t, size_t> counter_;
 
 public:
     
@@ -48,7 +48,7 @@ public:
 
     std::shared_ptr<instruction> next_instruction() const;
 
-    debug_trace_entry run();
+    debug_trace_entry run(size_t count = 0);
 
     // Emulates the next machine code instruction.
     debug_trace_entry step_into();
