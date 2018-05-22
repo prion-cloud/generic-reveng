@@ -277,11 +277,23 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             "skip",
             [this](const std::vector<std::string> ops)
             {
-                ERROR_IF(!ops.empty());
-                
-                ERROR_IF(debugger_->skip());
+                if(ops.empty())
+                {
+                    ERROR_IF(debugger_->skip());
+                    print_next_instruction();
+                }
+                else
+                {
+                    for (const auto op : ops)
+                    {
+                        char* end;
+                        const auto address = strtoull(op.c_str(), &end, 16);
+                        ERROR_IF(*end != '\0');
 
-                print_next_instruction();
+                        ERROR_IF(debugger_->set_debug_point(address, dp_skip));
+                    }
+                }
+
                 return RES_SUCCESS;
             }
         },
@@ -289,13 +301,24 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             "take",
             [this](const std::vector<std::string> ops)
             {
-                ERROR_IF(!ops.empty());
+                if (ops.empty())
+                {
+                    ERROR_IF(debugger_->take());
+                    printer_.print_blank();
+                    print_next_instruction();
+                }
+                else
+                {
+                    for (const auto op : ops)
+                    {
+                        char* end;
+                        const auto address = strtoull(op.c_str(), &end, 16);
+                        ERROR_IF(*end != '\0');
 
-                ERROR_IF(debugger_->take());
+                        ERROR_IF(debugger_->set_debug_point(address, dp_take));
+                    }
+                }
 
-                printer_.print_blank();
-
-                print_next_instruction();
                 return RES_SUCCESS;
             }
         }
