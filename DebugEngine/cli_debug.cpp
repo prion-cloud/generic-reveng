@@ -153,7 +153,7 @@ void cli_debug::process_command()
         return;
     }
 
-    if (commands_.at(input)(std::vector<std::string>(split.begin() + 1, split.end())) != RES_SUCCESS)
+    if (commands_.at(command)(std::vector<std::string>(split.begin() + 1, split.end())) != RES_SUCCESS)
         printer_.bottom_out("COMMAND FAILED");
 }
 
