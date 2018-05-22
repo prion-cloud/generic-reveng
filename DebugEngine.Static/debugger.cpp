@@ -97,8 +97,8 @@ std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) co
     std::vector<uint8_t> bytes(MAX_BYTES);
     emulator_->mem_read(address, bytes);
 
-    const auto instruction = disassembler_->disassemble(bytes, address);
-    instruction->label = loader_.label_at(address);
+    auto ins = disassembler_->disassemble(bytes, address);
+    ins.label = loader_.label_at(address);
 
-    return instruction;
+    return std::make_shared<instruction>(ins);
 }
