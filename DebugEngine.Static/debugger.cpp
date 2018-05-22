@@ -21,12 +21,35 @@ std::shared_ptr<instruction> debugger::next_instruction() const
 debug_trace_entry debugger::run()
 {
     debug_trace_entry trace_entry;
+
+    bool cont;
     
     do
     {
         trace_entry = step_into();
+
+        cont = true;
+
+        const auto address = next_instruction_->address;
+        if (debug_points_.find(address) != debug_points_.end())
+        {
+            const auto dp = debug_points_.at(address);
+
+            switch(dp)
+            {
+            case dp_break:
+                cont = false;
+                break;
+            case dp_skip:
+                skip();
+                break;
+            case dp_take:
+                take();
+                break;
+            }
+        }
     }
-    while (breakpoints_.find(next_instruction_->address) == breakpoints_.end());
+    while (cont);
 
     return trace_entry;
 }
@@ -87,18 +110,18 @@ int debugger::step_back()
     return RES_SUCCESS;
 }
 
-int debugger::set_breakpoint(const uint64_t address)
+int debugger::set_debug_point(const uint64_t address, const debug_point point)
 {
     ERROR_IF(!emulator_->mem_is_mapped(address));
 
-    breakpoints_.insert(address);
+    debug_points_.emplace(address, point);
     return RES_SUCCESS;
 }
-int debugger::remove_breakpoint(const uint64_t address)
+int debugger::remove_debug_point(const uint64_t address)
 {
-    ERROR_IF(!is_breakpoint(address));
+    ERROR_IF(!is_debug_point(address));
 
-    breakpoints_.erase(address);
+    debug_points_.erase(address);
     return RES_SUCCESS;
 }
 
@@ -117,14 +140,22 @@ int debugger::get_raw(const uint64_t address, uint64_t& raw_address) const
     ERROR_IF(raw_address == -1);
     return RES_SUCCESS;
 }
+
 int debugger::skip()
 {
     return jump_to(next_instruction_->address + next_instruction_->bytes.size());
 }
-
-bool debugger::is_breakpoint(const uint64_t address) const
+int debugger::take()
 {
-    return breakpoints_.find(address) != breakpoints_.end();
+    const auto jump = next_instruction_->jump;
+    ERROR_IF(!jump.has_value());
+
+    return jump_to(jump.value());
+}
+
+bool debugger::is_debug_point(const uint64_t address) const
+{
+    return debug_points_.find(address) != debug_points_.end();
 }
 
 std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const

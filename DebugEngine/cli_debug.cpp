@@ -177,7 +177,7 @@ void cli_debug::print_next_instruction()
 
     printer_.print(next);
 
-    if (debugger_->is_breakpoint(next->address))
+    if (debugger_->is_debug_point(next->address))
         SetConsoleTextAttribute(h_console, COL_BREAK);
     replace(arrow);
     SetConsoleTextAttribute(h_console, COL_DEF);
@@ -211,7 +211,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                     const auto address = strtoull(op.c_str(), &end, 16);
                     ERROR_IF(*end != '\0');
 
-                    ERROR_IF(debugger_->set_breakpoint(address));
+                    ERROR_IF(debugger_->set_debug_point(address, dp_break));
                 }
 
                 return RES_SUCCESS;
@@ -291,10 +291,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             {
                 ERROR_IF(!ops.empty());
 
-                const auto jump = debugger_->next_instruction()->jump;
-                ERROR_IF(!jump.has_value());
-
-                ERROR_IF(debugger_->jump_to(jump.value()));
+                ERROR_IF(debugger_->take());
 
                 printer_.print_blank();
 

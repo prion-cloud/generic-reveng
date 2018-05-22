@@ -18,6 +18,13 @@ struct debug_trace_entry
     std::map<std::string, uint64_t> new_registers;
 };
 
+enum debug_point
+{
+    dp_break,
+    dp_skip,
+    dp_take
+};
+
 // Low-level debugger of executable binaries
 class debugger
 {
@@ -30,7 +37,7 @@ class debugger
 
     std::deque<std::unique_ptr<debug_trace_entry>> trace_;
 
-    std::set<uint64_t> breakpoints_;
+    std::map<uint64_t, debug_point> debug_points_;
 
 public:
     
@@ -46,14 +53,16 @@ public:
 
     int step_back();
 
-    int set_breakpoint(uint64_t address);
-    int remove_breakpoint(uint64_t address);
+    int set_debug_point(uint64_t address, debug_point point);
+    int remove_debug_point(uint64_t address);
 
     int jump_to(uint64_t address);
     int get_raw(uint64_t virtual_address, uint64_t& raw_address) const;
-    int skip();
 
-    bool is_breakpoint(uint64_t address) const;
+    int skip();
+    int take();
+
+    bool is_debug_point(uint64_t address) const;
 
 private:
 
