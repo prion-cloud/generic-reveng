@@ -66,5 +66,26 @@ instruction disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t
         }
     }
 
+    instruction.jump = { };
+
+    for (auto i = 0; i < insn->detail->groups_count; ++i)
+    {
+        switch (insn->detail->groups[i])
+        {
+        case CS_GRP_JUMP:
+        case CS_GRP_CALL:
+            const auto op = insn->detail->x86.operands[0];
+            switch (op.type)
+            {
+            case X86_OP_IMM:
+                instruction.jump = op.imm;
+                break;
+            default:;
+            }
+            break;
+        default:;
+        }
+    }
+
     return instruction;
 }

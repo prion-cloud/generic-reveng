@@ -19,6 +19,8 @@ struct instruction
     std::string label;
 
     std::map<x86_reg, std::string> registers { };
+
+    std::optional<uint64_t> jump;
 };
 
 class disassembler

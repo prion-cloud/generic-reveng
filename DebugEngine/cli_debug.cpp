@@ -284,6 +284,23 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 print_next_instruction();
                 return RES_SUCCESS;
             }
+        },
+        {
+            "take",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(!ops.empty());
+
+                const auto jump = debugger_->next_instruction()->jump;
+                ERROR_IF(!jump.has_value());
+
+                ERROR_IF(debugger_->jump_to(jump.value()));
+
+                printer_.print_blank();
+
+                print_next_instruction();
+                return RES_SUCCESS;
+            }
         }
     };
 }
