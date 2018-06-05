@@ -63,7 +63,7 @@ static std::function<void(std::vector<uint8_t>)> print_bytes = [](const std::vec
         sep = true;
     }
 
-    std::cout << ")" << std::endl;
+    std::cout << ")";
 };
 static std::function<void(instruction)> print_instruction = [](const instruction instruction)
 {
@@ -89,11 +89,11 @@ static std::function<void(std::pair<std::string, uint64_t>)> print_register = []
     auto reg_name = reg.first;
     std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
 
-    std::cout << reg_name << ": " << std::uppercase << std::hex << reg.second << std::endl;
+    std::cout << reg_name << ": " << std::uppercase << std::hex << reg.second;
 };
 static std::function<void(std::pair<int, std::string>)> print_run_error = [](const std::pair<int, std::string> error)
 {
-    std::cout << std::string(ADDR_SIZE, ' ') << '\t' << colorize(FOREGROUND_RED | FOREGROUND_INTENSITY) << error.second << " <" << error.first << ">" << decolorize << std::endl;
+    std::cout << std::string(ADDR_SIZE, ' ') << '\t' << colorize(FOREGROUND_RED | FOREGROUND_INTENSITY) << error.second << " <" << error.first << ">" << decolorize;
 };
 
 cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
