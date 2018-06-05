@@ -120,7 +120,7 @@ int main(const int argc, char* argv[])
 {
     h_console = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    SetConsoleTextAttribute(h_console, COL_DEF);
+    decolorize(std::cout);
 
     std::string file_name;
     const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flags);
@@ -177,7 +177,7 @@ int main(const int argc, char* argv[])
     }
     catch (std::runtime_error err)
     {
-        COUT_COL(COL_FAIL, << std::endl << err.what() << std::endl);
+        std::cerr << std::endl << colorize(FOREGROUND_RED | FOREGROUND_INTENSITY) << err.what() << decolorize << std::endl;
         return EXIT_FAILURE;
     }
 }

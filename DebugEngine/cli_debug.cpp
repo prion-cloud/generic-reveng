@@ -34,12 +34,12 @@ static int get_instruction_color(const int id)
     case X86_INS_JP:
     case X86_INS_JNP:
     case X86_INS_JCXZ:
-        return COL_JUMP;
+        return FOREGROUND_YELLOW;
     case X86_INS_CALL:
     case X86_INS_RET:
-        return COL_CALL;
+        return FOREGROUND_CYAN;
     default:
-        return COL_DEF;
+        return FOREGROUND_WHITE;
     }
 }
 
@@ -73,17 +73,14 @@ static std::function<void(instruction)> print_instruction = [](const instruction
     std::cout << std::uppercase << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
 
     if (!instruction.registers.empty())
-        COUT_COL(COL_REG, << " *");
+        std::cout << " *";
 
-    std::cout << "\t";
-    
-    COUT_COL(get_instruction_color(instruction.id), << instruction.mnemonic << " " << instruction.operands);
+    std::cout << "\t" << colorize(get_instruction_color(instruction.id)) << instruction.mnemonic << " " << instruction.operands;
 
     if (!instruction.label.empty())
-    {
-        std::cout << " ";
-        COUT_COL(COL_LABEL, << "<" << instruction.label << ">");
-    }
+        std::cout << " " << colorize(FOREGROUND_GREEN) << "<" << instruction.label << ">";
+
+    decolorize(std::cout);
 };
 static std::function<void(std::pair<std::string, uint64_t>)> print_register = [](const std::pair<std::string, uint64_t> reg)
 {
@@ -92,11 +89,11 @@ static std::function<void(std::pair<std::string, uint64_t>)> print_register = []
     auto reg_name = reg.first;
     std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), toupper);
 
-    COUT_COL(COL_REG, << reg_name << ": " << std::uppercase << std::hex << reg.second << std::endl);
+    std::cout << reg_name << ": " << std::uppercase << std::hex << reg.second << std::endl;
 };
 static std::function<void(std::pair<int, std::string>)> print_run_error = [](const std::pair<int, std::string> error)
 {
-    COUT_COL(COL_FAIL, << std::string(ADDR_SIZE, ' ') << '\t' << error.second << " <" << error.first << ">" << std::endl);
+    std::cout << std::string(ADDR_SIZE, ' ') << '\t' << colorize(FOREGROUND_RED | FOREGROUND_INTENSITY) << error.second << " <" << error.first << ">" << decolorize << std::endl;
 };
 
 cli_debug::cli_debug(const std::shared_ptr<debugger> debugger)
@@ -184,10 +181,7 @@ void cli_debug::print_next_instruction()
 
     printer_.print(next);
 
-    if (debugger_->is_debug_point(next->address))
-        SetConsoleTextAttribute(h_console, COL_BREAK);
     replace(arrow);
-    SetConsoleTextAttribute(h_console, COL_DEF);
 
     arrow_line_ = get_cursor_line();
 }

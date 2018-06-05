@@ -1,18 +1,16 @@
 #pragma once
 
-#define COL_DEF FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
-#define COL_FAIL FOREGROUND_RED | FOREGROUND_INTENSITY
-#define COL_CALL FOREGROUND_GREEN | FOREGROUND_BLUE
-#define COL_JUMP FOREGROUND_RED | FOREGROUND_GREEN
-#define COL_LABEL FOREGROUND_GREEN
-#define COL_REG FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
-#define COL_BREAK FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY | BACKGROUND_RED
-#define COUT_COL(color, stream) \
-    { \
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color); \
-        std::cout stream; \
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), COL_DEF); \
-    }
+#define FOREGROUND_YELLOW FOREGROUND_RED | FOREGROUND_GREEN
+#define FOREGROUND_MAGENTA FOREGROUND_RED | FOREGROUND_BLUE
+#define FOREGROUND_CYAN FOREGROUND_GREEN | FOREGROUND_BLUE
+
+#define FOREGROUND_WHITE FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
+
+#define BACKGROUND_YELLOW BACKGROUND_RED | BACKGROUND_GREEN
+#define BACKGROUND_MAGENTA BACKGROUND_RED | BACKGROUND_BLUE
+#define BACKGROUND_CYAN BACKGROUND_GREEN | BACKGROUND_BLUE
+
+#define BACKGROUND_WHITE BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE
 
 extern HANDLE h_console;
 
@@ -28,3 +26,18 @@ std::pair<int16_t, int16_t> get_cursor();
 
 int16_t get_cursor_line();
 int16_t get_cursor_column();
+
+class colorize
+{
+    uint16_t color_;
+
+public:
+
+    explicit colorize(uint16_t color);
+
+    std::ostream& operator()(std::ostream& stream) const;
+};
+
+std::ostream& operator<<(std::ostream& stream, colorize colorize);
+
+std::ostream& decolorize(std::ostream& stream);
