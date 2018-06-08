@@ -79,7 +79,7 @@ debug_trace_entry debugger::step_into()
     case UC_ERR_READ_UNMAPPED:
     case UC_ERR_WRITE_UNMAPPED:
     case UC_ERR_FETCH_UNMAPPED:
-        if (loader_.ensure_availablility(emulator_->address()))
+        if (loader_.ensure_availability(emulator_->address()))
         {
             emulator_->jump_to(next_instruction_->address);
             return step_into(); // TODO: Prevent stack overflow

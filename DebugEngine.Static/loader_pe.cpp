@@ -66,7 +66,7 @@ std::string loader_pe::label_at(const uint64_t address) const
     return labels_.at(address);
 }
 
-uint16_t loader_pe::load(const std::vector<uint8_t> code)
+uint16_t loader_pe::load(const std::vector<uint8_t> bytes)
 {
     // Reset data structures
     imported_dlls_ = std::map<std::string, header_pe>();
@@ -75,16 +75,16 @@ uint16_t loader_pe::load(const std::vector<uint8_t> code)
     import_descriptors_ = std::map<uint64_t, std::map<std::string, IMAGE_IMPORT_DESCRIPTOR>>();
 
     // Do the bytes define a valid PE header?
-    header_ = header_pe(code);
+    header_ = header_pe(bytes);
 
     // Create emulator
     emulator_ = std::make_shared<emulator>(header_.machine);
 
     // Map all sections
-    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(code.begin(), code.begin() + PAGE_SIZE));
+    emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));
     for (auto sec : header_.section_headers)
     {
-        const auto start = code.begin() + sec.PointerToRawData;
+        const auto start = bytes.begin() + sec.PointerToRawData;
         emulator_->mem_map(header_.image_base + sec.VirtualAddress, std::vector<uint8_t>(start, start + sec.SizeOfRawData));
     }
 
@@ -111,7 +111,7 @@ uint16_t loader_pe::load(const std::vector<uint8_t> code)
     return header_.machine;
 }
 
-bool loader_pe::ensure_availablility(const uint64_t address)
+bool loader_pe::ensure_availability(const uint64_t address)
 {
     if (emulator_->mem_is_mapped(address))
         return false;
@@ -158,10 +158,10 @@ int loader_pe::import_single_dll(const uint64_t base, std::string dll_name, cons
     const auto import_descriptor = import_descriptors_.at(base).at(dll_name);
 
     // Update name
-    char dll_path[MAX_PATH];
-    GetModuleFileNameA(dll_handle, dll_path, MAX_PATH);
-    char dll_name_c[MAX_PATH];
-    _splitpath_s(dll_path, nullptr, 0, nullptr, 0, dll_name_c, MAX_PATH, nullptr, 0);
+    char dll_path_c[MAX_PATH];
+    GetModuleFileNameA(dll_handle, dll_path_c, MAX_PATH);
+    char dll_name_c[_MAX_FNAME];
+    _splitpath_s(dll_path_c, nullptr, 0, nullptr, 0, dll_name_c, _MAX_FNAME, nullptr, 0);
     dll_name = std::string(dll_name_c, strlen(dll_name_c));
 
     // Not yet imported?

@@ -10,18 +10,18 @@ std::string loader_raw::label_at(const uint64_t) const
     return { };
 }
 
-uint16_t loader_raw::load(const std::vector<uint8_t> code)
+uint16_t loader_raw::load(const std::vector<uint8_t> bytes)
 {
     emulator_ = std::make_shared<emulator>(machine_);
 
-    emulator_->mem_map(base_address_, code);
+    emulator_->mem_map(base_address_, bytes);
 
     initialize_environment(PAGE_SIZE, 0.5, base_address_);
 
     return machine_;
 }
 
-bool loader_raw::ensure_availablility(const uint64_t)
+bool loader_raw::ensure_availability(const uint64_t)
 {
     return false;
 }

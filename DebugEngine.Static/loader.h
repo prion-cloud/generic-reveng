@@ -20,11 +20,11 @@ public:
     virtual std::string label_at(uint64_t address) const = 0;
 
     // Initializes a new emulator according to a set of machine code.
-    virtual uint16_t load(std::vector<uint8_t> code) = 0;
+    virtual uint16_t load(std::vector<uint8_t> bytes) = 0;
 
     // Provides certanity that a specified address contains mapped memory.
     // Returns 'true' if previously unmapped memory is now mapped, otherwise 'false'.
-    virtual bool ensure_availablility(uint64_t address) = 0;
+    virtual bool ensure_availability(uint64_t address) = 0;
 
     virtual uint64_t to_raw_address(uint64_t virtual_address) const = 0;
 
@@ -45,9 +45,9 @@ public:
 
     std::string label_at(uint64_t address) const override;
 
-    uint16_t load(std::vector<uint8_t> code) override;
+    uint16_t load(std::vector<uint8_t> bytes) override;
 
-    bool ensure_availablility(uint64_t address) override;
+    bool ensure_availability(uint64_t address) override;
 
     uint64_t to_raw_address(uint64_t virtual_address) const override;
 };
@@ -90,9 +90,9 @@ public:
 
     std::string label_at(uint64_t address) const override;
 
-    uint16_t load(std::vector<uint8_t> code) override;
+    uint16_t load(std::vector<uint8_t> bytes) override;
 
-    bool ensure_availablility(uint64_t address) override;
+    bool ensure_availability(uint64_t address) override;
     
     uint64_t to_raw_address(uint64_t virtual_address) const override;
 
