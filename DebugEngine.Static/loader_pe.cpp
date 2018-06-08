@@ -58,11 +58,6 @@ loader_pe::loader_pe()
     defer_imports_ = global_flags.lazy;
 }
 
-std::shared_ptr<emulator> loader_pe::get_emulator() const
-{
-    return emulator_;
-}
-
 std::string loader_pe::label_at(const uint64_t address) const
 {
     if (labels_.find(address) == labels_.end())
@@ -71,7 +66,7 @@ std::string loader_pe::label_at(const uint64_t address) const
     return labels_.at(address);
 }
 
-uint16_t loader_pe::load(std::vector<uint8_t> code)
+uint16_t loader_pe::load(const std::vector<uint8_t> code)
 {
     // Reset data structures
     imported_dlls_ = std::map<std::string, header_pe>();
@@ -96,11 +91,6 @@ uint16_t loader_pe::load(std::vector<uint8_t> code)
     // Import all DLLs (or defer them)
     import_all_dlls(header_, false);
 
-    // Map stack
-    const uint64_t stack_pointer = 0xffffffff;
-    const auto stack_size = static_cast<size_t>(header_.stack_commit);
-    emulator_->mem_map(stack_pointer - stack_size + 1, std::vector<uint8_t>(stack_size));
-
     // Retrieve and map 'Thread Information Block' (TIB) TODO: Unused
     uint64_t tib_address;
 #ifdef _M_IX86
@@ -112,8 +102,7 @@ uint16_t loader_pe::load(std::vector<uint8_t> code)
     ReadProcessMemory(GetCurrentProcess(), reinterpret_cast<LPCVOID>(tib_address), &tib_buffer.at(0), PAGE_SIZE, nullptr);
     emulator_->mem_map(tib_address, tib_buffer);
 
-    // Initialize registers
-    emulator_->init_regs(stack_pointer, header_.image_base + header_.entry_point);
+    initialize_environment(header_.stack_commit, 0, header_.image_base + header_.entry_point);
 
     // Do not defer any more
     defer_imports_ = false;
@@ -141,6 +130,21 @@ bool loader_pe::ensure_availablility(const uint64_t address)
     }
 
     return false;
+}
+
+uint64_t loader_pe::to_raw_address(const uint64_t virtual_address) const
+{
+    if(!emulator_->mem_is_mapped(virtual_address))
+        return -1;
+
+    const auto relative_address = virtual_address - header_.image_base;
+    for (const auto sec : header_.section_headers)
+    {
+        if (relative_address >= sec.VirtualAddress && relative_address < sec.VirtualAddress + sec.SizeOfRawData)
+            return relative_address - sec.VirtualAddress + sec.PointerToRawData;
+    }
+
+    return -1;
 }
 
 int loader_pe::import_single_dll(const uint64_t base, std::string dll_name, const bool sub)
@@ -277,19 +281,4 @@ void loader_pe::import_all_dlls(const header_pe header, const bool sub)
             THROW(message.str());
         }
     }
-}
-
-uint64_t loader_pe::to_raw_address(const uint64_t virtual_address) const
-{
-    if(!emulator_->mem_is_mapped(virtual_address))
-        return -1;
-
-    const auto relative_address = virtual_address - header_.image_base;
-    for (const auto sec : header_.section_headers)
-    {
-        if (relative_address >= sec.VirtualAddress && relative_address < sec.VirtualAddress + sec.SizeOfRawData)
-            return relative_address - sec.VirtualAddress + sec.PointerToRawData;
-    }
-
-    return -1;
 }

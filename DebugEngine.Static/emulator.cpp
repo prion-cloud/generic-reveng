@@ -15,7 +15,7 @@ emulator::emulator(const uint16_t machine)
     {
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
-        
+
         mode = UC_MODE_64;
 
         max_scale_ = UINT64_MAX;
@@ -109,14 +109,6 @@ std::string emulator::mem_read_string(const uint64_t address) const
 
 // Registers
 
-void emulator::init_regs(const uint64_t stack_pointer, const uint64_t instruction_pointer) const
-{
-    reg_write(reg_sp_id_, stack_pointer);
-    reg_write(reg_bp_id_, stack_pointer);
-
-    jump_to(instruction_pointer);
-}
-
 uint64_t emulator::address() const
 {
     return reg_read<uint64_t>(reg_ip_id_);
@@ -124,6 +116,12 @@ uint64_t emulator::address() const
 void emulator::jump_to(const uint64_t address) const
 {
     reg_write(reg_ip_id_, address);
+}
+
+void emulator::resize_stack(const uint64_t pointer) const
+{
+    reg_write(reg_sp_id_, pointer);
+    reg_write(reg_bp_id_, pointer);
 }
 
 // Emulation

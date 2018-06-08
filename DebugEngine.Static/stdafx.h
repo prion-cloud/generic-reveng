@@ -1,7 +1,5 @@
 #pragma once
 
-// ReSharper disable CppUnusedIncludeDirective
-
 #include <array>
 #include <deque>
 #include <map>

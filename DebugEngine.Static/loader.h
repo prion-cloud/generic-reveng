@@ -5,11 +5,17 @@
 // Initializer for machine code emulation
 class loader
 {
+protected:
+    
+    std::shared_ptr<emulator> emulator_;
+
 public:
 
-    virtual ~loader() = default;
+    loader();
 
-    virtual std::shared_ptr<emulator> get_emulator() const = 0;
+    std::shared_ptr<emulator> get_emulator() const;
+
+    virtual ~loader() = default;
 
     virtual std::string label_at(uint64_t address) const = 0;
 
@@ -21,6 +27,29 @@ public:
     virtual bool ensure_availablility(uint64_t address) = 0;
 
     virtual uint64_t to_raw_address(uint64_t virtual_address) const = 0;
+
+protected:
+
+    void initialize_environment(size_t stack_size, double stack_fill, uint64_t entry_address) const;
+};
+
+// Initialize for raw machine code emulation
+class loader_raw : public loader
+{
+    uint16_t machine_;
+    uint64_t base_address_;
+
+public:
+
+    explicit loader_raw(uint16_t machine, uint64_t base_address);
+
+    std::string label_at(uint64_t address) const override;
+
+    uint16_t load(std::vector<uint8_t> code) override;
+
+    bool ensure_availablility(uint64_t address) override;
+
+    uint64_t to_raw_address(uint64_t virtual_address) const override;
 };
 
 // Initializer for machine code emulation of PE binaries
@@ -46,8 +75,6 @@ class loader_pe : public loader
 
     bool defer_imports_;
 
-    std::shared_ptr<emulator> emulator_;
-
     header_pe header_;
 
     std::map<std::string, header_pe> imported_dlls_;
@@ -60,8 +87,6 @@ class loader_pe : public loader
 public:
 
     loader_pe();
-
-    std::shared_ptr<emulator> get_emulator() const override;
 
     std::string label_at(uint64_t address) const override;
 

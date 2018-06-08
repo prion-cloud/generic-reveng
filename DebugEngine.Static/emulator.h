@@ -40,13 +40,13 @@ public:
 
     // Registers
 
-    void init_regs(uint64_t stack_pointer, uint64_t instruction_pointer) const;
-
     TPL T reg_read(int regid) const;
     TPL void reg_write(int regid, T value) const;
 
     uint64_t address() const;
     void jump_to(uint64_t address) const;
+
+    void resize_stack(uint64_t pointer) const;
 
     // Emulation
 
