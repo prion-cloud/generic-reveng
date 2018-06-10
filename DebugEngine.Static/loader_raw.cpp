@@ -2,9 +2,6 @@
 
 #include "loader.h"
 
-loader_raw::loader_raw(const uint16_t machine, const uint64_t base_address)
-    : machine_(machine), base_address_(base_address) { }
-
 std::string loader_raw::label_at(const uint64_t) const
 {
     return { };
@@ -12,13 +9,18 @@ std::string loader_raw::label_at(const uint64_t) const
 
 uint16_t loader_raw::load(const std::vector<uint8_t> bytes)
 {
-    emulator_ = std::make_shared<emulator>(machine_);
+    auto it = bytes.begin();
 
-    emulator_->mem_map(base_address_, bytes);
+    const auto machine = parse_to<uint16_t>(it);
+    const auto base_address = parse_to<uint64_t>(it);
 
-    initialize_environment(PAGE_SIZE, 0.5, base_address_);
+    emulator_ = std::make_shared<emulator>(machine);
 
-    return machine_;
+    emulator_->mem_map(base_address, std::vector<uint8_t>(it, bytes.end()));
+
+    initialize_environment(PAGE_SIZE, 0.5, base_address);
+
+    return machine;
 }
 
 bool loader_raw::ensure_availability(const uint64_t)

@@ -2,16 +2,6 @@
 
 #include "loader.h"
 
-TPL T parse_to(std::vector<uint8_t>::const_iterator& iterator)
-{
-    const auto next = iterator + sizeof(T);
-    const auto value = *reinterpret_cast<const T*>(iterator._Ptr);
-    
-    iterator = next;
-
-    return value;
-}
-
 loader_pe::header_pe::header_pe() = default;
 loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
 {

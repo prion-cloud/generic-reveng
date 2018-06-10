@@ -31,17 +31,16 @@ public:
 protected:
 
     void initialize_environment(size_t stack_size, double stack_fill, uint64_t entry_address) const;
+
+    TPL static T parse_to(std::vector<uint8_t>::const_iterator& iterator);
 };
+
+#include "loader_tpl.cpp"
 
 // Initialize for raw machine code emulation
 class loader_raw : public loader
 {
-    uint16_t machine_;
-    uint64_t base_address_;
-
 public:
-
-    explicit loader_raw(uint16_t machine, uint64_t base_address);
 
     std::string label_at(uint64_t address) const override;
 
