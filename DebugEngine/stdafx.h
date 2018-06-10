@@ -5,8 +5,10 @@
 #include "../DebugEngine.Static/stdafx.h"
 
 #include <conio.h>
+
+#include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <functional>
 #include <memory>
 #include <typeinfo>

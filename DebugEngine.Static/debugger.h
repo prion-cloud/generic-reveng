@@ -41,6 +41,9 @@ class debugger
 
     std::map<uint64_t, size_t> counter_;
 
+    std::vector<std::vector<uint8_t>> byte_trace_;
+    std::map<uint64_t, size_t> byte_trace_pointer_; // TODO: Unordered Map ?
+
 public:
     
     // Uses a loader to make some machine code ready for debugging.
@@ -65,6 +68,8 @@ public:
     int take();
 
     bool is_debug_point(uint64_t address) const;
+
+    int get_bytes(uint64_t address, size_t count, std::vector<uint8_t>& bytes);
 
 private:
 

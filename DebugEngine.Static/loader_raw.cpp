@@ -32,3 +32,30 @@ uint64_t loader_raw::to_raw_address(const uint64_t virtual_address) const
 {
     return virtual_address;
 }
+
+TPL std::vector<uint8_t> to_bytes(T value)
+{
+    std::vector<uint8_t> bytes;
+
+    const auto size = sizeof(T);
+
+    for (auto i = 1; i <= size; ++i)
+        bytes.push_back(static_cast<uint8_t>(value >> (size - i) * 8));
+
+    return bytes;
+}
+
+std::vector<uint8_t> loader_raw::create_aid(const uint16_t machine, const uint64_t base_address, const std::vector<uint8_t> bytes)
+{
+    std::vector<uint8_t> aid;
+
+    const auto bytes_machine = to_bytes(machine);
+    aid.insert(aid.end(), bytes_machine.begin(), bytes_machine.end());
+
+    const auto bytes_base_address = to_bytes(base_address);
+    aid.insert(aid.end(), bytes_base_address.begin(), bytes_base_address.end());
+
+    aid.insert(aid.end(), bytes.begin(), bytes.end());
+
+    return aid;
+}

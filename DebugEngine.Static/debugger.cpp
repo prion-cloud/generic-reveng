@@ -62,7 +62,16 @@ debug_trace_entry debugger::step_into()
 {
     debug_trace_entry trace_entry;
 
-    trace_entry.address = next_instruction_->address;
+    const auto address = next_instruction_->address;
+
+    trace_entry.address = address;
+
+    if (byte_trace_pointer_.find(address) == byte_trace_pointer_.end())
+    {
+        byte_trace_pointer_.emplace(address, byte_trace_.size());
+        byte_trace_.push_back(next_instruction_->bytes);
+    }
+    // else THROW("This may be a great case for an unordered map."); TODO
 
     if (global_flags.hot)
         ++counter_[trace_entry.address];
@@ -163,6 +172,21 @@ int debugger::take()
 bool debugger::is_debug_point(const uint64_t address) const
 {
     return debug_points_.find(address) != debug_points_.end();
+}
+
+int debugger::get_bytes(const uint64_t address, const size_t count, std::vector<uint8_t>& bytes)
+{
+    ERROR_IF(byte_trace_pointer_.find(address) == byte_trace_pointer_.end());
+
+    const auto start_vec_it = byte_trace_.begin() + byte_trace_pointer_.at(address);
+
+    for (auto i = 0; i < count; ++i)
+    {
+        const auto cur_vec_it = start_vec_it + i;
+        bytes.insert(bytes.end(), cur_vec_it->begin(), cur_vec_it->end());
+    }
+
+    return RES_SUCCESS;
 }
 
 std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const

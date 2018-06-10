@@ -49,6 +49,8 @@ public:
     bool ensure_availability(uint64_t address) override;
 
     uint64_t to_raw_address(uint64_t virtual_address) const override;
+
+    static std::vector<uint8_t> create_aid(uint16_t machine, uint64_t base_address, std::vector<uint8_t> bytes);
 };
 
 // Initializer for machine code emulation of PE binaries

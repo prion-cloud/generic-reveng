@@ -280,6 +280,33 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             }
         },
         {
+            "save",
+            [this](const std::vector<std::string> ops)
+            {
+                ERROR_IF(ops.size() != 2);
+
+                uint64_t address;
+                ERROR_IF(parse_string(ops.at(0), address, 16));
+
+                size_t count;
+                ERROR_IF(parse_string(ops.at(1), count, 10));
+
+                std::vector<uint8_t> bytes;
+                ERROR_IF(debugger_->get_bytes(address, count, bytes));
+
+                const auto aid = loader_raw::create_aid(IMAGE_FILE_MACHINE_AMD64, 0, bytes);
+
+                const std::string file_name = "saved.aid";
+                std::ofstream stream(file_name, std::ios::binary);
+
+                stream.write(reinterpret_cast<const char*>(&aid.at(0)), aid.size());
+
+                stream.close();
+
+                return RES_SUCCESS;
+            }
+        },
+        {
             "skip",
             [this](const std::vector<std::string> ops)
             {
