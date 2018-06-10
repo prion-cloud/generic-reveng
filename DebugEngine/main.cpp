@@ -4,6 +4,8 @@
 
 #include "console.h"
 
+#define COL_ERROR FOREGROUND_RED | FOREGROUND_INTENSITY
+
 #define ARG_SUCCESS 0
 #define ARG_FAILURE 1
 
@@ -39,7 +41,6 @@ static void print_manual()
     manual << "\t " << std::setw(10) << "b" << "to show an instruction's bytes" << std::endl;
     manual << "\t " << std::setw(10) << "x" << "to quit" << std::endl;
     manual << std::string(68, '=') << std::endl;
-    manual << std::endl;
 
     std::cout << manual.str();
 }
@@ -126,29 +127,51 @@ int main(const int argc, char* argv[])
     const auto res = inspect_args(std::vector<std::string>(argv + 1, argv + argc), file_name, global_flags);
     if (res == ARG_FAILURE)
     {
-        std::cout << "Invalid arguments." << std::endl;
+        std::cerr << colorize(COL_ERROR) << "Invalid arguments." << decolorize << std::endl;
         return EXIT_FAILURE;
     }
 
     struct stat buf;
     if (stat(file_name.c_str(), &buf))
     {
-        std::cout << "Specified file does not exist." << std::endl;
+        std::cerr << colorize(COL_ERROR) << "Specified file does not exist." << decolorize << std::endl;
         return EXIT_FAILURE;
     }
 
-    print_manual();
+    char ext_c[_MAX_EXT];
+    _splitpath_s(file_name.c_str(), nullptr, 0, nullptr, 0, nullptr, 0, ext_c, _MAX_EXT);
+
+    std::string ext = ext_c;
+    std::transform(ext.begin(), ext.end(), ext.begin(), tolower);
+
+    std::unique_ptr<loader> loader;
+
+    if (ext == ".exe")
+    {
+        loader = std::make_unique<loader_pe>();
+    }
+    else if (ext == ".aid")
+    {
+        loader = std::make_unique<loader_raw>();
+    }
+    else
+    {
+        std::cerr << colorize(COL_ERROR) << "Unknown file extension." << decolorize << std::endl;
+        return EXIT_FAILURE;
+    }
 
     try
     {
-        loader_pe loader;
-
         if (!global_flags.lazy)
             std::cout << "Loading... ";
 
-        const auto dbg = std::make_shared<debugger>(loader, dump_file(file_name));
+        const auto dbg = std::make_shared<debugger>(*loader, dump_file(file_name));
 
         std::cout << "File: \"" << file_name << "\"" << std::endl;
+
+        std::cout << std::endl;
+
+        print_manual();
 
         std::cin.get();
         system("cls");
@@ -177,7 +200,7 @@ int main(const int argc, char* argv[])
     }
     catch (std::runtime_error err)
     {
-        std::cerr << std::endl << colorize(FOREGROUND_RED | FOREGROUND_INTENSITY) << err.what() << decolorize << std::endl;
+        std::cerr << std::endl << colorize(COL_ERROR) << err.what() << decolorize << std::endl;
         return EXIT_FAILURE;
     }
 }
