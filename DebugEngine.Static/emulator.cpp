@@ -41,7 +41,9 @@ emulator::emulator(const uint16_t machine)
         break;
 #endif
     default:
-        THROW("Invalid machine specification.");
+        std::ostringstream message;
+        message << "Invalid machine specification: " << std::hex << std::showbase << machine;
+        THROW(message.str());
     }
 
     FATAL_IF(uc_open(UC_ARCH_X86, mode, &uc_));
