@@ -29,8 +29,12 @@ bool loader_raw::ensure_availability(const uint64_t)
     return false;
 }
 
-uint64_t loader_raw::to_raw_address(const uint64_t virtual_address) const
+uint64_t loader_raw::to_raw_address(const uint64_t virtual_address, size_t& section_index, std::string& section_name) const
 {
+    // TODO
+
+    section_index = 0;
+    section_name = "default";
     return virtual_address;
 }
 

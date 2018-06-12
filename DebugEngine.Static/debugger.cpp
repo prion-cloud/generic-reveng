@@ -149,9 +149,9 @@ int debugger::jump_to(const uint64_t address)
     next_instruction_ = disassemble_at(address);
     return RES_SUCCESS;
 }
-int debugger::get_raw(const uint64_t address, uint64_t& raw_address) const
+int debugger::get_raw(const uint64_t address, uint64_t& raw_address, size_t& section_index, std::string& section_name) const
 {
-    raw_address = loader_.to_raw_address(address);
+    raw_address = loader_.to_raw_address(address, section_index, section_name);
 
     ERROR_IF(raw_address == -1);
     return RES_SUCCESS;

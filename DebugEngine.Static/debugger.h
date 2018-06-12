@@ -62,7 +62,7 @@ public:
     int remove_debug_point(uint64_t address);
 
     int jump_to(uint64_t address);
-    int get_raw(uint64_t virtual_address, uint64_t& raw_address) const;
+    int get_raw(uint64_t virtual_address, uint64_t& raw_address, size_t& section_index, std::string& section_name) const;
 
     int skip();
     int take();
