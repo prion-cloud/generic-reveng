@@ -294,7 +294,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 std::vector<uint8_t> bytes;
                 ERROR_IF(debugger_->get_bytes(address, count, bytes));
 
-                const auto aid = loader_raw::create_aid(IMAGE_FILE_MACHINE_AMD64, 0, bytes);
+                const auto aid = loader_raw::create_aid(IMAGE_FILE_MACHINE_AMD64, address, bytes);
 
                 const std::string file_name = "saved.aid";
                 std::ofstream stream(file_name, std::ios::binary);
