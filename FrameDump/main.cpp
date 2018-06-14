@@ -14,7 +14,7 @@ static size_t get_size(std::ifstream& stream)
     return size;
 }
 
-static std::vector<cs_insn> disassemble_all(const uint64_t address, const std::vector<uint8_t> bytes)
+static std::vector<cs_insn>* disassemble_all(const uint64_t address, const std::vector<uint8_t> bytes)
 {
     csh handle;
     cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
@@ -26,7 +26,7 @@ static std::vector<cs_insn> disassemble_all(const uint64_t address, const std::v
 
     cs_close(&handle);
 
-    const std::vector<cs_insn> disassembly(c_disassembly, c_disassembly + count);
+    const auto disassembly = new std::vector<cs_insn>(c_disassembly, c_disassembly + count);
 
     cs_free(c_disassembly, count);
 
@@ -75,13 +75,12 @@ static std::vector<cs_insn> load_disassembly(const std::string file_name)
     std::ifstream file_stream(file_name, std::ios::binary);
 
     const auto size = get_size(file_stream);
+    const auto count = size / sizeof(cs_insn);
 
-    const auto c_disassembly = new char[size];
-    file_stream.read(c_disassembly, size);
+    const auto c_disassembly = new cs_insn[count];
+    file_stream.read(reinterpret_cast<char*>(c_disassembly), size);
 
-    const std::vector<cs_insn> disassembly(
-        reinterpret_cast<cs_insn*>(c_disassembly),
-        reinterpret_cast<cs_insn*>(c_disassembly) + size / sizeof(cs_insn));
+    const std::vector<cs_insn> disassembly(c_disassembly, c_disassembly + count);
 
     delete[] c_disassembly;
 
@@ -122,10 +121,12 @@ int main(const int argc, char* argv[])
     const std::vector<uint8_t> b_text2(bytes.begin() + addr2, bytes.begin() + 0xe66000);
 
     const auto ins1 = disassemble_all(addr1, b_text1);
-    const auto ins2 = disassemble_all(addr2, b_text2);
+    save_disassembly("ins1.dis", *ins1);
+    delete ins1;
 
-    save_disassembly("ins1.dis", ins1);
-    save_disassembly("ins2.dis", ins2);
+    const auto ins2 = disassemble_all(addr2, b_text2);
+    save_disassembly("ins2.dis", *ins2);
+    delete ins2;
 
     std::cout << "Complete" << std::endl;
 
