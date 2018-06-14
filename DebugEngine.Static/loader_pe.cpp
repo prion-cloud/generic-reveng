@@ -122,16 +122,26 @@ bool loader_pe::ensure_availability(const uint64_t address)
     return false;
 }
 
-uint64_t loader_pe::to_raw_address(const uint64_t virtual_address) const
+uint64_t loader_pe::to_raw_address(const uint64_t virtual_address, size_t& section_index, std::string& section_name) const
 {
-    if(!emulator_->mem_is_mapped(virtual_address))
-        return -1;
+    section_index = -1;
+    section_name = { };
 
+ /*   if(!emulator_->mem_is_mapped(virtual_address))
+        return -1;*/
+
+    auto i = 0;
     const auto relative_address = virtual_address - header_.image_base;
     for (const auto sec : header_.section_headers)
     {
         if (relative_address >= sec.VirtualAddress && relative_address < sec.VirtualAddress + sec.SizeOfRawData)
+        {
+            section_index = i;
+            section_name = reinterpret_cast<const char*>(sec.Name);
             return relative_address - sec.VirtualAddress + sec.PointerToRawData;
+        }
+
+        ++i;
     }
 
     return -1;
@@ -267,7 +277,9 @@ void loader_pe::import_all_dlls(const header_pe header, const bool sub)
         else if (import_single_dll(header.image_base, dll_name, sub) != RES_SUCCESS)
         {
             std::ostringstream message;
-            message << std::hex << "Corrupt import descriptor @ " << import_descriptor_address << " (" << to_raw_address(import_descriptor_address) << ") for \"" << dll_name << "\".";
+            size_t section_index;
+            std::string section_name;
+            message << std::hex << "Corrupt import descriptor @ " << import_descriptor_address << " (" << to_raw_address(import_descriptor_address, section_index, section_name) << ") for \"" << dll_name << "\".";
             THROW(message.str());
         }
     }

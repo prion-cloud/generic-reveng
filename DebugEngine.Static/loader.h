@@ -26,7 +26,7 @@ public:
     // Returns 'true' if previously unmapped memory is now mapped, otherwise 'false'.
     virtual bool ensure_availability(uint64_t address) = 0;
 
-    virtual uint64_t to_raw_address(uint64_t virtual_address) const = 0;
+    virtual uint64_t to_raw_address(uint64_t virtual_address, size_t& section_index, std::string& section_name) const = 0;
 
 protected:
 
@@ -48,7 +48,7 @@ public:
 
     bool ensure_availability(uint64_t address) override;
 
-    uint64_t to_raw_address(uint64_t virtual_address) const override;
+    uint64_t to_raw_address(uint64_t virtual_address, size_t& section_index, std::string& section_name) const override;
 
     static std::vector<uint8_t> create_aid(uint16_t machine, uint64_t base_address, std::vector<uint8_t> bytes);
 };
@@ -94,8 +94,8 @@ public:
     uint16_t load(std::vector<uint8_t> bytes) override;
 
     bool ensure_availability(uint64_t address) override;
-    
-    uint64_t to_raw_address(uint64_t virtual_address) const override;
+
+    uint64_t to_raw_address(uint64_t virtual_address, size_t& section_index, std::string& section_name) const override;
 
 private:
     

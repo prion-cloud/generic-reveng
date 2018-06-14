@@ -51,6 +51,16 @@ instruction disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t
     instruction.mnemonic = insn->mnemonic;
     instruction.operands = insn->op_str;
 
+    switch(insn->id)
+    {
+    case 0x244: // push
+    case 0x22e: // pop
+    case 0x38:  // call
+    case 0x95:  // ret
+        instruction.registers.emplace(X86_REG_RSP, cs_reg_name(cs_, X86_REG_RSP));
+    default:;
+    }
+
     for (auto i = 0; i < insn->detail->x86.op_count; ++i) // TODO: Enforce x86 ?
     {
         const auto operand = insn->detail->x86.operands[i];

@@ -238,16 +238,21 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
             "raw",
             [this](const std::vector<std::string> ops)
             {
-                ERROR_IF(ops.size() != 1);
+                ERROR_IF(ops.size() > 1);
 
                 uint64_t address;
-                ERROR_IF(parse_string(ops.at(0), address, 16));
+
+                if (ops.size() == 0)
+                    address = debugger_->next_instruction()->address;
+                else ERROR_IF(parse_string(ops.at(0), address, 16));
 
                 uint64_t raw;
-                ERROR_IF(debugger_->get_raw(address, raw));
+                size_t section_index;
+                std::string section_name;
+                ERROR_IF(debugger_->get_raw(address, raw, section_index, section_name));
 
                 std::ostringstream stream;
-                stream << std::uppercase << std::hex << raw;
+                stream << std::uppercase << std::hex << raw << std::dec << " [" << section_index << "]: " << section_name;
 
                 printer_.bottom_out(stream.str());
 
@@ -294,7 +299,7 @@ std::map<std::string, std::function<int(std::vector<std::string>)>> cli_debug::c
                 std::vector<uint8_t> bytes;
                 ERROR_IF(debugger_->get_bytes(address, count, bytes));
 
-                const auto aid = loader_raw::create_aid(IMAGE_FILE_MACHINE_AMD64, 0, bytes);
+                const auto aid = loader_raw::create_aid(IMAGE_FILE_MACHINE_AMD64, address, bytes);
 
                 const std::string file_name = "saved.aid";
                 std::ofstream stream(file_name, std::ios::binary);
