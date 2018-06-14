@@ -3,14 +3,14 @@
 #include "instruction.h"
 #include "serialization.h"
 
-std::ofstream& operator<<=(std::ofstream& stream, const x86_operator& op)
+std::ofstream& operator<<=(std::ofstream& stream, const x86_operand& op)
 {
     stream <<= op.type;
     stream <<= op.value;
 
     return stream;
 }
-std::ifstream& operator>>=(std::ifstream& stream, x86_operator& op)
+std::ifstream& operator>>=(std::ifstream& stream, x86_operand& op)
 {
     stream >>= op.type;
     stream >>= op.value;
@@ -25,7 +25,7 @@ std::ofstream& operator<<=(std::ofstream& stream, const x86_instruction& ins)
     stream <<= ins.bytes;
     stream <<= ins.representation;
 
-    stream <<= ins.operators;
+    stream <<= ins.operands;
 
     return stream;
 }
@@ -36,7 +36,7 @@ std::ifstream& operator>>=(std::ifstream& stream, x86_instruction& ins)
     stream >>= ins.bytes;
     stream >>= ins.representation;
 
-    stream >>= ins.operators;
+    stream >>= ins.operands;
 
     return stream;
 }
