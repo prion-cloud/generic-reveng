@@ -8,8 +8,7 @@ disassembly_x86::disassembly_x86(const std::vector<instruction_x86> instructions
 
 void disassembly_x86::save(const std::string file_name) const
 {
-    std::ofstream(file_name, std::ios::binary)
-        .write(reinterpret_cast<const char*>(&instructions_.at(0)), instructions_.size() * sizeof(instruction_x86));
+    FATAL_IF(serialize(file_name, instructions_));
 }
 
 disassembly_x86 disassembly_x86::create_complete(const uint64_t base_address, const std::vector<uint8_t> code)
@@ -33,17 +32,8 @@ disassembly_x86 disassembly_x86::create_complete(const uint64_t base_address, co
 
 disassembly_x86 disassembly_x86::load(const std::string file_name)
 {
-    std::ifstream file_stream(file_name, std::ios::binary);
+    std::vector<instruction_x86> instructions;
+    FATAL_IF(deserialize(file_name, instructions));
 
-    const auto size = get_size(file_stream);
-    const auto count = size / sizeof(instruction_x86);
-
-    const auto instructions = new instruction_x86[count];
-    file_stream.read(reinterpret_cast<char*>(instructions), size);
-
-    disassembly_x86 disassembly(std::vector<instruction_x86>(instructions, instructions + count));
-
-    delete[] instructions;
-
-    return disassembly;
+    return disassembly_x86(instructions);
 }

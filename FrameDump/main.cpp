@@ -27,17 +27,13 @@ int main(const int argc, char* argv[])
     const std::string file_name(argv[1]);
 
     std::cout << "File: \"" << file_name << "\"" << std::endl;
-    
-    std::ifstream file_stream(file_name, std::ios::binary);
 
-    if (!file_stream.is_open())
+    std::vector<uint8_t> bytes;
+    if (deserialize(file_name, bytes))
     {
         std::cerr << "Could not open file." << std::endl;
         return -1;
     }
-
-    std::vector<uint8_t> bytes(get_size(file_stream));
-    file_stream.read(reinterpret_cast<char*>(&bytes.at(0)), bytes.size());
 
     std::cout << "Size: " << bytes.size() << " bytes" << std::endl;
 

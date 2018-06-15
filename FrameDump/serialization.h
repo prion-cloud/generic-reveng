@@ -1,5 +1,6 @@
 #pragma once
 
-size_t get_size(std::ifstream& stream);
+TPL int serialize(std::string file_name, std::vector<T> data);
+TPL int deserialize(std::string file_name, std::vector<T>& data);
 
 #include "serialization_tpl.cpp"

@@ -160,7 +160,6 @@
     <ClCompile Include="disassembly.cpp" />
     <ClCompile Include="instruction.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="serialization.cpp" />
     <ClInclude Include="serialization_tpl.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
