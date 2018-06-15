@@ -27,4 +27,14 @@ public:
 
     instruction_x86();
     instruction_x86(cs_insn cs_instruction);
+
+    x86_insn get_id() const;
+
+    uint64_t get_address() const;
+
+    std::string get_string() const;
+
+    std::vector<uint8_t> get_bytes() const;
+
+    std::vector<std::pair<x86_op_type, uint64_t>> get_operands() const;
 };
