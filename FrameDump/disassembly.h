@@ -12,8 +12,8 @@ public:
 
     void save(std::string file_name) const;
 
-    std::set<uint64_t> find_sequences(int min, unsigned find, std::set<unsigned> add);
-    std::map<uint64_t, std::vector<uint64_t>> find_immediates(std::set<uint64_t> imm, std::set<unsigned> consider);
+    std::set<uint64_t> find_sequences(int min, unsigned find, std::set<unsigned> add) const;
+    std::map<uint64_t, std::vector<uint64_t>> find_immediates(std::set<uint64_t> imm, std::set<unsigned> consider) const;
 
     static disassembly_x86 create_complete(uint64_t base_address, std::vector<uint8_t> code);
 
