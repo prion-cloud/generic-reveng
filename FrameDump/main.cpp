@@ -3,6 +3,7 @@
 #include "../Bin-Capstone/capstone.h"
 
 #include "disassembly.h"
+#include "obfuscation.h"
 #include "serialization.h"
 
 #define FILE_1 "text1.dis"
@@ -39,6 +40,7 @@ int main(const int argc, char* argv[])
 
     // -----
 
+/*
     process(bytes, 0x1000, 0x4b4a00, FILE_1);
     process(bytes, 0x989000, 0x4dd000, FILE_2);
 
@@ -46,8 +48,19 @@ int main(const int argc, char* argv[])
 
     const auto seq = disassembly_x86::load(FILE_2)
         .find_sequences(10, X86_INS_PUSH, { X86_INS_PUSHFQ, X86_INS_MOVUPD, X86_INS_LEA });
-    
+
     disassembly_x86::load(FILE_1).find_immediates(seq, { X86_INS_JMP, X86_INS_CALL });
+*/
+
+    const std::vector<disassembly_x86> disassemblies =
+    {
+        disassembly_x86::load(FILE_1),
+        disassembly_x86::load(FILE_2)
+    };
+
+    std::cin.get();
+
+    const auto obfuscations = obfuscation_framed_x86::pick_all(&disassemblies);
 
     // -----
 

@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="disassembly.h" />
     <ClInclude Include="instruction.h" />
+    <ClInclude Include="obfuscation.h" />
     <ClInclude Include="serialization.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
@@ -161,6 +162,7 @@
     <ClCompile Include="instruction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="serialization_tpl.cpp" />
+    <ClCompile Include="obfuscation.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
