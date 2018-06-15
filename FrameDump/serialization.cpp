@@ -2,32 +2,14 @@
 
 #include "serialization.h"
 
-#define TERM '\0'
-
-std::ofstream& operator<<=(std::ofstream& stream, const std::string& string)
+size_t get_size(std::ifstream& stream)
 {
-    for (const auto c : string)
-        stream <<= c;
+    const auto pos = stream.tellg();
 
-    stream <<= TERM;
+    stream.seekg(0, std::ios::end);
+    const size_t size = stream.tellg();
 
-    return stream;
-}
+    stream.seekg(pos, std::ios::beg);
 
-std::ifstream& operator>>=(std::ifstream& stream, std::string& string)
-{
-    string = { };
-
-    while (true)
-    {
-        auto c = TERM;
-        stream >>= c;
-
-        if (c == TERM)
-            break;
-
-        string += c;
-    }
-
-    return stream;
+    return size;
 }
