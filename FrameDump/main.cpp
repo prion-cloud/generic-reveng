@@ -44,6 +44,11 @@ int main(const int argc, char* argv[])
 
     std::cout << "Complete" << std::endl;
 
+    const auto seq = disassembly_x86::load(FILE_2)
+        .find_sequences(10, X86_INS_PUSH, { X86_INS_PUSHFQ, X86_INS_MOVUPD, X86_INS_LEA });
+    
+    disassembly_x86::load(FILE_1).find_immediates(seq, { X86_INS_JMP, X86_INS_CALL });
+
     // -----
 
     std::cin.get();

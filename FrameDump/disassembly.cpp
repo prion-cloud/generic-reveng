@@ -11,6 +11,67 @@ void disassembly_x86::save(const std::string file_name) const
     FATAL_IF(serialize(file_name, instructions_));
 }
 
+std::set<uint64_t> disassembly_x86::find_sequences(const int min, const unsigned find, const std::set<unsigned> add)
+{
+    std::set<uint64_t> result;
+
+    for (auto i = 0; i < instructions_.size(); ++i)
+    {
+        const auto ins = instructions_.at(i);
+
+        if (ins.get_id() != find)
+            continue;
+
+        auto j = 0;
+
+        do
+        {
+            ++i;
+            ++j;
+
+            if (i >= instructions_.size())
+                break;
+        }
+        while (instructions_.at(i).get_id() == find || add.find(instructions_.at(i).get_id()) != add.end());
+
+        if (j >= min)
+        {
+            std::cout << std::hex << ins.get_address() << " (" << std::dec << j << ")" << std::endl;
+            result.insert(ins.get_address());
+        }
+    }
+
+    return result;
+}
+std::map<uint64_t, std::vector<uint64_t>> disassembly_x86::find_immediates(const std::set<uint64_t> imm, const std::set<unsigned> consider)
+{
+    std::map<uint64_t, std::vector<uint64_t>> result;
+
+    for (const auto ins : instructions_)
+    {
+        if (consider.find(ins.get_id()) == consider.end())
+            continue;
+
+        for (const auto op : ins.get_operands())
+        {
+            if (op.first != X86_OP_IMM || imm.find(op.second) == imm.end())
+                continue;
+
+            result[op.second].push_back(ins.get_address());
+            break;
+        }
+    }
+
+    for (const auto x : result)
+    {
+        std::cout << std::hex << x.first << " <- " << std::endl;
+        for (const auto y : x.second)
+            std::cout << std::hex << "  " << y << std::endl;
+    }
+
+    return result;
+}
+
 disassembly_x86 disassembly_x86::create_complete(const uint64_t base_address, const std::vector<uint8_t> code)
 {
     csh handle;
