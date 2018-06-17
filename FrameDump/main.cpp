@@ -4,7 +4,6 @@
 
 #include "disassembly.h"
 #include "obfuscation.h"
-#include "serialization.h"
 
 #define FILE_1 "text1.dis"
 #define FILE_2 "text2.dis"
@@ -14,7 +13,7 @@ static void process(const std::vector<uint8_t> bytes, const uint64_t base_addres
     const auto start = bytes.begin() + base_address;
     const std::vector<uint8_t> section(start, start + length);
 
-    disassembly_x86::create_complete(base_address, section).save(out_file_name);
+    disassembly_part_x86::create_complete(base_address, section).save(out_file_name);
 }
 
 int main(const int argc, char* argv[])
@@ -29,38 +28,41 @@ int main(const int argc, char* argv[])
 
     std::cout << "File: \"" << file_name << "\"" << std::endl;
 
-    std::vector<uint8_t> bytes;
-    if (deserialize(file_name, bytes))
+    std::ifstream file_stream(file_name, std::ios::binary);
+
+    if (!file_stream.is_open())
     {
         std::cerr << "Could not open file." << std::endl;
         return -1;
     }
 
+    file_stream.seekg(0, std::ios::end);
+    std::vector<uint8_t> bytes(file_stream.tellg());
+
+    file_stream.seekg(0, std::ios::beg);
+
+    file_stream.read(reinterpret_cast<char*>(&bytes.at(0)), bytes.size());
+
     std::cout << "Size: " << bytes.size() << " bytes" << std::endl;
 
     // -----
-
 /*
     process(bytes, 0x1000, 0x4b4a00, FILE_1);
     process(bytes, 0x989000, 0x4dd000, FILE_2);
 
     std::cout << "Complete" << std::endl;
 
-    const auto seq = disassembly_x86::load(FILE_2)
-        .find_sequences(10, X86_INS_PUSH, { X86_INS_PUSHFQ, X86_INS_MOVUPD, X86_INS_LEA });
-
-    disassembly_x86::load(FILE_1).find_immediates(seq, { X86_INS_JMP, X86_INS_CALL });
+    const auto seq = disassembly_part_x86::load(FILE_2)
+        .crawl_sequences(10, X86_INS_PUSH, { X86_INS_PUSHFQ, X86_INS_MOVUPD, X86_INS_LEA });
+    //disassembly_part_x86::load(FILE_1).find_immediates(seq, { X86_INS_JMP, X86_INS_CALL });
 */
+    disassembly_x86 disassembly;
+    disassembly.add(disassembly_part_x86::load(FILE_1));
+    disassembly.add(disassembly_part_x86::load(FILE_2));
 
-    const std::vector<disassembly_x86> disassemblies =
-    {
-        disassembly_x86::load(FILE_1),
-        disassembly_x86::load(FILE_2)
-    };
+    const obfuscation_framed_x86 obfuscation(&disassembly, 0x989000);// = obfuscation_framed_x86::pick_all(&disassembly).at(3);
 
-    std::cin.get();
-
-    const auto obfuscations = obfuscation_framed_x86::pick_all(&disassemblies);
+    obfuscation.test();
 
     // -----
 

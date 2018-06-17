@@ -1,16 +1,21 @@
 #pragma once
 
+#include "control_flow.h"
 #include "disassembly.h"
 
 class obfuscation_framed_x86
 {
-    const std::vector<disassembly_x86>* disassemblies_;
+    const disassembly_x86* disassembly_;
 
-    const uint64_t base_address_;
+    uint64_t address_;
 
-    explicit obfuscation_framed_x86(const std::vector<disassembly_x86>* disassemblies, uint64_t base_address);
+    control_flow_x86 control_flow_;
 
 public:
 
-    static std::vector<obfuscation_framed_x86> pick_all(const std::vector<disassembly_x86>* disassemblies);
+    explicit obfuscation_framed_x86(const disassembly_x86* disassembly, uint64_t address);
+
+    void test() const;
+
+    static std::vector<obfuscation_framed_x86> pick_all(const disassembly_x86* disassembly);
 };
