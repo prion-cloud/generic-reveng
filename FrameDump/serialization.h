@@ -1,6 +1,6 @@
 #pragma once
 
-TPL int serialize(std::string file_name, std::vector<T> data);
-TPL int deserialize(std::string file_name, std::vector<T>& data);
+TPL std::ofstream& operator<<=(std::ofstream& stream, const std::vector<T>& data);
+TPL std::ifstream& operator>>=(std::ifstream& stream, std::vector<T>& data);
 
 #include "serialization_tpl.cpp"
