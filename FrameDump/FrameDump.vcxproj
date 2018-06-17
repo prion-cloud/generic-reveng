@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="control_flow.h" />
     <ClInclude Include="disassembly.h" />
     <ClInclude Include="instruction.h" />
     <ClInclude Include="obfuscation.h" />
@@ -158,6 +159,7 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="control_flow.cpp" />
     <ClCompile Include="disassembly.cpp" />
     <ClCompile Include="instruction.cpp" />
     <ClCompile Include="main.cpp" />
