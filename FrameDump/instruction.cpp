@@ -8,8 +8,6 @@ instruction_x86::instruction_x86(const cs_insn cs_instruction)
     id_ = cs_instruction.id;
     address_ = static_cast<uint32_t>(cs_instruction.address);
 
-    _snprintf_s(str_, INS_MAX_STR - 1, "%s %s", cs_instruction.mnemonic, cs_instruction.op_str);
-
     if (cs_instruction.detail == nullptr)
     {
         op_count_ = 0;
@@ -34,11 +32,6 @@ x86_insn instruction_x86::identification() const
 uint64_t instruction_x86::address() const
 {
     return address_;
-}
-
-std::string instruction_x86::string() const
-{
-    return std::string(str_);
 }
 
 std::vector<std::pair<x86_op_type, uint64_t>> instruction_x86::operands() const
