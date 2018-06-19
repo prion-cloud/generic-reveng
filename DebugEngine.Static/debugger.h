@@ -7,6 +7,14 @@
 
 #define MAX_TRACE 5
 
+// --- TODO Q&D
+struct stack_representation
+{
+    uint64_t sp, bp;
+    std::vector<uint8_t> memory;
+};
+// ---
+
 struct debug_trace_entry
 {
     uint64_t address;
@@ -70,6 +78,11 @@ public:
     bool is_debug_point(uint64_t address) const;
 
     int get_bytes(uint64_t address, size_t count, std::vector<uint8_t>& bytes);
+
+    // --- TODO Q&D
+    stack_representation get_stack() const;
+    void set_stack(stack_representation stack) const;
+    // ---
 
 private:
 

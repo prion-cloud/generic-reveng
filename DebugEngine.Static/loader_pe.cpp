@@ -67,8 +67,9 @@ uint16_t loader_pe::load(const std::vector<uint8_t> bytes)
     // Do the bytes define a valid PE header?
     header_ = header_pe(bytes);
 
+    const auto stack_size = header_.stack_commit;
     // Create emulator
-    emulator_ = std::make_shared<emulator>(header_.machine);
+    emulator_ = std::make_shared<emulator>(header_.machine/*-->*/, stack_size, 0xffffffff - stack_size + 1/*<-- TODO Q&D*/);
 
     // Map all sections
     emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));
@@ -92,7 +93,7 @@ uint16_t loader_pe::load(const std::vector<uint8_t> bytes)
     ReadProcessMemory(GetCurrentProcess(), reinterpret_cast<LPCVOID>(tib_address), &tib_buffer.at(0), PAGE_SIZE, nullptr);
     emulator_->mem_map(tib_address, tib_buffer);
 
-    initialize_environment(header_.stack_commit, 0, header_.image_base + header_.entry_point);
+    initialize_environment(stack_size, 0.2, header_.image_base + header_.entry_point);
 
     // Do not defer any more
     defer_imports_ = false;

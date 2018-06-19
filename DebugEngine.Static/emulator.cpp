@@ -7,7 +7,8 @@ bool operator<(const uc_mem_region a, const uc_mem_region b)
     return a.end <= b.begin;
 }
 
-emulator::emulator(const uint16_t machine)
+emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint64_t stack_top)
+    : stack_size_(stack_size), stack_top_(stack_top)
 {
     auto mode = static_cast<uc_mode>(0);
 
@@ -55,25 +56,28 @@ emulator::~emulator()
 
 // Memory
 
-void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer)
+void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer, const bool map /*TODO Q&D*/)
 {
     if (buffer.size() == 0)
         return;
 
-    auto virt_size = PAGE_SIZE * (buffer.size() / PAGE_SIZE);
-    if (buffer.size() % PAGE_SIZE > 0)
-        virt_size += PAGE_SIZE;
+    if (map)
+    {
+        auto virt_size = PAGE_SIZE * (buffer.size() / PAGE_SIZE);
+        if (buffer.size() % PAGE_SIZE > 0)
+            virt_size += PAGE_SIZE;
 
-    const uint32_t perms = UC_PROT_ALL;
+        const uint32_t perms = UC_PROT_ALL;
 
-    FATAL_IF(uc_mem_map(uc_, address, virt_size, perms));
+        FATAL_IF(uc_mem_map(uc_, address, virt_size, perms));
 
-    uc_mem_region region;
-    region.begin = address;
-    region.end = address + virt_size;
-    region.perms = perms;
+        uc_mem_region region;
+        region.begin = address;
+        region.end = address + virt_size;
+        region.perms = perms;
 
-    mem_regions_.insert(region);
+        mem_regions_.insert(region);
+    }
 
     FATAL_IF(uc_mem_write(uc_, address, &buffer.at(0), buffer.size()));
 }
@@ -108,6 +112,21 @@ std::string emulator::mem_read_string(const uint64_t address) const
 
     return std::string(chars.begin(), chars.end());
 }
+
+// --- TODO Q&D
+std::vector<uint8_t> emulator::get_stack() const
+{
+    std::vector<uint8_t> memory(stack_size_);
+    mem_read(stack_top_, memory);
+
+    return memory;
+}
+void emulator::set_stack(const std::vector<uint8_t> memory)
+{
+    FATAL_IF(memory.size() != stack_size_);
+    mem_map(stack_top_, memory, false);
+}
+// ---
 
 // Registers
 
