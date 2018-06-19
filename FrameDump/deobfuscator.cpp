@@ -2,9 +2,13 @@
 
 #include "deobfuscator.h"
 
-obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address,
-    std::map<uint64_t, node*> previous_nodes, const uint64_t stop, bool last_error)
+static uint64_t counter;
+
+obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const uint64_t stop_address,
+    std::map<uint64_t, node*>& nodes, bool last_error)
 {
+    ++counter;
+
     std::cout << std::hex << std::uppercase << address << std::endl;
 
     debugger->jump_to(address);
@@ -26,6 +30,7 @@ obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, cons
 
     std::vector<uint64_t> nexts;
 
+    stack_representation stack { };
     switch (instruction_->id)
     {
     case X86_INS_JO:
@@ -48,38 +53,47 @@ obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, cons
         std::cout << "Jump" << std::endl;
         nexts.push_back(address + instruction_->bytes.size());
         nexts.push_back(instruction_->jump.value());
+        stack = debugger->get_stack();
         break;
     default:
         nexts.push_back(debugger->next_instruction()->address);
     }
 
-    previous_nodes.emplace(address, this);
+    nodes.emplace(address, this);
 
-    for (const auto next : nexts)
+    for (auto i = 0; i < nexts.size(); ++i)
     {
-        if (next == stop)
+        const auto next = nexts.at(i);
+
+        if (next == stop_address)
         {
             std::cout << "Stop" << std::endl;
             continue;
         }
 
-        if (previous_nodes.find(next) == previous_nodes.end())
+        if (i > 0)
+            debugger->set_stack(stack);
+
+        if (nodes.find(next) == nodes.end())
         {
-            next_.push_back(std::make_shared<node>(debugger, next, previous_nodes, stop, last_error));
+            next_.push_back(std::make_shared<node>(debugger, next, stop_address, nodes, last_error));
             continue;
         }
-        
-        std::cout << "Loop" << std::endl;
-        next_.push_back(std::shared_ptr<node>(previous_nodes.at(next)));
+
+        std::cout << "Loop: " << std::hex << std::uppercase << next << std::endl;
+        next_.push_back(std::shared_ptr<node>(nodes.at(next)));
     }
 }
 
 obfuscation_graph_x86::obfuscation_graph_x86(const node root)
     : root_(root) { }
 
-obfuscation_graph_x86 obfuscation_graph_x86::build(const std::shared_ptr<debugger> debugger, const uint64_t root_address, const uint64_t stop)
+obfuscation_graph_x86 obfuscation_graph_x86::build(const std::shared_ptr<debugger> debugger, const uint64_t root_address, const uint64_t stop_address)
 {
-    return obfuscation_graph_x86(node(debugger, root_address, { }, stop, false));
+    counter = 0;
+
+    std::map<uint64_t, node*> nodes;
+    return obfuscation_graph_x86(node(debugger, root_address, stop_address, nodes, false));
 }
 
 deobfuscator_x86::deobfuscator_x86(loader& loader, std::vector<uint8_t> code)
