@@ -3,12 +3,14 @@
 #include "disassembly.h"
 #include "serialization.h"
 
-disassembly_part_x86::disassembly_part_x86(const std::vector<instruction_x86> instructions, const std::vector<uint8_t> code)
-    : instructions_(instructions), code_(code) { }
+/*
+disassembly_part_x86::disassembly_part_x86() = default;
+disassembly_part_x86::disassembly_part_x86(const uint64_t virtual_base, const std::vector<instruction_x86> instructions, const std::vector<uint8_t> code)
+    : virtual_base_(virtual_base), instructions_(instructions), code_(code) { }
 
 uint64_t disassembly_part_x86::base() const
 {
-    return instructions_.at(0).address();
+    return instructions_.at(0).address(virtual_base_);
 }
 size_t disassembly_part_x86::size() const
 {
@@ -21,8 +23,8 @@ const void* disassembly_part_x86::nipple() const
 
 bool disassembly_part_x86::find(const uint64_t address, instruction_x86& instruction) const
 {
-    size_t l = 0;
-    auto r = instructions_.size() - 1;
+    int32_t l = 0;
+    int32_t r = instructions_.size() - 1;
 
     while (true)
     {
@@ -31,14 +33,15 @@ bool disassembly_part_x86::find(const uint64_t address, instruction_x86& instruc
 
         const auto m = (l + r) / 2;
         const auto ins = instructions_.at(m);
+        const auto ins_addr = ins.address(virtual_base_);
 
-        if (ins.address() < address)
+        if (ins_addr < address)
         {
             l = m + 1;
             continue;
         }
 
-        if (ins.address() > address)
+        if (ins_addr > address)
         {
             r = m - 1;
             continue;
@@ -51,9 +54,21 @@ bool disassembly_part_x86::find(const uint64_t address, instruction_x86& instruc
     return false;
 }
 
+void disassembly_part_x86::load(const std::string file_name)
+{
+    std::ifstream stream(file_name, std::ios::binary);
+    
+    stream >>= virtual_base_;
+
+    stream >>= instructions_;
+    stream >>= code_;
+}
 void disassembly_part_x86::save(const std::string file_name) const
 {
     std::ofstream stream(file_name, std::ios::binary);
+
+    stream <<= virtual_base_;
+
     stream <<= instructions_;
     stream <<= code_;
 }
@@ -82,13 +97,13 @@ std::set<uint64_t> disassembly_part_x86::crawl_sequences(const int min, const un
         while (instructions_.at(i).identification() == find || add.find(instructions_.at(i).identification()) != add.end());
 
         if (j >= min)
-            result.insert(ins.address());
+            result.insert(ins.address(virtual_base_));
     }
 
     return result;
 }
 
-disassembly_part_x86 disassembly_part_x86::create_complete(const uint64_t base_address, const std::vector<uint8_t> code)
+disassembly_part_x86 disassembly_part_x86::create_complete(const uint64_t virtual_base, const uint64_t base_address, const std::vector<uint8_t> code)
 {
     csh handle;
     cs_open(CS_ARCH_X86, CS_MODE_64, &handle);
@@ -100,27 +115,18 @@ disassembly_part_x86 disassembly_part_x86::create_complete(const uint64_t base_a
 
     cs_close(&handle);
 
-    disassembly_part_x86 disassembly(std::vector<instruction_x86>(cs_instructions, cs_instructions + count), code);
+    disassembly_part_x86 disassembly(virtual_base, std::vector<instruction_x86>(cs_instructions, cs_instructions + count), code);
 
     cs_free(cs_instructions, count);
 
     return disassembly;
 }
 
-disassembly_part_x86 disassembly_part_x86::load(const std::string file_name)
-{
-    std::vector<instruction_x86> instructions;
-    std::vector<uint8_t> bytes;
-
-    std::ifstream stream(file_name, std::ios::binary);
-    stream >>= instructions;
-    stream >>= bytes;
-
-    return disassembly_part_x86(instructions, bytes);
-}
-
 disassembly_x86::disassembly_x86()
 {
+    cs_open(CS_ARCH_X86, CS_MODE_64, &cs_);
+    cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
+
     uc_open(UC_ARCH_X86, UC_MODE_64, &uc_);
 
     const uint64_t stack_bottom = 0xffffffff;
@@ -134,16 +140,24 @@ disassembly_x86::disassembly_x86()
 }
 disassembly_x86::~disassembly_x86()
 {
+    cs_close(&cs_);
     uc_close(uc_);
 }
 
+csh disassembly_x86::cs() const
+{
+    return cs_;
+}
 uc_engine* disassembly_x86::uc() const
 {
     return uc_;
 }
 
-void disassembly_x86::add(const disassembly_part_x86 part)
+void disassembly_x86::load_part(const std::string file_name)
 {
+    disassembly_part_x86 part;
+    part.load(file_name);
+
     parts_.push_back(part);
 
     auto size = PAGE_SIZE * (part.size() / PAGE_SIZE);
@@ -178,3 +192,4 @@ std::set<uint64_t> disassembly_x86::crawl_sequences(const int min, const unsigne
 
     return result;
 }
+*/

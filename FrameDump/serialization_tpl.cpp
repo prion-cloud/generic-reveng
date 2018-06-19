@@ -1,5 +1,10 @@
 #include "stdafx.h"
 
+TPL std::ofstream& operator<<=(std::ofstream& stream, const T& value)
+{
+    stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
+    return stream;
+}
 TPL std::ofstream& operator<<=(std::ofstream& stream, const std::vector<T>& data)
 {
     if (data.size() == 0)
@@ -9,15 +14,21 @@ TPL std::ofstream& operator<<=(std::ofstream& stream, const std::vector<T>& data
 
     const uint64_t size = data.size() * sizeof(T);
 
-    stream.write(reinterpret_cast<const char*>(&size), sizeof(uint64_t));
+    stream <<= size;
     stream.write(reinterpret_cast<const char*>(&data.at(0)), size);
 
     return stream;
 }
+
+TPL std::ifstream& operator>>=(std::ifstream& stream, T& value)
+{
+    stream.read(reinterpret_cast<char*>(&value), sizeof(T));
+    return stream;
+}
 TPL std::ifstream& operator>>=(std::ifstream& stream, std::vector<T>& data)
 {
-    uint64_t size;
-    stream.read(reinterpret_cast<char*>(&size), sizeof(uint64_t));
+    uint64_t size = 0;
+    stream >>= size;
 
     const auto count = size / sizeof(T);
 

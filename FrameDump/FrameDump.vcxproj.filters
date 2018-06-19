@@ -26,11 +26,16 @@
     <ClInclude Include="disassembly.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="obfuscation.h">
+    <ClInclude Include="taint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="deobfuscator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="control_flow.h">
-    <ClInclude Include="deobfuscator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="obfuscation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,11 +52,16 @@
     <ClCompile Include="disassembly.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="obfuscation.cpp">
+    <ClCompile Include="taint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="deobfuscator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="control_flow.cpp">
-    <ClCompile Include="deobfuscator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="obfuscation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
