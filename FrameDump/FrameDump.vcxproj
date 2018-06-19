@@ -151,24 +151,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="control_flow.h" />
     <ClInclude Include="deobfuscator.h" />
-    <ClInclude Include="disassembly.h" />
-    <ClInclude Include="instruction.h" />
-    <ClInclude Include="obfuscation.h" />
-    <ClInclude Include="serialization.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="taint.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="control_flow.cpp" />
     <ClCompile Include="deobfuscator.cpp" />
-    <ClCompile Include="disassembly.cpp" />
-    <ClCompile Include="instruction.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="obfuscation.cpp" />
-    <ClCompile Include="taint.cpp" />
-    <ClInclude Include="serialization_tpl.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

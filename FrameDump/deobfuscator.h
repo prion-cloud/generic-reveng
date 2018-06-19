@@ -2,8 +2,6 @@
 
 #include "../DebugEngine.Static/debugger.h"
 
-#include "disassembly.h"
-
 class obfuscation_graph_x86
 {
     class node

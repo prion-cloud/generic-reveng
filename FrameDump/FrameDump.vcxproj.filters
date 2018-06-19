@@ -14,28 +14,7 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="serialization.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="serialization_tpl.cpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="instruction.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="disassembly.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="taint.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="deobfuscator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="control_flow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="obfuscation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -46,22 +25,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="instruction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="disassembly.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="taint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="deobfuscator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="control_flow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="obfuscation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
