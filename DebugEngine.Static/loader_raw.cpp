@@ -15,7 +15,7 @@ uint16_t loader_raw::load(const std::vector<uint8_t> bytes)
     const auto base_address = parse_to<uint64_t>(it);
     const auto code = std::vector<uint8_t>(it, bytes.end());
 
-    emulator_ = std::make_shared<emulator>(machine);
+    emulator_ = std::make_shared<emulator>(machine/*-->*/, PAGE_SIZE, 0xffffffff - PAGE_SIZE + 1/*<-- TODO Q&D*/);
 
     emulator_->mem_map(base_address, code);
 

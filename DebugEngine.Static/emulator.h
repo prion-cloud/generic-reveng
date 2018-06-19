@@ -17,14 +17,19 @@ class emulator
 
     int reg_ip_id_;
 
+    // --- TODO Q&D
+    uint64_t stack_size_;
+    uint64_t stack_top_;
+    // ---
+
 public:
 
-    explicit emulator(uint16_t machine);
+    explicit emulator(uint16_t machine/*-->*/, uint64_t stack_size, uint64_t stack_top/*<-- TODO Q&D*/);
     ~emulator();
 
     // Memory
 
-    void mem_map(uint64_t address, std::vector<uint8_t> buffer);
+    void mem_map(uint64_t address, std::vector<uint8_t> buffer, bool map = true/*TODO Q&D*/);
 
     bool mem_is_mapped(uint64_t address) const;
 
@@ -37,6 +42,11 @@ public:
 
     TPL void mem_write(uint64_t address, T value) const;
     TPL void mem_write(uint64_t address, T value, int index) const;
+
+    // --- TODO Q&D
+    std::vector<uint8_t> get_stack() const;
+    void set_stack(std::vector<uint8_t> memory);
+    // ---
 
     // Registers
 

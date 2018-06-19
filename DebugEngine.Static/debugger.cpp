@@ -143,7 +143,7 @@ int debugger::remove_debug_point(const uint64_t address)
 
 int debugger::jump_to(const uint64_t address)
 {
-    ERROR_IF(!emulator_->mem_is_mapped(address));
+    // ERROR_IF(!emulator_->mem_is_mapped(address)); TODO (does not work any more)
 
     emulator_->jump_to(address);
     next_instruction_ = disassemble_at(address);
@@ -188,6 +188,27 @@ int debugger::get_bytes(const uint64_t address, const size_t count, std::vector<
 
     return RES_SUCCESS;
 }
+
+// --- TODO Q&D
+stack_representation debugger::get_stack() const
+{
+    stack_representation stack;
+
+    stack.sp = emulator_->reg_read<uint64_t>(X86_REG_RSP);
+    stack.bp = emulator_->reg_read<uint64_t>(X86_REG_RBP);
+
+    stack.memory = emulator_->get_stack();
+
+    return stack;
+}
+void debugger::set_stack(const stack_representation stack) const
+{
+    emulator_->reg_write(X86_REG_RSP, stack.sp);
+    emulator_->reg_write(X86_REG_RBP, stack.bp);
+
+    emulator_->set_stack(stack.memory);
+}
+// ---
 
 std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const
 {
