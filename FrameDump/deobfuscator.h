@@ -7,22 +7,23 @@ class obfuscation_graph_x86
     class node
     {
         std::shared_ptr<instruction> instruction_;
-
-        std::vector<std::shared_ptr<node>> next_;
+        std::vector<node*> next_;
 
     public:
 
-        explicit node(std::shared_ptr<debugger> debugger, uint64_t address, uint64_t stop_address,
-            std::map<uint64_t, node*>& nodes, bool last_error);
+        node() = default;
+        node(std::shared_ptr<debugger> debugger, uint64_t address, std::pair<std::string, std::string> stop,
+            std::map<uint64_t, node*>& nodes, uint64_t& stop_address, bool last_error = false);
     };
+
+    uint64_t root_address_;
+    uint64_t stop_address_;
 
     node root_;
 
-    explicit obfuscation_graph_x86(node root);
-
 public:
 
-    static obfuscation_graph_x86 build(std::shared_ptr<debugger> debugger, uint64_t root_address, uint64_t stop_address);
+    obfuscation_graph_x86(std::shared_ptr<debugger> debugger, uint64_t root_address);
 };
 
 class deobfuscator_x86
@@ -33,5 +34,5 @@ public:
 
     explicit deobfuscator_x86(loader& loader, std::vector<uint8_t> code);
 
-    void build(uint64_t start, uint64_t stop) const;
+    std::vector<obfuscation_graph_x86> inspect_framed(std::vector<uint64_t> addresses) const;
 };

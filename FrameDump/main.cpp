@@ -202,21 +202,26 @@ int main(const int argc, char* argv[])
 
     file_stream.read(reinterpret_cast<char*>(&code.at(0)), code.size());
 
-    std::cout << "Size: " << code.size() << " bytes" << std::endl;
+    std::cout << "Size: " << code.size() << " bytes" << std::endl << std::endl;
 
     // -----
 
-    global_flags.lazy = true;
-    global_flags.ugly = true;
+    try
+    {
+        global_flags.lazy = true;
+        global_flags.ugly = true;
 
-    loader_pe loader;
+        loader_pe loader;
 
-    const deobfuscator_x86 deobfuscator(loader, code);
-    deobfuscator.build(0x7FF7E4C59000, 0x7FF7E46A7B2B);
+        const auto graphs = deobfuscator_x86(loader, code).inspect_framed(addresses);
+    }
+    catch (std::runtime_error err)
+    {
+        std::cerr << std::endl << err.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // -----
-
-    std::cout << "Complete" << std::endl;
 
     std::cin.get();
     return 0;
