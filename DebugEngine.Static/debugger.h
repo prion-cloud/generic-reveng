@@ -82,9 +82,12 @@ public:
     // --- TODO Q&D
     stack_representation get_stack() const;
     void set_stack(stack_representation stack) const;
+
+    uint64_t image_base() const;
+    std::vector<code_section> sections() const;
     // ---
 
-private:
+// private: TODO Q&D
 
     std::shared_ptr<instruction> disassemble_at(uint64_t address) const;
 };
