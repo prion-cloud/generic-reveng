@@ -48,8 +48,10 @@ instruction disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t
 
     instruction.bytes = std::vector<uint8_t>(insn->bytes, insn->bytes + insn->size);
 
-    instruction.mnemonic = insn->mnemonic;
-    instruction.operands = insn->op_str;
+    const auto cs_mnem = insn->mnemonic;
+    instruction.mnemonic = std::string(cs_mnem, cs_mnem + std::strlen(cs_mnem));
+    const auto cs_op = insn->op_str;
+    instruction.operands = std::string(cs_op, cs_op + std::strlen(cs_op));
 
     switch(insn->id)
     {
