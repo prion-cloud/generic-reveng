@@ -99,5 +99,58 @@ instruction disassembler::disassemble(std::vector<uint8_t> bytes, const uint64_t
         }
     }
 
+    cs_free(insn, 1);
+
     return instruction;
 }
+
+/* TODO
+assembler::assembler(const uint16_t machine)
+{
+    auto mode = static_cast<ks_mode>(0);
+
+    switch (machine)
+    {
+#ifdef _WIN64
+    case IMAGE_FILE_MACHINE_AMD64:
+
+        mode = KS_MODE_64;
+
+        break;
+#else
+    case IMAGE_FILE_MACHINE_I386:
+
+        mode = KS_MODE_32;
+
+        break;
+#endif
+    default:
+        std::ostringstream message;
+        message << "Invalid machine specification: " << std::hex << std::showbase << machine;
+        THROW(message.str());
+    }
+
+    FATAL_IF(ks_open(KS_ARCH_X86, mode, &ks_));
+}
+assembler::~assembler()
+{
+    ks_close(ks_);
+}
+
+std::vector<uint8_t> assembler::assemble(const uint64_t address, const std::string string) const
+{
+    uint8_t* code;
+
+    size_t size;
+    size_t count;
+
+    FATAL_IF(ks_asm(ks_, string.c_str(), address, &code, &size, &count) != 0);
+    FATAL_IF(count != 1);
+
+    std::vector<uint8_t> code_vector(code, code + size);
+
+    ks_free(code);
+
+    return code_vector;
+}
+*/

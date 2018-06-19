@@ -2,6 +2,19 @@
 
 #include "emulator.h"
 
+// --- TODO Q&D
+struct code_section
+{
+    std::string name;
+
+    uint64_t raw_address;
+    size_t raw_size;
+
+    uint64_t virtual_address;
+    size_t virtual_size;
+};
+// ---
+
 // Initializer for machine code emulation
 class loader
 {
@@ -27,6 +40,11 @@ public:
     virtual bool ensure_availability(uint64_t address) = 0;
 
     virtual uint64_t to_raw_address(uint64_t virtual_address, size_t& section_index, std::string& section_name) const = 0;
+    
+    // --- TODO Q&D
+    virtual uint64_t image_base() const = 0;
+    virtual std::vector<code_section> sections() const = 0;
+    // ---
 
 protected:
 
@@ -49,6 +67,11 @@ public:
     bool ensure_availability(uint64_t address) override;
 
     uint64_t to_raw_address(uint64_t virtual_address, size_t& section_index, std::string& section_name) const override;
+
+    // --- TODO Q&D
+    uint64_t image_base() const override;
+    std::vector<code_section> sections() const override;
+    // ---
 
     static std::vector<uint8_t> create_aid(uint16_t machine, uint64_t base_address, std::vector<uint8_t> bytes);
 };
@@ -96,6 +119,11 @@ public:
     bool ensure_availability(uint64_t address) override;
 
     uint64_t to_raw_address(uint64_t virtual_address, size_t& section_index, std::string& section_name) const override;
+
+    // --- TODO Q&D
+    uint64_t image_base() const override;
+    std::vector<code_section> sections() const override;
+    // ---
 
 private:
     

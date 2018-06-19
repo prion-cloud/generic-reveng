@@ -148,6 +148,35 @@ uint64_t loader_pe::to_raw_address(const uint64_t virtual_address, size_t& secti
     return -1;
 }
 
+// --- TODO Q&D
+uint64_t loader_pe::image_base() const
+{
+    return header_.image_base;
+}
+std::vector<code_section> loader_pe::sections() const
+{
+    std::vector<code_section> result;
+    for (const auto h : header_.section_headers)
+    {
+        code_section sec;
+
+        sec.name = std::string(h.Name, h.Name + std::strlen(reinterpret_cast<const char*>(h.Name)));
+
+        sec.raw_address = h.PointerToRawData;
+        sec.raw_size = h.SizeOfRawData;
+
+        sec.virtual_address = header_.image_base + h.VirtualAddress;
+        sec.virtual_size = PAGE_SIZE * (h.SizeOfRawData / PAGE_SIZE);
+        if (h.SizeOfRawData % PAGE_SIZE > 0)
+            sec.virtual_size += PAGE_SIZE;
+
+        result.push_back(sec);
+    }
+
+    return result;
+}
+// ---
+
 int loader_pe::import_single_dll(const uint64_t base, std::string dll_name, const bool sub)
 {
     // Get handle

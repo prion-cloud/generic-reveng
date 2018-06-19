@@ -208,6 +208,15 @@ void debugger::set_stack(const stack_representation stack) const
 
     emulator_->set_stack(stack.memory);
 }
+
+uint64_t debugger::image_base() const
+{
+    return loader_.image_base();
+}
+std::vector<code_section> debugger::sections() const
+{
+    return loader_.sections();
+}
 // ---
 
 std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const

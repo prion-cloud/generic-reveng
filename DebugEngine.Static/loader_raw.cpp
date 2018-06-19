@@ -38,6 +38,17 @@ uint64_t loader_raw::to_raw_address(const uint64_t virtual_address, size_t& sect
     return virtual_address;
 }
 
+// --- TODO Q&D
+uint64_t loader_raw::image_base() const
+{
+    return 0;
+}
+std::vector<code_section> loader_raw::sections() const
+{
+    return { };
+}
+// ---
+
 TPL std::vector<uint8_t> to_bytes(T value)
 {
     std::vector<uint8_t> bytes;
