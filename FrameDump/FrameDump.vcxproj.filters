@@ -30,6 +30,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="control_flow.h">
+    <ClInclude Include="deobfuscator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,6 +51,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="control_flow.cpp">
+    <ClCompile Include="deobfuscator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
