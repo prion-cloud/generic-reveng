@@ -7,3 +7,6 @@
 [submodule "Bin-Unicorn"]
 	path = Bin-Unicorn
 	url = git@github.com:superbr4in/Bin-Unicorn.git
+[submodule "Bin-Keystone"]
+	path = Bin-Keystone
+	url = git@github.com:superbr4in/Bin-Keystone.git
