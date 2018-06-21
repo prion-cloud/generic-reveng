@@ -11,11 +11,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Test", "DebugEngine.Test\DebugEngine.Test.vcxproj", "{D3BF1BC5-EFDE-415B-AD8B-8191260AE76B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Static", "DebugEngine.Static\DebugEngine.Static.vcxproj", "{A5E4AF56-F340-4A97-9237-7DF39052C92E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87} = {0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DebugEngine.Dummy", "DebugEngine.Dummy\DebugEngine.Dummy.vcxproj", "{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameDump", "FrameDump\FrameDump.vcxproj", "{D87FAAA4-8C47-493A-8B86-AFE900B5F2C7}"
 EndProject
@@ -51,14 +46,6 @@ Global
 		{A5E4AF56-F340-4A97-9237-7DF39052C92E}.Release|x64.Build.0 = Release|x64
 		{A5E4AF56-F340-4A97-9237-7DF39052C92E}.Release|x86.ActiveCfg = Release|Win32
 		{A5E4AF56-F340-4A97-9237-7DF39052C92E}.Release|x86.Build.0 = Release|Win32
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Debug|x64.ActiveCfg = Debug|x64
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Debug|x64.Build.0 = Debug|x64
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Debug|x86.ActiveCfg = Debug|Win32
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Debug|x86.Build.0 = Debug|Win32
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Release|x64.ActiveCfg = Release|x64
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Release|x64.Build.0 = Release|x64
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Release|x86.ActiveCfg = Release|Win32
-		{0DB2C0FC-95E4-4F6E-BE46-1744E67F6C87}.Release|x86.Build.0 = Release|Win32
 		{D87FAAA4-8C47-493A-8B86-AFE900B5F2C7}.Debug|x64.ActiveCfg = Debug|x64
 		{D87FAAA4-8C47-493A-8B86-AFE900B5F2C7}.Debug|x64.Build.0 = Debug|x64
 		{D87FAAA4-8C47-493A-8B86-AFE900B5F2C7}.Debug|x86.ActiveCfg = Debug|Win32
