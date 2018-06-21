@@ -42,9 +42,85 @@ instruction_x86::instruction_x86(const cs_insn cs_insn)
     operands = std::vector<operand_x86>(cs_insn.detail->x86.operands, cs_insn.detail->x86.operands + cs_insn.detail->x86.op_count);
 }
 
+instruction_x86_live::instruction_x86_live(const instruction_x86 base, const uc_err error, const std::function<uint64_t(x86_reg)> read_reg)
+    : base_(base), error_(error)
+{
+    const auto op0 = base_.operands.size() > 0 ? base_.operands.at(0) : operand_x86();
+    const auto op1 = base_.operands.size() > 1 ? base_.operands.at(1) : operand_x86();
+
+    switch (base_.type)
+    {
+    case instruction_type::push:
+        memory_write_ = std::make_pair(
+            read_reg(X86_REG_RSP) + sizeof(void*),
+            read_reg(op0.reg));
+        break;
+    case instruction_type::pop:
+        memory_read_ = std::make_pair(
+            read_reg(X86_REG_RSP) - sizeof(void*),
+            read_reg(op0.reg));
+        break;
+    case instruction_type::move:
+        if (op1.type == operand_type::mem)
+            memory_read_ = std::make_pair(
+                read_reg(static_cast<x86_reg>(op1.mem.base)) + op1.mem.disp,
+                read_reg(op0.reg));
+        if (op0.type == operand_type::mem)
+        {
+            switch (base_.operands.at(1).type)
+            {
+            case operand_type::reg:
+                memory_write_ = std::make_pair(
+                    read_reg(static_cast<x86_reg>(op0.mem.base)) + op0.mem.disp,
+                    read_reg(static_cast<x86_reg>(op1.reg)));
+                break;
+            case operand_type::imm:
+                memory_write_ = std::make_pair(
+                    read_reg(static_cast<x86_reg>(op0.mem.base)) + op0.mem.disp,
+                    op1.imm);
+                break;
+            default:;
+            }
+        }
+        break;
+    default:;
+    }
+}
+
+bool instruction_x86_live::has_failed() const
+{
+    return error_ != UC_ERR_OK;
+}
+
+bool instruction_x86_live::memory_read(uint64_t& address, uint64_t& value) const
+{
+    if (!memory_read_.has_value())
+        return false;
+
+    address = memory_read_->first;
+    value = memory_read_->second;
+
+    return true;
+}
+bool instruction_x86_live::memory_write(uint64_t& address, uint64_t& value) const
+{
+    if (!memory_write_.has_value())
+        return false;
+
+    address = memory_write_->first;
+    value = memory_write_->second;
+
+    return true;
+}
+
+const instruction_x86* instruction_x86_live::operator->() const
+{
+    return &base_;
+}
+
 static void inspect(const x86_insn id, instruction_type& type, bool& is_conditional)
 {
-    type = instruction_type::any;
+    type = instruction_type::unknown;
     is_conditional = false;
 
     switch (id)
@@ -68,16 +144,9 @@ static void inspect(const x86_insn id, instruction_type& type, bool& is_conditio
     case X86_INS_JS:
         is_conditional = true;
     case X86_INS_JMP:
-        type = instruction_type::jmp;
+        type = instruction_type::jump;
         break;
     case X86_INS_CALL:
-        type = instruction_type::call;
-        break;
-    case X86_INS_RET:
-    case X86_INS_RETF:
-    case X86_INS_RETFQ:
-        type = instruction_type::ret;
-        break;
     case X86_INS_PUSH:
     case X86_INS_PUSHAL:
     case X86_INS_PUSHAW:
@@ -93,6 +162,9 @@ static void inspect(const x86_insn id, instruction_type& type, bool& is_conditio
     case X86_INS_POPF:
     case X86_INS_POPFD:
     case X86_INS_POPFQ:
+    case X86_INS_RET:
+    case X86_INS_RETF:
+    case X86_INS_RETFQ:
         type = instruction_type::pop;
         break;
     case X86_INS_CMOVA:
@@ -114,17 +186,18 @@ static void inspect(const x86_insn id, instruction_type& type, bool& is_conditio
         is_conditional = true;
     case X86_INS_MOV:
     case X86_INS_MOVABS:
-        type = instruction_type::mov;
+    case X86_INS_XCHG:
+        type = instruction_type::move;
         break;
     case X86_INS_CMP:
     case X86_INS_TEST:
-        type = instruction_type::cond;
+        type = instruction_type::conditon;
         break;
     case X86_INS_ADD:
     case X86_INS_DIV:
     case X86_INS_MUL:
     case X86_INS_SUB:
-        type = instruction_type::arith;
+        type = instruction_type::arithmetic;
         break;
     default:;
     }

@@ -20,13 +20,13 @@ class loader
 {
 protected:
     
-    std::shared_ptr<emulator> emulator_;
+    emulator* emulator_;
 
 public:
 
     loader();
 
-    std::shared_ptr<emulator> get_emulator() const;
+    std::unique_ptr<emulator> get_emulator() const;
 
     virtual ~loader() = default;
 

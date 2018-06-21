@@ -15,17 +15,6 @@ struct stack_representation
 };
 // ---
 
-struct debug_trace_entry
-{
-    uint64_t address;
-
-    int error;
-    std::string error_str;
-
-    std::map<x86_reg, uint64_t> old_registers;
-    std::map<std::string, uint64_t> new_registers;
-};
-
 enum debug_point
 {
     dp_break,
@@ -39,11 +28,9 @@ class debugger
     loader& loader_;
 
     std::unique_ptr<disassembler> disassembler_;
-    std::shared_ptr<emulator> emulator_;
+    std::unique_ptr<emulator> emulator_;
 
-    std::shared_ptr<instruction_x86> next_instruction_;
-
-    std::deque<std::unique_ptr<debug_trace_entry>> trace_;
+    instruction_x86 next_instruction_;
 
     std::map<uint64_t, debug_point> debug_points_;
 
@@ -57,12 +44,12 @@ public:
     // Uses a loader to make some machine code ready for debugging.
     explicit debugger(loader& loader, std::vector<uint8_t> code);
 
-    std::shared_ptr<instruction_x86> next_instruction() const;
+    instruction_x86 next_instruction() const;
 
-    debug_trace_entry run(size_t count = 0);
+    instruction_x86_live run(size_t count = 0);
 
     // Emulates the next machine code instruction.
-    debug_trace_entry step_into();
+    instruction_x86_live step_into();
 
     int step_back();
 
@@ -89,5 +76,5 @@ public:
 
 // private: TODO Q&D
 
-    std::shared_ptr<instruction_x86> disassemble_at(uint64_t address) const;
+    instruction_x86 disassemble_at(uint64_t address) const;
 };

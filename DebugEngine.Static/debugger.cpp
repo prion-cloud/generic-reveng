@@ -13,25 +13,25 @@ debugger::debugger(loader& loader, const std::vector<uint8_t> code)
     next_instruction_ = disassemble_at(emulator_->address());
 }
 
-std::shared_ptr<instruction_x86> debugger::next_instruction() const
+instruction_x86 debugger::next_instruction() const
 {
     return next_instruction_;
 }
 
-debug_trace_entry debugger::run(const size_t count)
+instruction_x86_live debugger::run(const size_t count)
 {
-    debug_trace_entry trace_entry;
+    instruction_x86_live live;
 
     size_t i = 0;
 
     bool cont;
     do
     {
-        trace_entry = step_into();
+        live = step_into();
 
         cont = true;
 
-        const auto address = next_instruction_->address;
+        const auto address = next_instruction_.address;
         if (debug_points_.find(address) != debug_points_.end())
         {
             const auto dp = debug_points_.at(address);
@@ -55,79 +55,66 @@ debug_trace_entry debugger::run(const size_t count)
     }
     while (cont);
 
-    return trace_entry;
+    return live;
 }
 
-debug_trace_entry debugger::step_into()
+instruction_x86_live debugger::step_into()
 {
-    debug_trace_entry trace_entry;
-
-    const auto address = next_instruction_->address;
-
-    trace_entry.address = address;
-
+    /*
     if (byte_trace_pointer_.find(address) == byte_trace_pointer_.end())
     {
         byte_trace_pointer_.emplace(address, byte_trace_.size());
-        byte_trace_.push_back(next_instruction_->code);
+        byte_trace_.push_back(next_instruction_.code);
     }
     // else THROW("This may be a great case for an unordered map."); TODO
 
     if (global_flags.hot)
-        ++counter_[trace_entry.address];
-
+        ++counter_[address];
+    */
 /* TODO
     for (const auto reg : next_instruction_->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 */
 
-    trace_entry.error = emulator_->emulate_once();
-    if (trace_entry.error)
-        trace_entry.error_str = uc_strerror(static_cast<uc_err>(trace_entry.error));
+    instruction_x86_live instruction(next_instruction_, static_cast<uc_err>(emulator_->emulate_once()),
+        [this](const x86_reg reg)
+        {
+            if (reg == X86_REG_INVALID)
+                return uint64_t { 0 };
+            return emulator_->reg_read<uint64_t>(reg);
+        });
 
-    switch (trace_entry.error)
+    /*
+    switch (live.error)
     {
     case UC_ERR_READ_UNMAPPED:
     case UC_ERR_WRITE_UNMAPPED:
     case UC_ERR_FETCH_UNMAPPED:
         if (loader_.ensure_availability(emulator_->address()))
         {
-            emulator_->jump_to(next_instruction_->address);
+            emulator_->jump_to(next_instruction_.address);
             return step_into(); // TODO: Prevent stack overflow
         }
     default:;
     }
+    */
 
 /* TODO
     for (const auto reg : next_instruction_->registers)
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 */
 
-    if (trace_entry.error && global_flags.ugly)
+    if (instruction.has_failed() && global_flags.ugly)
         skip();
     else next_instruction_ = disassemble_at(emulator_->address());
 
-    trace_.push_back(std::make_unique<debug_trace_entry>(trace_entry));
-    if (trace_.size() > MAX_TRACE)
-        trace_.pop_front();
-
-    return trace_entry;
+    return instruction;
 }
 
 int debugger::step_back()
 {
-    ERROR_IF(trace_.size() == 0);
-
-    const auto& prev = trace_.at(trace_.size() - 1);
-
-    ERROR_IF(jump_to(prev->address));
-
-    for (const auto old_reg : prev->old_registers)
-        emulator_->reg_write(old_reg.first, old_reg.second);
-
-    trace_.pop_back();
-
-    return RES_SUCCESS;
+    // TODO
+    return RES_FAILURE;
 }
 
 int debugger::set_debug_point(const uint64_t address, const debug_point point)
@@ -163,7 +150,7 @@ int debugger::get_raw(const uint64_t address, uint64_t& raw_address, size_t& sec
 
 int debugger::skip()
 {
-    return jump_to(next_instruction_->address + next_instruction_->code.size());
+    return jump_to(next_instruction_.address + next_instruction_.code.size());
 }
 int debugger::take()
 {   
@@ -171,8 +158,8 @@ int debugger::take()
     const auto jump = next_instruction_->jump;
     ERROR_IF(!jump.has_value());  
 */
-    ERROR_IF(next_instruction_->type != instruction_type::jmp);
-    return jump_to(next_instruction_->operands.at(0).imm);
+    ERROR_IF(next_instruction_.type != instruction_type::jump);
+    return jump_to(next_instruction_.operands.at(0).imm);
 }
 
 bool debugger::is_debug_point(const uint64_t address) const
@@ -225,15 +212,13 @@ std::vector<code_section> debugger::sections() const
 }
 // ---
 
-std::shared_ptr<instruction_x86> debugger::disassemble_at(const uint64_t address) const
+instruction_x86 debugger::disassemble_at(const uint64_t address) const
 {
     const auto max_bytes = 16;
 
     std::vector<uint8_t> code(max_bytes);
     emulator_->mem_read(address, code);
 
-    auto ins = disassembler_->disassemble(address, code);
+    return disassembler_->disassemble(address, code);
     //ins.label = loader_.label_at(address);
-
-    return std::make_shared<instruction_x86>(ins);
 }
