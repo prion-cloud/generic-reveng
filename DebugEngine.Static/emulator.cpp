@@ -21,10 +21,10 @@ emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint
 
         max_scale_ = UINT64_MAX;
 
-        reg_sp_id_ = UC_X86_REG_RSP;
-        reg_bp_id_ = UC_X86_REG_RBP;
+        reg_sp_id_ = X86_REG_RSP;
+        reg_bp_id_ = X86_REG_RBP;
 
-        reg_ip_id_ = UC_X86_REG_RIP;
+        reg_ip_id_ = X86_REG_RIP;
 
         break;
 #else
@@ -34,10 +34,10 @@ emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint
 
         max_scale_ = UINT32_MAX;
 
-        reg_sp_id_ = UC_X86_REG_ESP;
-        reg_bp_id_ = UC_X86_REG_EBP;
+        reg_sp_id_ = X86_REG_ESP;
+        reg_bp_id_ = X86_REG_EBP;
 
-        reg_ip_id_ = UC_X86_REG_EIP;
+        reg_ip_id_ = X86_REG_EIP;
 
         break;
 #endif
