@@ -48,6 +48,12 @@ emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint
     }
 
     FATAL_IF(uc_open(UC_ARCH_X86, mode, &uc_));
+
+    for (const auto reg_scale : reg_scales)
+    {
+        if (reg_scale.second == UINT64_MAX)
+            reg_write<uint64_t>(reg_scale.first, 0xBeef); // Beef!
+    }
 }
 emulator::~emulator()
 {
