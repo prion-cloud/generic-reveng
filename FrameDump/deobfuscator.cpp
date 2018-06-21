@@ -4,25 +4,21 @@
 
 static bool verbose = false;
 
-static std::vector<uint8_t> assemble(const uint64_t address, const std::string string)
+static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string string)
 {
     const std::string var_code = "v1";
-    const std::string var_count = "v2";
-    const std::string var_length = "v3";
+    const std::string var_length = "v2";
 
     auto s_python =
         "from keystone import *\n"
         "ks = Ks(KS_ARCH_X86, KS_MODE_64)\n"
-        + var_code + ", " + var_count + " = ks.asm(b\"" + string + "\", " + std::to_string(address) + ")\n"
-        + var_length + " = len(code)";
+        + var_code + ", count = ks.asm(b\"" + string + "\", " + std::to_string(address) + ")\n"
+        + var_length + " = len(" + var_code + ")";
 
     Py_Initialize();
     PyRun_SimpleString(s_python.c_str());
 
     const auto main = PyImport_AddModule("__main__");
-
-    if (_PyInt_AsInt(PyObject_GetAttrString(main, var_count.c_str())) != 1)
-        throw std::runtime_error("Unexpected assembling request.");
 
     const auto p_code = PyObject_GetAttrString(main, var_code.c_str());
     const auto length = _PyInt_AsInt(PyObject_GetAttrString(main, var_length.c_str()));
@@ -36,23 +32,24 @@ static std::vector<uint8_t> assemble(const uint64_t address, const std::string s
     return code;
 }
 
-obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::pair<std::string, std::string> stop,
-    std::map<uint64_t, node*>& nodes, uint64_t& stop_address, bool last_error)
+obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::vector<uint8_t> stop,
+    std::map<uint64_t, node*>& node_map, uint64_t& stop_address, node* previous, bool last_error)
+    : previous(previous)
 {
-    nodes.emplace(address, this);
+    node_map.emplace(address, this);
 
     if (verbose)
         std::cout << std::hex << std::uppercase << address << std::endl;
 
     debugger->jump_to(address);
-    instruction_ = debugger->next_instruction();
+    instruction = debugger->next_instruction();
 
-    if (instruction_->mnemonic == stop.first && instruction_->operands == stop.second)
+    if (instruction->bytes == stop)
     {
         if (verbose)
             std::cout << "Stop" << std::endl;
 
-        stop_address = instruction_->address;
+        stop_address = instruction->address;
         return;
     }
 
@@ -74,7 +71,7 @@ obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, cons
     std::vector<uint64_t> next_addresses;
 
     stack_representation stack { };
-    switch (instruction_->id)
+    switch (instruction->id)
     {
     case X86_INS_JO:
     case X86_INS_JNO:
@@ -95,8 +92,8 @@ obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, cons
     case X86_INS_JCXZ:
         if (verbose)
             std::cout << "Jump" << std::endl;
-        next_addresses.push_back(address + instruction_->bytes.size());
-        next_addresses.push_back(instruction_->jump.value());
+        next_addresses.push_back(address + instruction->bytes.size());
+        next_addresses.push_back(instruction->jump.value());
         stack = debugger->get_stack();
         break;
     default:
@@ -110,15 +107,15 @@ obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, cons
         if (i > 0)
             debugger->set_stack(stack);
 
-        if (nodes.find(next_address) == nodes.end())
+        if (node_map.find(next_address) == node_map.end())
         {
-            next_.push_back(new node(debugger, next_address, stop, nodes, stop_address, last_error));
+            next.push_back(new node(debugger, next_address, stop, node_map, stop_address, this, last_error));
             continue;
         }
 
         if (verbose)
             std::cout << "Loop: " << std::hex << std::uppercase << next_address << std::endl;
-        next_.push_back(nodes.at(next_address));
+        next.push_back(node_map.at(next_address));
     }
 }
 
@@ -140,15 +137,18 @@ obfuscation_graph_x86::obfuscation_graph_x86(const std::shared_ptr<debugger> deb
 
     const auto stack = debugger->get_stack();
 
-    std::map<uint64_t, node*> nodes;
-
-    root_ = node(debugger, root_address, std::make_pair("pop", root_instruction->operands), nodes, stop_address_);
+    root_ = node(debugger, root_address, assemble_x86(0, "pop " + root_instruction->operands), node_map_, stop_address_);
 
     debugger->set_stack(stack);
 
     std::cout << std::string(title.size(), ' ') << std::right << std::setw(width)
               << std::hex << std::uppercase << stop_address_
-              << " (" << std::dec << nodes.size() << ")" << std::endl;
+              << " (" << std::dec << node_map_.size() << ")" << std::endl;
+}
+
+instruction obfuscation_graph_x86::find_instruction(const uint64_t address)
+{
+    return *node_map_.at(address)->instruction;
 }
 
 deobfuscator_x86::deobfuscator_x86(loader& loader, std::vector<uint8_t> code)
