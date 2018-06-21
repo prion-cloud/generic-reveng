@@ -1,10 +1,40 @@
 #include "stdafx.h"
 
-#include <iomanip>
-
 #include "deobfuscator.h"
 
 static bool verbose = false;
+
+static std::vector<uint8_t> assemble(const uint64_t address, const std::string string)
+{
+    const std::string var_code = "v1";
+    const std::string var_count = "v2";
+    const std::string var_length = "v3";
+
+    auto s_python =
+        "from keystone import *\n"
+        "ks = Ks(KS_ARCH_X86, KS_MODE_64)\n"
+        + var_code + ", " + var_count + " = ks.asm(b\"" + string + "\", " + std::to_string(address) + ")\n"
+        + var_length + " = len(code)";
+
+    Py_Initialize();
+    PyRun_SimpleString(s_python.c_str());
+
+    const auto main = PyImport_AddModule("__main__");
+
+    if (_PyInt_AsInt(PyObject_GetAttrString(main, var_count.c_str())) != 1)
+        throw std::runtime_error("Unexpected assembling request.");
+
+    const auto p_code = PyObject_GetAttrString(main, var_code.c_str());
+    const auto length = _PyInt_AsInt(PyObject_GetAttrString(main, var_length.c_str()));
+    
+    std::vector<uint8_t> code;
+    for (auto i = 0; i < length; ++i)
+        code.push_back(_PyInt_AsInt(PyList_GetItem(p_code, i)));
+
+    Py_Finalize();
+
+    return code;
+}
 
 obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::pair<std::string, std::string> stop,
     std::map<uint64_t, node*>& nodes, uint64_t& stop_address, bool last_error)

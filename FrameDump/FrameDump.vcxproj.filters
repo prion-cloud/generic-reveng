@@ -29,4 +29,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="C:\Python27amd64\libs\python27.lib" />
+  </ItemGroup>
 </Project>

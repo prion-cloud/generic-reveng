@@ -170,6 +170,9 @@
       <Project>{a5e4af56-f340-4a97-9237-7df39052c92e}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="C:\Python27amd64\libs\python27.lib" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
