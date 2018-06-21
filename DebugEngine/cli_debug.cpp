@@ -65,20 +65,24 @@ static std::function<void(std::vector<uint8_t>)> print_bytes = [](const std::vec
 
     std::cout << ")";
 };
-static std::function<void(instruction)> print_instruction = [](const instruction instruction)
+static std::function<void(instruction_x86)> print_instruction = [](const instruction_x86 instruction)
 {
     const auto pos = get_cursor();
     set_cursor(pos.first, pos.second + static_cast<int16_t>(arrow.size()));
 
     std::cout << std::uppercase << std::hex << std::right << std::setw(ADDR_SIZE) << instruction.address;
 
+/* TODO
     if (!instruction.registers.empty())
         std::cout << " *";
+*/
 
-    std::cout << "\t" << colorize(get_instruction_color(instruction.id)) << instruction.mnemonic << " " << instruction.operands;
+    std::cout << "\t" << colorize(get_instruction_color(instruction.id)) << instruction.str_mnemonic << " " << instruction.str_operands;
 
+/* TODO
     if (!instruction.label.empty())
         std::cout << " " << colorize(FOREGROUND_GREEN) << "<" << instruction.label << ">";
+*/
 
     decolorize(std::cout);
 };
@@ -130,7 +134,7 @@ void cli_debug::step_into(const bool registers)
             printer_.print(std::make_shared<std::pair<std::string, uint64_t>>(reg.first, reg.second));
     }
 
-    if (cur_instruction->address + cur_instruction->bytes.size() != debugger_->next_instruction()->address)
+    if (cur_instruction->address + cur_instruction->code.size() != debugger_->next_instruction()->address)
         printer_.print_blank();
     
     print_next_instruction();
@@ -164,7 +168,7 @@ void cli_debug::show_bytes()
     if (bytes_shown_)
         return;
 
-    printer_.print(std::make_shared<std::vector<uint8_t>>(debugger_->next_instruction()->bytes));
+    printer_.print(std::make_shared<std::vector<uint8_t>>(debugger_->next_instruction()->code));
 
     bytes_shown_ = true;
 }
