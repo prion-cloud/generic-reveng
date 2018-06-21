@@ -13,7 +13,7 @@ debugger::debugger(loader& loader, const std::vector<uint8_t> code)
     next_instruction_ = disassemble_at(emulator_->address());
 }
 
-std::shared_ptr<instruction> debugger::next_instruction() const
+std::shared_ptr<instruction_x86> debugger::next_instruction() const
 {
     return next_instruction_;
 }
@@ -69,15 +69,17 @@ debug_trace_entry debugger::step_into()
     if (byte_trace_pointer_.find(address) == byte_trace_pointer_.end())
     {
         byte_trace_pointer_.emplace(address, byte_trace_.size());
-        byte_trace_.push_back(next_instruction_->bytes);
+        byte_trace_.push_back(next_instruction_->code);
     }
     // else THROW("This may be a great case for an unordered map."); TODO
 
     if (global_flags.hot)
         ++counter_[trace_entry.address];
 
+/* TODO
     for (const auto reg : next_instruction_->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
+*/
 
     trace_entry.error = emulator_->emulate_once();
     if (trace_entry.error)
@@ -96,8 +98,10 @@ debug_trace_entry debugger::step_into()
     default:;
     }
 
+/* TODO
     for (const auto reg : next_instruction_->registers)
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
+*/
 
     if (trace_entry.error && global_flags.ugly)
         skip();
@@ -159,14 +163,16 @@ int debugger::get_raw(const uint64_t address, uint64_t& raw_address, size_t& sec
 
 int debugger::skip()
 {
-    return jump_to(next_instruction_->address + next_instruction_->bytes.size());
+    return jump_to(next_instruction_->address + next_instruction_->code.size());
 }
 int debugger::take()
-{
+{   
+/* TODO
     const auto jump = next_instruction_->jump;
-    ERROR_IF(!jump.has_value());
-
-    return jump_to(jump.value());
+    ERROR_IF(!jump.has_value());  
+*/
+    ERROR_IF(next_instruction_->type != instruction_type::jmp);
+    return jump_to(next_instruction_->operands.at(0).imm);
 }
 
 bool debugger::is_debug_point(const uint64_t address) const
@@ -219,13 +225,15 @@ std::vector<code_section> debugger::sections() const
 }
 // ---
 
-std::shared_ptr<instruction> debugger::disassemble_at(const uint64_t address) const
+std::shared_ptr<instruction_x86> debugger::disassemble_at(const uint64_t address) const
 {
-    std::vector<uint8_t> bytes(MAX_BYTES);
-    emulator_->mem_read(address, bytes);
+    const auto max_bytes = 16;
 
-    auto ins = disassembler_->disassemble(bytes, address);
-    ins.label = loader_.label_at(address);
+    std::vector<uint8_t> code(max_bytes);
+    emulator_->mem_read(address, code);
 
-    return std::make_shared<instruction>(ins);
+    auto ins = disassembler_->disassemble(address, code);
+    //ins.label = loader_.label_at(address);
+
+    return std::make_shared<instruction_x86>(ins);
 }
