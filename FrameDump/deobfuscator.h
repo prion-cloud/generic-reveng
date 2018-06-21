@@ -1,16 +1,15 @@
 #pragma once
 
-#include "../DebugEngine.Static/debugger.h"
-
 class obfuscation_graph_x86
 {
     struct node
     {
-        std::shared_ptr<instruction> instruction;
+        std::shared_ptr<instruction_x86> instruction;
 
         node* previous;
         std::vector<node*> next;
 
+        node() = default;
         node(std::shared_ptr<debugger> debugger, uint64_t address, std::vector<uint8_t> stop,
             std::map<uint64_t, node*>& node_map, uint64_t& stop_address, node* previous = nullptr, bool last_error = false);
     };
@@ -26,7 +25,7 @@ public:
 
     obfuscation_graph_x86(std::shared_ptr<debugger> debugger, uint64_t root_address);
 
-    instruction find_instruction(uint64_t address);
+    instruction_x86 find_instruction(uint64_t address);
 };
 
 class deobfuscator_x86

@@ -14,7 +14,7 @@
 #define _DEBUG
 #endif
 
-#include "../DebugEngine.Static/stdafx.h"
+#include "../DebugEngine.Static/debugger.h"
 
 #include <fstream>
 #include <iomanip>
