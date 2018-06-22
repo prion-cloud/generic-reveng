@@ -2,7 +2,7 @@
 
 #include "memory_monitor.h"
 
-class obfuscation_graph_x86
+class control_flow_graph_x86
 {
     struct node
     {
@@ -28,18 +28,7 @@ class obfuscation_graph_x86
 
 public:
 
-    obfuscation_graph_x86(std::shared_ptr<debugger> debugger, uint64_t root_address);
+    control_flow_graph_x86(std::shared_ptr<debugger> debugger, uint64_t root_address);
 
     traceback_x86 find_traceback(uint64_t address) const;
-};
-
-class deobfuscator_x86
-{
-    std::shared_ptr<debugger> debugger_;
-
-public:
-
-    explicit deobfuscator_x86(loader& loader, std::vector<uint8_t> code);
-
-    std::vector<obfuscation_graph_x86> inspect_framed(std::vector<uint64_t> addresses) const;
 };

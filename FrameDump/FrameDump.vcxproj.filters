@@ -14,10 +14,10 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="deobfuscator.h">
+    <ClInclude Include="memory_monitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="memory_monitor.h">
+    <ClInclude Include="control_flow_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -28,10 +28,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="deobfuscator.cpp">
+    <ClCompile Include="memory_monitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="memory_monitor.cpp">
+    <ClCompile Include="graph_control_flow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

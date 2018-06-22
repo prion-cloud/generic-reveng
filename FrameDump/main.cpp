@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "deobfuscator.h"
+#include "control_flow_graph.h"
 
 #define FILE_1 "text1.dis"
 #define FILE_2 "text2.dis"
@@ -171,6 +171,29 @@ static std::vector<uint64_t> addresses =
     0x7FF7E50BB6AD,
     0x7FF7E50BF7A3,
 */
+};
+
+class deobfuscator_x86
+{
+    std::shared_ptr<debugger> debugger_;
+
+public:
+
+    explicit deobfuscator_x86(loader& loader, std::vector<uint8_t> code)
+        : debugger_(std::make_shared<debugger>(loader, code)) { }
+
+    std::vector<control_flow_graph_x86> inspect_framed(std::vector<uint64_t> addresses) const
+    {
+        std::vector<control_flow_graph_x86> cfgs;
+        for (auto i = 1; i < 2; ++i)
+        {
+            std::cout << std::dec << i + 1 << ":" << std::endl;
+            cfgs.push_back(control_flow_graph_x86(debugger_, addresses.at(i)));
+            std::cout << std::endl;
+        }
+
+        return cfgs;
+    }
 };
 
 int main(const int argc, char* argv[])

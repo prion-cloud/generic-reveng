@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "deobfuscator.h"
+#include "control_flow_graph.h"
 
 static bool verbose = false;
 
@@ -32,7 +32,7 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
     return code;
 }
 
-obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::vector<uint8_t> stop,
+control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::vector<uint8_t> stop,
     std::map<uint64_t, node*>& node_map, memory_monitor& monitor, uint64_t& stop_address, node* previous)
     : previous(previous)
 {
@@ -102,7 +102,7 @@ obfuscation_graph_x86::node::node(const std::shared_ptr<debugger> debugger, cons
     }
 }
 
-obfuscation_graph_x86::obfuscation_graph_x86(const std::shared_ptr<debugger> debugger, const uint64_t root_address)
+control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger> debugger, const uint64_t root_address)
     : root_address_(root_address)
 {
     const auto width = sizeof(uint64_t) * 2;
@@ -130,23 +130,7 @@ obfuscation_graph_x86::obfuscation_graph_x86(const std::shared_ptr<debugger> deb
               << " (" << std::dec << node_map_.size() << ")" << std::endl;
 }
 
-traceback_x86 obfuscation_graph_x86::find_traceback(const uint64_t address) const
+traceback_x86 control_flow_graph_x86::find_traceback(const uint64_t address) const
 {
     return node_map_.at(address)->traceback;
-}
-
-deobfuscator_x86::deobfuscator_x86(loader& loader, const std::vector<uint8_t> code)
-    : debugger_(std::make_shared<debugger>(loader, code)) { }
-
-std::vector<obfuscation_graph_x86> deobfuscator_x86::inspect_framed(const std::vector<uint64_t> addresses) const
-{
-    std::vector<obfuscation_graph_x86> graphs;
-    for (auto i = 1; i < 2; ++i)
-    {
-        std::cout << std::dec << i + 1 << ":" << std::endl;
-        graphs.push_back(obfuscation_graph_x86(debugger_, addresses.at(i)));
-        std::cout << std::endl;
-    }
-
-    return graphs;
 }
