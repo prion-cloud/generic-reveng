@@ -33,8 +33,7 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
 }
 
 control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::vector<uint8_t> stop,
-    std::map<uint64_t, node*>& node_map, memory_monitor& monitor, uint64_t& stop_address, node* previous)
-    : previous(previous)
+    std::map<uint64_t, node*>& node_map, memory_monitor& monitor, uint64_t& stop_address)
 {
     node_map.emplace(address, this);
 
@@ -48,17 +47,10 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
 
     if (traceback.has_failed())
     {
-        std::cout << "Error: " << std::hex << std::uppercase << address;
-
-        if (previous != nullptr && previous->traceback.has_failed())
-        {
-            std::cout << " (Stop)" << std::endl;
-            return;
-        }
-
-        std::cout << std::endl;
+        std::cout << "Error: " << std::hex << std::uppercase << address << " "
+                  << traceback->str_mnemonic  << " " << traceback->str_operands << std::endl;
     }
-    
+
     if (traceback->code == stop)
     {
         if (verbose)
@@ -69,7 +61,7 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
     }
 
     std::vector<uint64_t> next_addresses;
-    stack_representation saved_stack { };
+    emulation_snapshot snapshot { };
     if (traceback->type == instruction_type::jump && traceback->is_conditional)
     {
         if (verbose)
@@ -78,7 +70,7 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
         next_addresses.push_back(address + traceback->code.size());
         next_addresses.push_back(traceback->operands.at(0).imm);
 
-        saved_stack = debugger->get_stack();
+        snapshot = debugger->take_snapshot();
     }
     else next_addresses.push_back(debugger->next_instruction().address);
 
@@ -86,30 +78,31 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
     {
         const auto next_address = next_addresses.at(i);
 
+        node* next_node;
         if (node_map.find(next_address) == node_map.end())
         {
             if (i > 0)
-                debugger->set_stack(saved_stack);
+                debugger->reset(snapshot);
 
-            next.push_back(new node(debugger, next_address, stop,
-                node_map, monitor, stop_address, this));
-            continue;
+            next_node = new node(debugger, next_address, stop, node_map, monitor, stop_address);
+        }
+        else
+        {
+            if (verbose)
+                std::cout << "Loop: " << std::hex << std::uppercase << next_address << std::endl;
+
+            next_node = node_map.at(next_address);
         }
 
-        if (verbose)
-            std::cout << "Loop: " << std::hex << std::uppercase << next_address << std::endl;
-        next.push_back(node_map.at(next_address));
+        next_node->previous.push_back(this);
+        next.push_back(next_node);
     }
 }
 
 control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger> debugger, const uint64_t root_address)
     : root_address_(root_address)
 {
-    const auto width = sizeof(uint64_t) * 2;
-    const std::string title = "Obfuscation ";
-
-    std::cout << title << std::right << std::setw(width)
-              << std::hex << std::uppercase << root_address << std::endl;
+    std::cout << std::hex << std::uppercase << root_address << std::endl;
 
     const auto root_instruction = debugger->disassemble_at(root_address);
     if (root_instruction.str_mnemonic != "push")
@@ -118,15 +111,14 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger> d
         return;
     }
 
-    const auto stack = debugger->get_stack();
+    const auto snapshot = debugger->take_snapshot();
 
     root_ = node(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands),
         node_map_, monitor_, stop_address_);
 
-    debugger->set_stack(stack);
+    debugger->reset(snapshot);
 
-    std::cout << std::string(title.size(), ' ') << std::right << std::setw(width)
-              << std::hex << std::uppercase << stop_address_
+    std::cout << std::hex << std::uppercase << stop_address_
               << " (" << std::dec << node_map_.size() << ")" << std::endl;
 }
 

@@ -185,7 +185,7 @@ public:
     std::vector<control_flow_graph_x86> inspect_framed(std::vector<uint64_t> addresses) const
     {
         std::vector<control_flow_graph_x86> cfgs;
-        for (auto i = 1; i < 2; ++i)
+        for (auto i = 0; i < 2; ++i)
         {
             std::cout << std::dec << i + 1 << ":" << std::endl;
             cfgs.push_back(control_flow_graph_x86(debugger_, addresses.at(i)));

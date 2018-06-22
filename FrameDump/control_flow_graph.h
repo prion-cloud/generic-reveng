@@ -8,13 +8,12 @@ class control_flow_graph_x86
     {
         traceback_x86 traceback;
 
-        node* previous;
-        std::vector<node*> next;
+        std::vector<const node*> previous;
+        std::vector<const node*> next;
 
         node() = default;
         node(std::shared_ptr<debugger> debugger, uint64_t address, std::vector<uint8_t> stop,
-            std::map<uint64_t, node*>& node_map, memory_monitor& monitor, uint64_t& stop_address,
-            node* previous = nullptr);
+            std::map<uint64_t, node*>& node_map, memory_monitor& monitor, uint64_t& stop_address);
     };
 
     uint64_t root_address_;

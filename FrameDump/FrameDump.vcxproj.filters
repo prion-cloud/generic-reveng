@@ -20,6 +20,9 @@
     <ClInclude Include="control_flow_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="data_flow_tree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -31,7 +34,10 @@
     <ClCompile Include="memory_monitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="graph_control_flow.cpp">
+    <ClCompile Include="control_flow_graph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="data_flow_tree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -153,11 +153,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="control_flow_graph.h" />
+    <ClInclude Include="data_flow_tree.h" />
     <ClInclude Include="memory_monitor.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="graph_control_flow.cpp" />
+    <ClCompile Include="control_flow_graph.cpp" />
+    <ClCompile Include="data_flow_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory_monitor.cpp" />
     <ClCompile Include="stdafx.cpp">
