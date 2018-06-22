@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-#include "../Bin-Capstone/capstone.h"
-
 #include "deobfuscator.h"
 
 #define FILE_1 "text1.dis"
