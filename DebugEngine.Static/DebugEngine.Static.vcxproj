@@ -157,11 +157,13 @@
     <ClInclude Include="instruction.h" />
     <ClInclude Include="loader.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="traceback.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="debugger.cpp" />
     <ClCompile Include="disassembler.cpp" />
     <ClCompile Include="emulator.cpp" />
+    <ClCompile Include="traceback.cpp" />
     <ClInclude Include="emulator_tpl.cpp" />
     <ClCompile Include="instruction.cpp" />
     <ClCompile Include="loader.cpp" />

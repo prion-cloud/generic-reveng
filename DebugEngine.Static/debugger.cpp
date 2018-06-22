@@ -18,16 +18,16 @@ instruction_x86 debugger::next_instruction() const
     return next_instruction_;
 }
 
-instruction_x86_live debugger::run(const size_t count)
+traceback_x86 debugger::run(const size_t count)
 {
-    instruction_x86_live live;
+    traceback_x86 traceback;
 
     size_t i = 0;
 
     bool cont;
     do
     {
-        live = step_into();
+        traceback = step_into();
 
         cont = true;
 
@@ -55,10 +55,10 @@ instruction_x86_live debugger::run(const size_t count)
     }
     while (cont);
 
-    return live;
+    return traceback;
 }
 
-instruction_x86_live debugger::step_into()
+traceback_x86 debugger::step_into()
 {
     /*
     if (byte_trace_pointer_.find(address) == byte_trace_pointer_.end())
@@ -76,12 +76,18 @@ instruction_x86_live debugger::step_into()
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
 */
 
-    instruction_x86_live instruction(next_instruction_, static_cast<uc_err>(emulator_->emulate_once()),
+    traceback_x86 traceback(next_instruction_, static_cast<uc_err>(emulator_->emulate_once()),
         [this](const x86_reg reg)
         {
             if (reg == X86_REG_INVALID)
-                return uint64_t { 0 };
+                return uint64_t { 0xBAD };
             return emulator_->reg_read<uint64_t>(reg);
+        },
+        [this](const uint64_t address)
+        {
+            if (!emulator_->mem_is_mapped(address))
+                return uint64_t { 0xBAD };
+            return emulator_->mem_read<uint64_t>(address);
         });
 
     /*
@@ -104,11 +110,11 @@ instruction_x86_live debugger::step_into()
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 */
 
-    if (instruction.has_failed() && global_flags.ugly)
+    if (traceback.has_failed() && global_flags.ugly)
         skip();
     else next_instruction_ = disassemble_at(emulator_->address());
 
-    return instruction;
+    return traceback;
 }
 
 int debugger::step_back()

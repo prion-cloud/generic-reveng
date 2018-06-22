@@ -2,6 +2,7 @@
 
 #include <array>
 #include <deque>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>

@@ -2,8 +2,8 @@
 
 #include "disassembler.h"
 #include "emulator.h"
-
 #include "loader.h"
+#include "traceback.h"
 
 #define MAX_TRACE 5
 
@@ -46,10 +46,10 @@ public:
 
     instruction_x86 next_instruction() const;
 
-    instruction_x86_live run(size_t count = 0);
+    traceback_x86 run(size_t count = 0);
 
     // Emulates the next machine code instruction.
-    instruction_x86_live step_into();
+    traceback_x86 step_into();
 
     int step_back();
 

@@ -5,6 +5,8 @@
 
 #define PAGE_SIZE 0x1000
 
+#define REG64_DEFAULT 0xDEF
+
 class emulator
 {
     uc_engine* uc_;
