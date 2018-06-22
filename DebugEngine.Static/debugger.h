@@ -7,14 +7,6 @@
 
 #define MAX_TRACE 5
 
-// --- TODO Q&D
-struct stack_representation
-{
-    uint64_t sp, bp;
-    std::vector<uint8_t> memory;
-};
-// ---
-
 enum debug_point
 {
     dp_break,
@@ -67,8 +59,8 @@ public:
     int get_bytes(uint64_t address, size_t count, std::vector<uint8_t>& bytes);
 
     // --- TODO Q&D
-    stack_representation get_stack() const;
-    void set_stack(stack_representation stack) const;
+    emulation_snapshot take_snapshot() const;
+    void reset(emulation_snapshot snapshot) const;
 
     uint64_t image_base() const;
     std::vector<code_section> sections() const;

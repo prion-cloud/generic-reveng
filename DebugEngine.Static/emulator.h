@@ -7,6 +7,18 @@
 
 #define REG64_DEFAULT 0xDEF
 
+// --- TODO Q&D
+struct emulation_snapshot
+{
+    uint64_t instruction_pointer;
+
+    uint64_t stack_pointer, base_pointer;
+    std::vector<uint8_t> stack_data;
+
+    std::map<x86_reg, uint64_t> register_values;
+};
+// ---
+
 class emulator
 {
     uc_engine* uc_;
@@ -47,8 +59,8 @@ public:
     TPL void mem_write(uint64_t address, T value, int index) const;
 
     // --- TODO Q&D
-    std::vector<uint8_t> get_stack() const;
-    void set_stack(std::vector<uint8_t> memory);
+    emulation_snapshot take_snapshot() const;
+    void reset(emulation_snapshot snapshot);
     // ---
 
     // Registers
@@ -68,47 +80,53 @@ public:
 
 private:
 
-    inline static const std::map<x86_reg, uint64_t> reg_scales =
+    void initialize_registers() const;
+
+    inline static const std::map<x86_reg, uint64_t> register_map =
     {
+        { X86_REG_RIP, UINT64_MAX },
+        { X86_REG_EIP, UINT32_MAX },
+        { X86_REG_IP, UINT16_MAX },
+
         { X86_REG_RAX, UINT64_MAX },
         { X86_REG_EAX, UINT32_MAX },
         { X86_REG_AX, UINT16_MAX },
         { X86_REG_AH, UINT8_MAX },
         { X86_REG_AL, UINT8_MAX },
-        
+
         { X86_REG_RBX, UINT64_MAX },
         { X86_REG_EBX, UINT32_MAX },
         { X86_REG_BX, UINT16_MAX },
         { X86_REG_BH, UINT8_MAX },
         { X86_REG_BL, UINT8_MAX },
-        
+
         { X86_REG_RCX, UINT64_MAX },
         { X86_REG_ECX, UINT32_MAX },
         { X86_REG_CX, UINT16_MAX },
         { X86_REG_CH, UINT8_MAX },
         { X86_REG_CL, UINT8_MAX },
-        
+
         { X86_REG_RDX, UINT64_MAX },
         { X86_REG_EDX, UINT32_MAX },
         { X86_REG_DX, UINT16_MAX },
         { X86_REG_DH, UINT8_MAX },
         { X86_REG_DL, UINT8_MAX },
-        
+
         { X86_REG_RSI, UINT64_MAX },
         { X86_REG_ESI, UINT32_MAX },
         { X86_REG_SI, UINT16_MAX },
         { X86_REG_SIL, UINT8_MAX },
-        
+
         { X86_REG_RDI, UINT64_MAX },
         { X86_REG_EDI, UINT32_MAX },
         { X86_REG_DI, UINT16_MAX },
         { X86_REG_DIL, UINT8_MAX },
-        
+
         { X86_REG_RBP, UINT64_MAX },
         { X86_REG_EBP, UINT32_MAX },
         { X86_REG_BP, UINT16_MAX },
         { X86_REG_BPL, UINT8_MAX },
-        
+
         { X86_REG_RSP, UINT64_MAX },
         { X86_REG_ESP, UINT32_MAX },
         { X86_REG_SP, UINT16_MAX },

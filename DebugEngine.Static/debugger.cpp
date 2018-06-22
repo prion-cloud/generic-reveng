@@ -189,23 +189,13 @@ int debugger::get_bytes(const uint64_t address, const size_t count, std::vector<
 }
 
 // --- TODO Q&D
-stack_representation debugger::get_stack() const
+emulation_snapshot debugger::take_snapshot() const
 {
-    stack_representation stack;
-
-    stack.sp = emulator_->reg_read<uint64_t>(X86_REG_RSP);
-    stack.bp = emulator_->reg_read<uint64_t>(X86_REG_RBP);
-
-    stack.memory = emulator_->get_stack();
-
-    return stack;
+    return emulator_->take_snapshot();
 }
-void debugger::set_stack(const stack_representation stack) const
+void debugger::reset(const emulation_snapshot snapshot) const
 {
-    emulator_->reg_write(X86_REG_RSP, stack.sp);
-    emulator_->reg_write(X86_REG_RBP, stack.bp);
-
-    emulator_->set_stack(stack.memory);
+    emulator_->reset(snapshot);
 }
 
 uint64_t debugger::image_base() const
