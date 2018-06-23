@@ -52,7 +52,7 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
 
     const auto snapshot = debugger->take_snapshot();
 
-    build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands));
+    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), node_map_, paths_);
 
     debugger->reset(snapshot);
 
@@ -64,14 +64,15 @@ traceback_x86 control_flow_graph_x86::find_traceback(const uint64_t address) con
     return node_map_.at(address)->traceback;
 }
 
-control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::vector<uint8_t> stop)
+control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, const uint64_t address, const std::vector<uint8_t> stop,
+    std::map<uint64_t, node*>& node_map, std::set<path>& paths)
 {
     const auto cur = new node;
 
     debugger->jump_to(address);
     cur->traceback = debugger->step_into();
 
-    node_map_.emplace(address, cur);
+    node_map.emplace(address, cur);
 
     if (cur->traceback.has_failed())
         log_event("FAIL", cur->traceback, true, FOREGROUND_RED | FOREGROUND_INTENSITY);
@@ -94,22 +95,22 @@ control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_pt
     }
     else next_addresses.push_back(debugger->next_instruction().address);
 
-    for (auto i = 0; i < next_addresses.size(); ++i)
+    for (unsigned i = 0; i < next_addresses.size(); ++i)
     {
         const auto next_address = next_addresses.at(i);
 
         node* next;
-        if (node_map_.find(next_address) == node_map_.end())
+        if (node_map.find(next_address) == node_map.end())
         {
             if (i > 0)
                 debugger->reset(snapshot);
 
-            next = build(debugger, next_address, stop);
+            next = build(debugger, next_address, stop, node_map, paths);
         }
         else
         {
             log_event("LOOP", cur->traceback, false, FOREGROUND_CYAN);
-            next = node_map_.at(next_address);
+            next = node_map.at(next_address);
         }
 
         cur->next.push_back(next);
