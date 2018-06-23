@@ -7,6 +7,3 @@
 [submodule "Bin-Unicorn"]
 	path = Bin-Unicorn
 	url = git@github.com:superbr4in/Bin-Unicorn.git
-[submodule "Catch2"]
-	path = Catch2
-	url = git@github.com:catchorg/Catch2.git
