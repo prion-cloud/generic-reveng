@@ -1,6 +1,5 @@
 #include "stdafx.h"
 
-int main()
-{
-    return 0;
-}
+#define CATCH_CONFIG_MAIN
+// ReSharper disable once CppUnusedIncludeDirective
+#include "catch.hpp"
