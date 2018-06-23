@@ -1,8 +1,7 @@
 #include "stdafx.h"
 
+#include "console.h"
 #include "control_flow_graph.h"
-
-static bool verbose = false;
 
 static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string string)
 {
@@ -32,13 +31,20 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
     return code;
 }
 
+static void log_occurence(const uint16_t color, const unsigned basic_block_id, const std::string name, const traceback_x86& traceback, const bool instruction)
+{
+    std::cout << basic_block_id << "[" << colorize(color) << name << decolorize << "] " << std::hex << std::uppercase << traceback->address;
+
+    if (instruction)
+        std::cout << " " << traceback->str_mnemonic << " " << traceback->str_operands;
+
+    std::cout << std::endl;
+}
+
 control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, const uint64_t address, const std::vector<uint8_t> stop,
     std::map<uint64_t, node*>& node_map, memory_monitor& monitor, uint64_t& stop_address)
 {
     node_map.emplace(address, this);
-
-    if (verbose)
-        std::cout << std::hex << std::uppercase << address << std::endl;
 
     debugger->jump_to(address);
     traceback = debugger->step_into();
@@ -46,16 +52,11 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
     monitor.inspect_access(traceback);
 
     if (traceback.has_failed())
-    {
-        std::cout << "Error: " << std::hex << std::uppercase << address << " "
-                  << traceback->str_mnemonic  << " " << traceback->str_operands << std::endl;
-    }
+        log_occurence(FOREGROUND_RED | FOREGROUND_INTENSITY, 0, "FAIL", traceback, true);
 
     if (traceback->code == stop)
     {
-        if (verbose)
-            std::cout << "Stop" << std::endl;
-
+        log_occurence(FOREGROUND_GREEN, 0, "STOP", traceback, false);
         stop_address = traceback->address;
         return;
     }
@@ -64,9 +65,7 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
     emulation_snapshot snapshot { };
     if (traceback->type == instruction_type::jump && traceback->is_conditional)
     {
-        if (verbose)
-            std::cout << "Jump" << std::endl;
-
+        log_occurence(FOREGROUND_YELLOW, 0, "FORK", traceback, false);
         next_addresses.push_back(address + traceback->code.size());
         next_addresses.push_back(traceback->operands.at(0).imm);
 
@@ -88,9 +87,7 @@ control_flow_graph_x86::node::node(const std::shared_ptr<debugger> debugger, con
         }
         else
         {
-            if (verbose)
-                std::cout << "Loop: " << std::hex << std::uppercase << next_address << std::endl;
-
+            log_occurence(FOREGROUND_CYAN, 0, "LOOP", traceback, false);
             next_node = node_map.at(next_address);
         }
 
@@ -118,8 +115,7 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger> d
 
     debugger->reset(snapshot);
 
-    std::cout << std::hex << std::uppercase << stop_address_
-              << " (" << std::dec << node_map_.size() << ")" << std::endl;
+    std::cout << "(" << std::dec << node_map_.size() << ")" << std::endl;
 }
 
 traceback_x86 control_flow_graph_x86::find_traceback(const uint64_t address) const

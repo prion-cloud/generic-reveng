@@ -1,5 +1,6 @@
 #include "stdafx.h"
 
+#include "console.h"
 #include "control_flow_graph.h"
 
 #define FILE_1 "text1.dis"
@@ -8,7 +9,7 @@
 static std::vector<uint64_t> addresses =
 {
 
-    // (91) Normal
+    // (82) Successful
     0x7FF7E4C59000,
     0x7FF7E4E2DD4C,
     0x7FF7E4E2EBDA,
@@ -26,13 +27,10 @@ static std::vector<uint64_t> addresses =
     0x7FF7E4E79064,
     0x7FF7E4E7A7E3,
     0x7FF7E4E7B544,
-    0x7FF7E4E804FF,
     0x7FF7E4E81252,
     0x7FF7E4E83FE1,
     0x7FF7E4E88A77,
     0x7FF7E4E8BD57,
-    0x7FF7E4E8E482,
-    0x7FF7E4E8F086,
     0x7FF7E4E90189,
     0x7FF7E4E92750,
     0x7FF7E4EABFBA,
@@ -40,14 +38,12 @@ static std::vector<uint64_t> addresses =
     0x7FF7E4EB2228,
     0x7FF7E4EE75A5,
     0x7FF7E4F08493,
-    0x7FF7E4F25A32,
     0x7FF7E4F2EBC3,
     0x7FF7E4F2F773,
     0x7FF7E4F3EEB9,
     0x7FF7E4F4438A,
     0x7FF7E4F4443A,
     0x7FF7E4F46D6B,
-    0x7FF7E4F4A1F1,
     0x7FF7E4F58D0E,
     0x7FF7E4F59D44,
     0x7FF7E4F64311,
@@ -80,11 +76,9 @@ static std::vector<uint64_t> addresses =
     0x7FF7E50667F9,
     0x7FF7E5069E9B,
     0x7FF7E506D951,
-    0x7FF7E506EF56,
     0x7FF7E50AADBC,
     0x7FF7E50ACC94,
     0x7FF7E50AF887,
-    0x7FF7E50B7020,
     0x7FF7E50B9764,
     0x7FF7E50BB9A7,
     0x7FF7E50BDAF5,
@@ -93,30 +87,37 @@ static std::vector<uint64_t> addresses =
     0x7FF7E50BF3DC,
     0x7FF7E50DAB37,
     0x7FF7E50DB892,
-    0x7FF7E50DD4E2,
     0x7FF7E50E3B7F,
     0x7FF7E50FF016,
     0x7FF7E50FFB14,
     0x7FF7E50FFE8B,
-    0x7FF7E510058B,
     0x7FF7E51009E5,
 
 /*
-    // (1) BUG Emulation error
+    // (1) BUG: Emulation error
     0x7FF7E50EA65F,
 */
 /*
-    // (7) BUG Exceptions
+    // (16) BUG: Exceptions
     0x7FF7E4E30D06,
+    0x7FF7E4E804FF,
+    0x7FF7E4E8E482,
+    0x7FF7E4E8F086,
     0x7FF7E4EAF4D8,
     0x7FF7E4EBA94C,
+    0x7FF7E4F25A32,
     0x7FF7E4F32F71,
+    0x7FF7E4F4A1F1,
     0x7FF7E4FAB08F,
     0x7FF7E4FE4E12,
     0x7FF7E500BD6C,
+    0x7FF7E506EF56,
+    0x7FF7E50B7020,
+    0x7FF7E50DD4E2,
+    0x7FF7E510058B,
 */
 /*
-    // (53) BUG CCCCCCCC...
+    // (53) BUG: CCCCCCCC...
     0x7FF7E4E2E970,
     0x7FF7E4E2FD58,
     0x7FF7E4E367C0,
@@ -198,6 +199,8 @@ public:
 
 int main(const int argc, char* argv[])
 {
+    h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+
     if (argc != 2)
     {
         std::cerr << "Invalid number of arguments." << std::endl;
@@ -238,7 +241,7 @@ int main(const int argc, char* argv[])
     }
     catch (std::runtime_error err)
     {
-        std::cerr << std::endl << err.what() << std::endl;
+        std::cerr << colorize(FOREGROUND_RED) << err.what() << decolorize << std::endl;
         return EXIT_FAILURE;
     }
 
