@@ -19,20 +19,20 @@ traceback_x86::traceback_x86(instruction_x86 instruction, const uc_err error,
 
     switch (instruction_.type)
     {
-    case instruction_type::push:
+    case ins_push:
         address_write = reg_read_func(X86_REG_RSP);
         break;
-    case instruction_type::pop:
+    case ins_pop:
         address_read = reg_read_func(X86_REG_RSP);
         break;
-    case instruction_type::move:
-        if (op0.type == operand_type::mem)
+    case ins_move:
+        if (op0.type == op_memory)
         {
-            address_write = resolve_address(op0.mem, reg_read_func);
+            address_write = resolve_address(std::get<op_memory>(op0.value), reg_read_func);
             //if () TODO: XCHG
         }
-        if (op1.type == operand_type::mem)
-            address_read = resolve_address(op1.mem, reg_read_func);
+        if (op1.type == op_memory)
+            address_read = resolve_address(std::get<op_memory>(op1.value), reg_read_func);
     default:;
     }
 

@@ -164,8 +164,8 @@ int debugger::take()
     const auto jump = next_instruction_->jump;
     ERROR_IF(!jump.has_value());  
 */
-    ERROR_IF(next_instruction_.type != instruction_type::jump);
-    return jump_to(next_instruction_.operands.at(0).imm);
+    ERROR_IF(next_instruction_.type != ins_jump);
+    return jump_to(std::get<op_immediate>(next_instruction_.operands.at(0).value));
 }
 
 bool debugger::is_debug_point(const uint64_t address) const

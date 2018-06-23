@@ -84,11 +84,11 @@ control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_pt
 
     std::vector<uint64_t> next_addresses;
     emulation_snapshot snapshot { };
-    if (cur->traceback->type == instruction_type::jump && cur->traceback->is_conditional)
+    if (cur->traceback->type == ins_jump && cur->traceback->is_conditional)
     {
         log_event("FORK", cur->traceback, false, FOREGROUND_YELLOW);
         next_addresses.push_back(address + cur->traceback->code.size());
-        next_addresses.push_back(cur->traceback->operands.at(0).imm);
+        next_addresses.push_back(std::get<op_immediate>(cur->traceback->operands.at(0).value));
 
         snapshot = debugger->take_snapshot();
     }

@@ -2,35 +2,29 @@
 
 #include "../Bin-Capstone/capstone.h"
 
-enum class operand_type
+enum operand_type
 {
-    reg,
-    imm,
-    mem,
-    flp
+    op_register,
+    op_immediate,
+    op_memory,
+    op_float
 };
-enum class instruction_type
+enum instruction_type
 {
-    unknown,
-    jump,
-    push,
-    pop,
-    move,
-    conditon,
-    arithmetic
+    ins_unknown,
+    ins_jump,
+    ins_push,
+    ins_pop,
+    ins_move,
+    ins_conditon,
+    ins_arithmetic
 };
 
 struct operand_x86
 {
     operand_type type { };
 
-    union
-    {
-		x86_reg reg { };
-		int64_t imm { };
-		x86_op_mem mem { };
-		double flp { };
-	};
+    std::variant<x86_reg, int64_t, x86_op_mem, double> value;
     
     operand_x86() = default;
     operand_x86(cs_x86_op cs_op);
