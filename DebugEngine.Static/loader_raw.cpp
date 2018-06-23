@@ -55,13 +55,14 @@ TPL std::vector<uint8_t> to_bytes(T value)
 
     const auto size = sizeof(T);
 
-    for (auto i = 0; i < size; ++i)
+    bytes.reserve(size);
+    for (unsigned i = 0; i < size; ++i)
         bytes.push_back(static_cast<uint8_t>(value >> i * 8));
 
     return bytes;
 }
 
-std::vector<uint8_t> loader_raw::create_aid(const uint16_t machine, const uint64_t base_address, const std::vector<uint8_t> bytes)
+std::vector<uint8_t> loader_raw::create_aid(const uint16_t machine, const uint64_t base_address, const std::vector<uint8_t>& bytes)
 {
     std::vector<uint8_t> aid;
 

@@ -2,16 +2,16 @@
 
 #include "traceback.h"
 
-static uint64_t resolve_address(x86_op_mem op_mem, const std::function<uint64_t(x86_reg)> reg_read_func)
+static uint64_t resolve_address(x86_op_mem op_mem, const std::function<uint64_t(x86_reg)>& reg_read_func)
 {
     return reg_read_func(static_cast<x86_reg>(op_mem.base)) + reg_read_func(static_cast<x86_reg>(op_mem.index)) * op_mem.scale + op_mem.disp;
 }
 
-traceback_x86::traceback_x86(const instruction_x86 instruction, const uc_err error,
-    const std::function<uint64_t(x86_reg)> reg_read_func, const std::function<uint64_t(uint64_t)> mem_read_func)
-    : instruction_(instruction), error_(error)
+traceback_x86::traceback_x86(instruction_x86 instruction, const uc_err error,
+    const std::function<uint64_t(x86_reg)>& reg_read_func, const std::function<uint64_t(uint64_t)>& mem_read_func)
+    : instruction_(std::move(instruction)), error_(error)
 {
-    const auto op0 = instruction_.operands.size() > 0 ? instruction_.operands.at(0) : operand_x86();
+    const auto op0 = !instruction_.operands.empty() ? instruction_.operands.at(0) : operand_x86();
     const auto op1 = instruction_.operands.size() > 1 ? instruction_.operands.at(1) : operand_x86();
 
     std::optional<uint64_t> address_write;

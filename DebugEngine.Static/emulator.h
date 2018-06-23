@@ -10,9 +10,9 @@
 // --- TODO Q&D
 struct emulation_snapshot
 {
-    uint64_t instruction_pointer;
+    uint64_t instruction_pointer { };
 
-    uint64_t stack_pointer, base_pointer;
+    uint64_t stack_pointer { }, base_pointer { };
     std::vector<uint8_t> stack_data;
 
     std::map<x86_reg, uint64_t> register_values;
@@ -21,7 +21,7 @@ struct emulation_snapshot
 
 class emulator
 {
-    uc_engine* uc_;
+    uc_engine* uc_ { };
 
     std::set<uc_mem_region> mem_regions_;
 
@@ -44,7 +44,7 @@ public:
 
     // Memory
 
-    void mem_map(uint64_t address, std::vector<uint8_t> buffer, bool map = true/*TODO Q&D*/);
+    void mem_map(uint64_t address, const std::vector<uint8_t>& buffer, bool map = true/*TODO Q&D*/);
 
     bool mem_is_mapped(uint64_t address) const;
 

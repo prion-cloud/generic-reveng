@@ -2,7 +2,7 @@
 
 #include "debugger.h"
 
-debugger::debugger(loader& loader, const std::vector<uint8_t> code)
+debugger::debugger(loader& loader, const std::vector<uint8_t>& code)
     : loader_(loader)
 {
     const auto machine = loader_.load(code);
@@ -150,7 +150,7 @@ int debugger::get_raw(const uint64_t address, uint64_t& raw_address, size_t& sec
 {
     raw_address = loader_.to_raw_address(address, section_index, section_name);
 
-    ERROR_IF(raw_address == -1);
+    ERROR_IF(raw_address == UINT64_MAX);
     return RES_SUCCESS;
 }
 
@@ -179,7 +179,7 @@ int debugger::get_bytes(const uint64_t address, const size_t count, std::vector<
 
     const auto start_vec_it = byte_trace_.begin() + byte_trace_pointer_.at(address);
 
-    for (auto i = 0; i < count; ++i)
+    for (unsigned i = 0; i < count; ++i)
     {
         const auto cur_vec_it = start_vec_it + i;
         bytes.insert(bytes.end(), cur_vec_it->begin(), cur_vec_it->end());
@@ -193,7 +193,7 @@ emulation_snapshot debugger::take_snapshot() const
 {
     return emulator_->take_snapshot();
 }
-void debugger::reset(const emulation_snapshot snapshot) const
+void debugger::reset(const emulation_snapshot& snapshot) const
 {
     emulator_->reset(snapshot);
 }

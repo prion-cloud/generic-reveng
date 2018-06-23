@@ -22,14 +22,14 @@ enum class instruction_type
 
 struct operand_x86
 {
-    operand_type type;
+    operand_type type { };
 
     union
     {
-		x86_reg reg;
-		int64_t imm;
-		x86_op_mem mem;
-		double flp;
+		x86_reg reg { };
+		int64_t imm { };
+		x86_op_mem mem { };
+		double flp { };
 	};
     
     operand_x86() = default;
@@ -37,12 +37,12 @@ struct operand_x86
 };
 struct instruction_x86
 {
-    x86_insn id;
+    x86_insn id { };
 
-    instruction_type type;
-    bool is_conditional;
+    instruction_type type { };
+    bool is_conditional { };
 
-    uint64_t address;
+    uint64_t address { };
 
     std::vector<uint8_t> code;
 

@@ -58,9 +58,9 @@ emulator::~emulator()
 
 // Memory
 
-void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer, const bool map /*TODO Q&D mem_write*/)
+void emulator::mem_map(const uint64_t address, const std::vector<uint8_t>& buffer, const bool map /*TODO Q&D mem_write*/)
 {
-    if (buffer.size() == 0)
+    if (buffer.empty())
         return;
 
     if (map)

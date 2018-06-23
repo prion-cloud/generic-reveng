@@ -34,7 +34,7 @@ class debugger
 public:
     
     // Uses a loader to make some machine code ready for debugging.
-    explicit debugger(loader& loader, std::vector<uint8_t> code);
+    explicit debugger(loader& loader, const std::vector<uint8_t>& code);
 
     instruction_x86 next_instruction() const;
 
@@ -49,7 +49,7 @@ public:
     int remove_debug_point(uint64_t address);
 
     int jump_to(uint64_t address);
-    int get_raw(uint64_t virtual_address, uint64_t& raw_address, size_t& section_index, std::string& section_name) const;
+    int get_raw(uint64_t address, uint64_t& raw_address, size_t& section_index, std::string& section_name) const;
 
     int skip();
     int take();
@@ -60,7 +60,7 @@ public:
 
     // --- TODO Q&D
     emulation_snapshot take_snapshot() const;
-    void reset(emulation_snapshot snapshot) const;
+    void reset(const emulation_snapshot& snapshot) const;
 
     uint64_t image_base() const;
     std::vector<code_section> sections() const;

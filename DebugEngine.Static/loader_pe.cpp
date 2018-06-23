@@ -3,7 +3,7 @@
 #include "loader.h"
 
 loader_pe::header_pe::header_pe() = default;
-loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
+loader_pe::header_pe::header_pe(const std::vector<uint8_t>& buffer)
 {
     auto it = buffer.begin();
 
