@@ -128,7 +128,7 @@ emulation_snapshot emulator::take_snapshot() const
     snapshot.stack_data = std::vector<uint8_t>(stack_size_);
     mem_read(stack_top_, snapshot.stack_data);
 
-    for (const auto reg : register_map)
+    for (const auto reg : register_map_)
     {
         switch (reg.first)
         {
@@ -193,7 +193,7 @@ int emulator::emulate_once() const
 
 void emulator::initialize_registers() const
 {
-    for (const auto reg : register_map)
+    for (const auto reg : register_map_)
     {
         switch (reg.first)
         {

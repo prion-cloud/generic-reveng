@@ -36,8 +36,8 @@ TPL T emulator::reg_read(x86_reg regid) const
 
     auto scale = max_scale_;
 
-    if (register_map.find(regid) != register_map.end())
-        scale = register_map.at(regid);
+    if (register_map_.find(regid) != register_map_.end())
+        scale = register_map_.at(regid);
 
     return value & scale;
 }

@@ -82,7 +82,7 @@ private:
 
     void initialize_registers() const;
 
-    inline static const std::map<x86_reg, uint64_t> register_map =
+    const std::map<x86_reg, uint64_t> register_map_ =
     {
         { X86_REG_RIP, UINT64_MAX },
         { X86_REG_EIP, UINT32_MAX },
