@@ -186,14 +186,14 @@ public:
     std::vector<control_flow_graph_x86> inspect_framed(std::vector<uint64_t> addresses) const
     {
         std::vector<control_flow_graph_x86> cfgs;
-        for (auto i = 0; i < 2; ++i)
+        for (unsigned i = 0; i < addresses.size(); ++i)
         {
             const auto address = addresses.at(i);
 
             std::cout << std::setw(7) << std::left << "#" + std::to_string(i + 1) + ":"
                       << std::hex << std::uppercase << address << std::endl;
 
-            cfgs.push_back(control_flow_graph_x86(debugger_, address));
+            cfgs.emplace_back(debugger_, address);
 
             std::cout << std::endl;
         }
@@ -244,7 +244,7 @@ int main(const int argc, char* argv[])
 
         const auto graphs = deobfuscator_x86(loader, code).inspect_framed(addresses);
     }
-    catch (std::runtime_error err)
+    catch (std::runtime_error& err)
     {
         std::cerr << colorize(FOREGROUND_RED) << err.what() << decolorize << std::endl;
         return EXIT_FAILURE;

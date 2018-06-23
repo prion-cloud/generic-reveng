@@ -3,7 +3,7 @@
 #include "console.h"
 #include "control_flow_graph.h"
 
-static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string string)
+static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string& string)
 {
     const std::string var_code = "v1";
     const std::string var_length = "v2";
@@ -31,7 +31,7 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
     return code;
 }
 
-static void log_event(const std::string name, const traceback_x86& traceback, const bool full, const uint16_t color)
+static void log_event(const std::string& name, const traceback_x86& traceback, const bool full, const uint16_t color)
 {
     std::cout << "[" << colorize(color) << name << decolorize << "] " << std::hex << std::uppercase << traceback->address;
 
@@ -41,7 +41,7 @@ static void log_event(const std::string name, const traceback_x86& traceback, co
     std::cout << std::endl;
 }
 
-control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger> debugger, const uint64_t root_address)
+control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, const uint64_t root_address)
 {
     const auto root_instruction = debugger->disassemble_at(root_address);
     if (root_instruction.str_mnemonic != "push")

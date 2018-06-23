@@ -20,7 +20,7 @@ class control_flow_graph_x86
 
 public:
 
-    control_flow_graph_x86(std::shared_ptr<debugger> debugger, uint64_t root_address);
+    control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, uint64_t root_address);
 
     traceback_x86 find_traceback(uint64_t address) const;
 
