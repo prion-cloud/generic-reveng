@@ -1,28 +1,23 @@
 #pragma once
 
-#include "memory_monitor.h"
-
 class control_flow_graph_x86
 {
     struct node
     {
-        traceback_x86 traceback;
+        instruction_x86 instruction;
 
-        std::vector<node*> previous;
-        std::vector<node*> next;
+        std::vector<node*> previous { };
+        std::vector<node*> next { };
     };
 
-    node* root_;
+    node* root_ { };
 
-    std::map<uint64_t, node*> node_map_;
+    std::map<uint64_t, node*> node_map_ { };
 
-    memory_monitor monitor_;
 
 public:
 
     control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, uint64_t root_address);
-
-    traceback_x86 find_traceback(uint64_t address) const;
 
 private:
 

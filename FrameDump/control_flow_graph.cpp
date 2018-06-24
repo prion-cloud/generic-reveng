@@ -31,12 +31,12 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
     return code;
 }
 
-static void log_event(const std::string& name, const traceback_x86& traceback, const bool full, const uint16_t color)
+static void log_event(const std::string& name, const instruction_x86& instruction, const bool full, const uint16_t color = FOREGROUND_WHITE)
 {
-    std::cout << "[" << colorize(color) << name << decolorize << "] " << std::hex << std::uppercase << traceback->address;
+    std::cout << "[" << colorize(color) << name << decolorize << "] " << std::hex << std::uppercase << instruction.address;
 
     if (full)
-        std::cout << " " << traceback->str_mnemonic << " " << traceback->str_operands;
+        std::cout << " " << instruction.str_mnemonic << " " << instruction.str_operands;
 
     std::cout << std::endl;
 }
@@ -59,37 +59,31 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
     std::cout << "(" << std::dec << node_map_.size() << ")" << std::endl;
 }
 
-traceback_x86 control_flow_graph_x86::find_traceback(const uint64_t address) const
-{
-    return node_map_.at(address)->traceback;
-}
-
 control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, const uint64_t address, const std::vector<uint8_t> stop,
     std::map<uint64_t, node*>& node_map, std::set<path>& paths)
 {
     const auto cur = new node;
-
-    debugger->jump_to(address);
-    cur->traceback = debugger->step_into();
-
     node_map.emplace(address, cur);
 
-    if (cur->traceback.has_failed())
-        log_event("FAIL", cur->traceback, true, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    debugger->jump_to(address);
+    cur->instruction = debugger->next_instruction();
 
-    if (cur->traceback->code == stop)
+    if (debugger->step_into() != UC_ERR_OK)
+        log_event("FAIL", cur->instruction, true, FOREGROUND_RED | FOREGROUND_INTENSITY);
+
+    if (cur->instruction.code == stop)
     {
-        log_event("STOP", cur->traceback, false, FOREGROUND_GREEN);
+        log_event("STOP", cur->instruction, false, FOREGROUND_GREEN);
         return cur;
     }
 
     std::vector<uint64_t> next_addresses;
     emulation_snapshot snapshot { };
-    if (cur->traceback->type == ins_jump && cur->traceback->is_conditional)
+    if (cur->instruction.type == ins_jump && cur->instruction.is_conditional)
     {
-        log_event("FORK", cur->traceback, false, FOREGROUND_YELLOW);
-        next_addresses.push_back(address + cur->traceback->code.size());
-        next_addresses.push_back(std::get<op_immediate>(cur->traceback->operands.at(0).value));
+        log_event("FORK", cur->instruction, false, FOREGROUND_YELLOW);
+        next_addresses.push_back(address + cur->instruction.code.size());
+        next_addresses.push_back(std::get<op_immediate>(cur->instruction.operands.at(0).value));
 
         snapshot = debugger->take_snapshot();
     }

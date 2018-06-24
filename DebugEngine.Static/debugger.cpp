@@ -18,47 +18,7 @@ instruction_x86 debugger::next_instruction() const
     return next_instruction_;
 }
 
-traceback_x86 debugger::run(const size_t count)
-{
-    traceback_x86 traceback;
-
-    size_t i = 0;
-
-    bool cont;
-    do
-    {
-        traceback = step_into();
-
-        cont = true;
-
-        const auto address = next_instruction_.address;
-        if (debug_points_.find(address) != debug_points_.end())
-        {
-            const auto dp = debug_points_.at(address);
-
-            switch(dp)
-            {
-            case dp_break:
-                cont = false;
-                break;
-            case dp_skip:
-                skip();
-                break;
-            case dp_take:
-                take();
-                break;
-            }
-        }
-
-        if (count > 0 && ++i >= count)
-            break;
-    }
-    while (cont);
-
-    return traceback;
-}
-
-traceback_x86 debugger::step_into()
+uc_err debugger::step_into()
 {
     /*
     if (byte_trace_pointer_.find(address) == byte_trace_pointer_.end())
@@ -70,27 +30,11 @@ traceback_x86 debugger::step_into()
 
     if (global_flags.hot)
         ++counter_[address];
-    */
-/* TODO
+        
+    TODO
     for (const auto reg : next_instruction_->registers)
         trace_entry.old_registers.emplace(reg.first, emulator_->reg_read<uint64_t>(reg.first));
-*/
 
-    traceback_x86 traceback(next_instruction_, static_cast<uc_err>(emulator_->emulate_once()),
-        [this](const x86_reg reg)
-        {
-            if (reg == X86_REG_INVALID)
-                return uint64_t { 0xBAD };
-            return emulator_->reg_read<uint64_t>(reg);
-        },
-        [this](const uint64_t address)
-        {
-            if (!emulator_->mem_is_mapped(address))
-                return uint64_t { 0xBAD };
-            return emulator_->mem_read<uint64_t>(address);
-        });
-
-    /*
     switch (live.error)
     {
     case UC_ERR_READ_UNMAPPED:
@@ -103,18 +47,18 @@ traceback_x86 debugger::step_into()
         }
     default:;
     }
-    */
-
-/* TODO
+    
+    TODO
     for (const auto reg : next_instruction_->registers)
         trace_entry.new_registers.emplace(reg.second, emulator_->reg_read<uint64_t>(reg.first));
 */
+    const auto err = static_cast<uc_err>(emulator_->emulate_once());
 
-    if (traceback.has_failed() && global_flags.ugly)
+    if (err && global_flags.ugly)
         skip();
     else next_instruction_ = disassemble_at(emulator_->address());
 
-    return traceback;
+    return err;
 }
 
 int debugger::step_back()

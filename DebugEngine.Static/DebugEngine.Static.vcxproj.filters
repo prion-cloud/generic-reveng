@@ -39,9 +39,6 @@
     <ClInclude Include="instruction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="traceback.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -66,9 +63,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="instruction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="traceback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
