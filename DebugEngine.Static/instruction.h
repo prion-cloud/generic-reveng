@@ -27,7 +27,7 @@ struct operand_x86
     operand_type type { };
 
     std::variant<x86_reg, int64_t, x86_op_mem, double> value;
-    
+
     operand_x86() = default;
     operand_x86(cs_x86_op cs_op);
 };
@@ -50,4 +50,6 @@ struct instruction_x86
 
     instruction_x86() = default;
     instruction_x86(cs_insn cs_insn);
+
+    std::string to_string(bool full) const;
 };

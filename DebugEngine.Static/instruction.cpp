@@ -34,7 +34,7 @@ instruction_x86::instruction_x86(const cs_insn cs_insn)
     inspect_type(id, type, is_conditional);
 
     address = cs_insn.address;
-    
+
     code = std::vector<uint8_t>(cs_insn.bytes, cs_insn.bytes + cs_insn.size);
 
     str_mnemonic = std::string(cs_insn.mnemonic, cs_insn.mnemonic + std::strlen(cs_insn.mnemonic));
@@ -43,6 +43,28 @@ instruction_x86::instruction_x86(const cs_insn cs_insn)
     operands = std::vector<operand_x86>(cs_insn.detail->x86.operands, cs_insn.detail->x86.operands + cs_insn.detail->x86.op_count);
 
     is_volatile = type == ins_return || type == ins_jump && operands.at(0).type != op_immediate;
+}
+
+std::string instruction_x86::to_string(const bool full) const
+{
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << address;
+
+    if (full)
+    {
+        ss << " " << str_mnemonic;
+        if (!str_operands.empty())
+        {
+            ss << " ";
+
+            const auto str_op = str_operands;
+            if (operands.size() == 1 && operands.front().type == op_immediate)
+                ss << std::hex << std::uppercase << std::get<op_immediate>(operands.front().value);
+            else ss << str_operands;
+        }
+    }
+
+    return ss.str();
 }
 
 static void inspect_type(const x86_insn id, instruction_type& type, bool& is_conditional)
