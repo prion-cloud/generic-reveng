@@ -22,5 +22,5 @@ public:
 private:
 
     static node* build(const std::shared_ptr<debugger>& debugger, uint64_t address, std::vector<uint8_t> stop,
-        std::map<uint64_t, node*>& node_map, std::set<path>& paths);
+        std::map<uint64_t, node*>& node_map);
 };

@@ -52,7 +52,7 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
 
     const auto snapshot = debugger->take_snapshot();
 
-    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), node_map_, paths_);
+    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), node_map_);
 
     debugger->reset(snapshot);
 
@@ -60,7 +60,7 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
 }
 
 control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, const uint64_t address, const std::vector<uint8_t> stop,
-    std::map<uint64_t, node*>& node_map, std::set<path>& paths)
+    std::map<uint64_t, node*>& node_map)
 {
     const auto cur = new node;
     node_map.emplace(address, cur);
@@ -102,7 +102,7 @@ control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_pt
             if (i > 0)
                 debugger->reset(snapshot);
 
-            next = build(debugger, next_address, stop, node_map, paths);
+            next = build(debugger, next_address, stop, node_map);
         }
         else
         {
