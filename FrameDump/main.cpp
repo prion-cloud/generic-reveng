@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "console.h"
 #include "control_flow_graph.h"
+#include "display.h"
 
 #define FILE_1 "text1.dis"
 #define FILE_2 "text2.dis"
@@ -204,7 +204,7 @@ public:
 
 int main(const int argc, char* argv[])
 {
-    h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+    dsp::h_console = GetStdHandle(STD_OUTPUT_HANDLE);
 
     if (argc != 2)
     {
@@ -246,7 +246,7 @@ int main(const int argc, char* argv[])
     }
     catch (std::runtime_error& err)
     {
-        std::cerr << colorize(FOREGROUND_RED) << err.what() << decolorize << std::endl;
+        std::cerr << dsp::colorize(FOREGROUND_RED) << err.what() << dsp::decolorize << std::endl;
         return EXIT_FAILURE;
     }
 

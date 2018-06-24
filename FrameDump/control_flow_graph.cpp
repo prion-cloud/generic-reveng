@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "console.h"
 #include "control_flow_graph.h"
+#include "display.h"
 
 static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string& string)
 {
@@ -33,7 +33,7 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
 
 static void log_event(const std::string& name, const instruction_x86& instruction, const bool full, const uint16_t color = FOREGROUND_WHITE)
 {
-    std::cout << "[" << colorize(color) << name << decolorize << "] " << std::hex << std::uppercase << instruction.address;
+    std::cout << "[" << dsp::colorize(color) << name << dsp::decolorize << "] " << std::hex << std::uppercase << instruction.address;
 
     if (full)
         std::cout << " " << instruction.str_mnemonic << " " << instruction.str_operands;

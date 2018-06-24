@@ -20,7 +20,7 @@
     <ClInclude Include="data_flow_tree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="console.h">
+    <ClInclude Include="display.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -37,7 +37,7 @@
     <ClCompile Include="data_flow_tree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="console.cpp">
+    <ClCompile Include="display.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
