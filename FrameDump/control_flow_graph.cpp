@@ -95,6 +95,9 @@ control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_pt
     }
     else next_addresses.push_back(debugger->next_instruction().address);
 
+    if (cur->instruction.is_volatile)
+        log_event("VOLA", cur->instruction, true);
+
     for (unsigned i = 0; i < next_addresses.size(); ++i)
     {
         const auto next_address = next_addresses.at(i);

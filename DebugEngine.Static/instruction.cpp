@@ -2,7 +2,7 @@
 
 #include "instruction.h"
 
-static void inspect(x86_insn id, instruction_type& type, bool& is_conditional);
+static void inspect_type(x86_insn id, instruction_type& type, bool& is_conditional);
 
 operand_x86::operand_x86(const cs_x86_op cs_op)
 {
@@ -29,8 +29,9 @@ operand_x86::operand_x86(const cs_x86_op cs_op)
 }
 instruction_x86::instruction_x86(const cs_insn cs_insn)
 {
-    inspect(id = static_cast<x86_insn>(cs_insn.id),
-        type, is_conditional);
+    id = static_cast<x86_insn>(cs_insn.id);
+
+    inspect_type(id, type, is_conditional);
 
     address = cs_insn.address;
     
@@ -40,9 +41,11 @@ instruction_x86::instruction_x86(const cs_insn cs_insn)
     str_operands = std::string(cs_insn.op_str, cs_insn.op_str + std::strlen(cs_insn.op_str));
 
     operands = std::vector<operand_x86>(cs_insn.detail->x86.operands, cs_insn.detail->x86.operands + cs_insn.detail->x86.op_count);
+
+    is_volatile = type == ins_return || type == ins_jump && operands.at(0).type != op_immediate;
 }
 
-static void inspect(const x86_insn id, instruction_type& type, bool& is_conditional)
+static void inspect_type(const x86_insn id, instruction_type& type, bool& is_conditional)
 {
     type = ins_unknown;
     is_conditional = false;
@@ -70,27 +73,6 @@ static void inspect(const x86_insn id, instruction_type& type, bool& is_conditio
     case X86_INS_JMP:
         type = ins_jump;
         break;
-    case X86_INS_CALL:
-    case X86_INS_PUSH:
-    case X86_INS_PUSHAL:
-    case X86_INS_PUSHAW:
-    case X86_INS_PUSHF:
-    case X86_INS_PUSHFD:
-    case X86_INS_PUSHFQ:
-        type = ins_push;
-        break;
-    case X86_INS_POP:
-    case X86_INS_POPAL:
-    case X86_INS_POPAW:
-    case X86_INS_POPCNT:
-    case X86_INS_POPF:
-    case X86_INS_POPFD:
-    case X86_INS_POPFQ:
-    case X86_INS_RET:
-    case X86_INS_RETF:
-    case X86_INS_RETFQ:
-        type = ins_pop;
-        break;
     case X86_INS_CMOVA:
     case X86_INS_CMOVAE:
     case X86_INS_CMOVB:
@@ -113,6 +95,31 @@ static void inspect(const x86_insn id, instruction_type& type, bool& is_conditio
     case X86_INS_MOVUPD:
     case X86_INS_XCHG:
         type = ins_move;
+        break;
+    case X86_INS_PUSH:
+    case X86_INS_PUSHAL:
+    case X86_INS_PUSHAW:
+    case X86_INS_PUSHF:
+    case X86_INS_PUSHFD:
+    case X86_INS_PUSHFQ:
+        type = ins_push;
+        break;
+    case X86_INS_POP:
+    case X86_INS_POPAL:
+    case X86_INS_POPAW:
+    case X86_INS_POPCNT:
+    case X86_INS_POPF:
+    case X86_INS_POPFD:
+    case X86_INS_POPFQ:
+        type = ins_pop;
+        break;
+    case X86_INS_CALL:
+        type = ins_call;
+        break;
+    case X86_INS_RET:
+    case X86_INS_RETF:
+    case X86_INS_RETFQ:
+        type = ins_return;
         break;
     case X86_INS_CMP:
     case X86_INS_TEST:

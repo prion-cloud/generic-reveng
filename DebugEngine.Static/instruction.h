@@ -13,9 +13,11 @@ enum instruction_type
 {
     ins_unknown,
     ins_jump,
+    ins_move,
     ins_push,
     ins_pop,
-    ins_move,
+    ins_call,
+    ins_return,
     ins_conditon,
     ins_arithmetic
 };
@@ -35,6 +37,7 @@ struct instruction_x86
 
     instruction_type type { };
     bool is_conditional { };
+    bool is_volatile { };
 
     uint64_t address { };
 
