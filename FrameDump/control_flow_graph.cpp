@@ -106,7 +106,7 @@ control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_pt
         }
         else
         {
-            log_event("LOOP", cur->traceback, false, FOREGROUND_CYAN);
+            log_event("MERG", cur->instruction, false, FOREGROUND_MAGENTA | FOREGROUND_INTENSITY);
             next = node_map.at(next_address);
         }
 
