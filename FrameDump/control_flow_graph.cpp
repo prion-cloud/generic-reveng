@@ -61,7 +61,9 @@ std::string control_flow_graph_x86::block::to_string() const
 
     const auto width = last_string.size();
 
-    ss << CHAR_ID << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(instructions.size()) + ")" << eu;
+    const auto padding = 1;
+
+    ss << std::string(padding, ' ') << CHAR_ID << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(instructions.size()) + ")" << eu;
     for (unsigned i = 0; i < previous.size(); ++i)
         ss << ' ' << CHAR_PREV;
     ss << std::endl;
@@ -69,12 +71,12 @@ std::string control_flow_graph_x86::block::to_string() const
     ss << std::setfill(' ');
 
     if (instructions.size() > 1)
-        ss << l << std::setw(width) << std::left << instructions.front().to_string(false) << r << std::endl;
+        ss << std::string(padding, ' ') << l << std::setw(width) << std::left << instructions.front().to_string(false) << r << std::endl;
     if (instructions.size() > 2)
-        ss << l << std::setw(width) << std::left << ':' << r << std::endl;
-    ss << l << std::setw(width) << std::left << last_string << r << std::endl;
+        ss << std::string(padding, ' ') << l << std::setw(width) << std::left << ':' << r << std::endl;
+    ss << std::string(padding, ' ') << l << std::setw(width) << std::left << last_string << r << std::endl;
 
-    ss << ed << std::string(width + 2, '-') << ed;
+    ss << std::string(padding, ' ') << ed << std::string(width + 2, '-') << ed;
     for (unsigned i = 0; i < next.size(); ++i)
         ss << ' ' << CHAR_NEXT;
     ss << std::endl << std::endl;
@@ -114,10 +116,10 @@ void control_flow_graph_x86::draw() const
         const auto no_pred = block.previous.empty();
         const auto no_succ = block.next.empty();
 
-        if (no_pred || no_succ)
+        if (no_pred ^ no_succ)
         {
             std::cout << dsp::colorize(FOREGROUND_INTENSITY |
-                (no_pred ? (no_succ ? FOREGROUND_YELLOW : FOREGROUND_GREEN) : FOREGROUND_RED));
+                (no_pred ? FOREGROUND_GREEN : FOREGROUND_RED));
         }
 
         auto block_string = block.to_string();
@@ -240,6 +242,19 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
                 debugger->reset(snapshot);
             }
         }
+/*
+        else if (instruction.is_volatile) // TODO
+        {
+            const auto next_address = debugger->next_instruction().address;
+
+            if (!success(next_address))
+            {
+                const auto next = build(debugger, next_address, stop, map);
+                next->previous.insert(cur);
+                cur->next.insert(next);
+            }
+        }
+*/
         else
         {
             const auto next_address = debugger->next_instruction().address;

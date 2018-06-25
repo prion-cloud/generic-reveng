@@ -192,7 +192,7 @@ public:
 
             const auto address = addresses.at(i);
 
-            std::cout << '#' << i + 1 << std::endl;
+            std::cout << '#' << i + 1 << std::endl << std::endl;
 
             const auto cfg = control_flow_graph_x86(debugger_, address);
             cfgs.push_back(cfg);
