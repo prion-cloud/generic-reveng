@@ -42,7 +42,7 @@ instruction_x86::instruction_x86(const cs_insn cs_insn)
 
     operands = std::vector<operand_x86>(cs_insn.detail->x86.operands, cs_insn.detail->x86.operands + cs_insn.detail->x86.op_count);
 
-    is_volatile = type == ins_return || type == ins_jump && operands.at(0).type != op_immediate;
+    is_volatile = type == ins_return || (type == ins_jump || type == ins_call) && operands.at(0).type != op_immediate;
 }
 
 std::string instruction_x86::to_string(const bool full) const
