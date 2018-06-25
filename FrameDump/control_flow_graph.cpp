@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "control_flow_graph.h"
+#include "display.h"
 
 static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string& string)
 {
@@ -46,36 +47,62 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
 
 void control_flow_graph_x86::draw() const
 {
-    std::set<block> blocks;
-    for (const auto m : map_)
-        blocks.insert(*m.second.first);
+    std::map<block, char> block_map;
 
     auto id = 'A';
-    for (const auto& block : blocks)
+    for (const auto m : map_)
     {
+        const auto [it, b] = block_map.try_emplace(*m.second.first, id);
+        if (b) ++id;
+    }
+
+    const std::string l = "| ";
+    const std::string r = " |";
+
+    const auto h = '-';
+
+    const auto eu = '.';
+    const auto ed = '\'';
+
+    std::map<char, std::string> string_map;
+    for (const auto& [block, block_id] : block_map)
+    {
+        std::ostringstream ss;
+
         const auto last = block.instructions.back();
         const auto last_string = last.to_string(last.is_conditional || last.is_volatile);
 
         const auto width = last_string.size();
 
-        std::cout << id << std::setfill('-') << std::setw(width + 2) << std::left << "(" + std::to_string(block.instructions.size()) + ")" << '+' << std::endl;
+        ss << block_id << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(block.instructions.size()) + ")" << eu << std::endl;
 
-        std::cout << std::setfill(' ');
+        ss << std::setfill(' ');
 
         if (block.instructions.size() > 1)
-            std::cout << "| " << std::setw(width) << std::left << block.instructions.front().to_string(false) << " |" << std::endl;
+            ss << l << std::setw(width) << std::left << block.instructions.front().to_string(false) << r << std::endl;
         if (block.instructions.size() > 2)
-            std::cout << "| " << std::setw(width) << std::left << ':' << " |" << std::endl;
-        std::cout << "| " << std::setw(width) << std::left << last_string << " |" << std::endl;
+            ss << l << std::setw(width) << std::left << ':' << r << std::endl;
+        ss << l << std::setw(width) << std::left << last_string << r << std::endl;
 
-        std::cout << '+' << std::string(width + 2, '-') << '+' << std::endl;
+        ss << ed << std::string(width + 2, '-') << ed;
 
-        for (const auto n : block.next)
-            std::cout << "-> " << n->instructions.front().to_string(false) << std::endl;
+        for (unsigned i = 0; i < block.next.size(); ++i)
+        {
+            if (i > 0)
+                ss << ',';
+            ss << ' ' << block_map.at(*block.next.at(i));
+        }
 
-        std::cout << std::endl;
+        ss << std::endl << std::endl;
 
-        ++id;
+        string_map.emplace(block_id, ss.str());
+    }
+
+    for (const auto& [block_id, string] : string_map)
+    {
+        if (block_id == block_map.at(*root_))
+            std::cout << dsp::colorize(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+        std::cout << string << dsp::decolorize;
     }
 }
 
