@@ -121,11 +121,11 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         orig->instructions.erase(begin, end);
 
         // Update successor information
-        cur->next.push_back(next);
         next->next = orig->next;
         if (orig == cur)
             next->next.push_back(next);
         else orig->next = { next };
+        cur->next.push_back(next);
 
         return true;
     };
