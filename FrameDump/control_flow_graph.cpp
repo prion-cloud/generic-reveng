@@ -82,86 +82,111 @@ void control_flow_graph_x86::draw() const
 control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, uint64_t address,
     const std::vector<uint8_t>& stop, std::map<uint64_t, std::pair<block*, size_t>>& map)
 {
+    // New (current) block
     const auto cur = new block;
 
-    const std::function<block*(uint64_t)> split_existing = [cur, &map](const uint64_t next_address)
+    // Appends an existing block at the specified address as successor
+    const std::function<bool(uint64_t)> success = [cur, &map](const uint64_t next_address)
     {
-        const auto [orig, index] = map.at(next_address);
-
-        if (index > 0)
+        const auto map_it = map.find(next_address);
+        if (map_it == map.end())
         {
-            const auto begin = orig->instructions.begin() + index;
-            const auto end = orig->instructions.end();
-
-            const auto next = new block;
-            next->instructions = std::vector<instruction_x86>(begin, end);
-            next->next = orig->next;
-
-            for (auto j = 0; j < end - begin; ++j)
-                map[(begin + j)->address] = std::make_pair(next, j);
-
-            orig->instructions.erase(begin, end);
-
-            if (orig == cur)
-                next->next.push_back(next);
-            else orig->next = { next };
-
-            return next;
+            // No block exists at this address
+            return false;
         }
 
-        return orig;
+        const auto [orig, index] = map_it->second;
+
+        if (index == 0)
+        {
+            // Block does not have to be split
+            cur->next.push_back(orig);
+            return true;
+        }
+
+        const auto begin = orig->instructions.begin() + index;
+        const auto end = orig->instructions.end();
+
+        const auto next = new block;
+
+        // Copy tail
+        next->instructions = std::vector<instruction_x86>(begin, end);
+
+        // Update map
+        // TODO: Inefficient with large blocks
+        for (auto j = 0; j < end - begin; ++j)
+            map[(begin + j)->address] = std::make_pair(next, j);
+
+        // Truncate tail
+        orig->instructions.erase(begin, end);
+
+        // Update successor information
+        cur->next.push_back(next);
+        next->next = orig->next;
+        if (orig == cur)
+            next->next.push_back(next);
+        else orig->next = { next };
+
+        return true;
     };
 
-    do
+    // Repeat until successors are set
+    while (cur->next.empty())
     {
+        // Map address to block and index
         map.emplace(address, std::make_pair(cur, cur->instructions.size()));
 
         debugger->jump_to(address);
 
         const auto instruction = debugger->next_instruction();
+
+        // Append instruction
         cur->instructions.push_back(instruction);
 
+        // Emulate instruction
         if (debugger->step_into() != UC_ERR_OK)
             std::cout << "FAIL: " << instruction.to_string(true) << std::endl;
 
         if (instruction.code == stop)
+        {
+            // Reached final instruction, stop without successor
             break;
+        }
 
-        std::vector<uint64_t> next_addresses;
-        emulation_snapshot snapshot;
         if (instruction.type == ins_jump && instruction.is_conditional)
         {
+            std::vector<uint64_t> next_addresses;
+
+            // Consider both jump results
             next_addresses.push_back(address + instruction.code.size());
             next_addresses.push_back(std::get<op_immediate>(instruction.operands.at(0).value));
 
-            snapshot = debugger->take_snapshot();
+            // Save current emulation state
+            const auto snapshot = debugger->take_snapshot();
+
+            for (const auto next_address : next_addresses)
+            {
+                if (!success(next_address))
+                {
+                    // Recursively create a new successor
+                    cur->next.push_back(build(debugger, next_address, stop, map));
+                }
+
+                // Reset to previous state
+                debugger->reset(snapshot);
+            }
         }
         else
         {
             const auto next_address = debugger->next_instruction().address;
 
-            if (map.find(next_address) == map.end())
+            if (!success(next_address))
             {
+                // Advanced address and continue
                 address = next_address;
-                continue;
             }
-
-            cur->next.push_back(split_existing(next_address));
-            break;
         }
-
-        for (const auto next_address : next_addresses)
-        {
-            cur->next.push_back(map.find(next_address) == map.end()
-                ? build(debugger, next_address, stop, map)
-                : split_existing(next_address));
-
-            debugger->reset(snapshot);
-        }
-
-        break;
     }
-    while (true);
 
     return cur;
 }
