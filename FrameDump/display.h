@@ -30,16 +30,4 @@ namespace dsp
     std::ostream& operator<<(std::ostream& stream, colorize colorize);
 
     std::ostream& decolorize(std::ostream& stream);
-
-    class flow_box
-    {
-    public:
-
-        void draw();
-    };
-
-    class flow_chart
-    {
-        
-    };
 }
