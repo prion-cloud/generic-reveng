@@ -74,7 +74,10 @@ void control_flow_graph_x86::draw() const
 
         const auto width = last_string.size();
 
-        ss << block_id << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(block.instructions.size()) + ")" << eu << std::endl;
+        ss << block_id << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(block.instructions.size()) + ")" << eu;
+        for (const auto p : block.previous)
+            ss << ' ' << block_map.at(*p);
+        ss << std::endl;
 
         ss << std::setfill(' ');
 
@@ -85,14 +88,8 @@ void control_flow_graph_x86::draw() const
         ss << l << std::setw(width) << std::left << last_string << r << std::endl;
 
         ss << ed << std::string(width + 2, '-') << ed;
-
-        for (unsigned i = 0; i < block.next.size(); ++i)
-        {
-            if (i > 0)
-                ss << ',';
-            ss << ' ' << block_map.at(*block.next.at(i));
-        }
-
+        for (const auto n : block.next)
+            ss << ' ' << block_map.at(*n);
         ss << std::endl << std::endl;
 
         string_map.emplace(block_id, ss.str());
@@ -127,7 +124,8 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         if (index == 0)
         {
             // Block does not have to be split
-            cur->next.push_back(orig);
+            cur->next.insert(orig);
+            orig->previous.insert(cur);
             return true;
         }
 
@@ -148,11 +146,18 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         orig->instructions.erase(begin, end);
 
         // Update successor information
+        cur->next.insert(next);
         next->next = orig->next;
-        if (orig == cur)
-            next->next.push_back(next);
-        else orig->next = { next };
-        cur->next.push_back(next);
+        orig->next = { next };
+
+        // Update predecessor information
+        next->previous.insert(orig);
+        for (const auto nn : next->next)
+        {
+            nn->previous.erase(orig);
+            nn->previous.insert(next);
+        }
+        next->previous.insert(cur);
 
         return true;
     };
@@ -196,10 +201,12 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
                 if (!success(next_address))
                 {
                     // Recursively create a new successor
-                    cur->next.push_back(build(debugger, next_address, stop, map));
+                    const auto next = build(debugger, next_address, stop, map);
+                    cur->next.insert(next);
+                    next->previous.insert(cur);
                 }
 
-                // Reset to previous state
+                // Reset to original state
                 debugger->reset(snapshot);
             }
         }
