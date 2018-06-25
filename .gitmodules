@@ -1,6 +1,3 @@
-[submodule "Shared"]
-	path = Shared
-	url = git@github.com:superbr4in/Shared.git
 [submodule "Bin-Capstone"]
 	path = Bin-Capstone
 	url = git@github.com:superbr4in/Bin-Capstone.git
