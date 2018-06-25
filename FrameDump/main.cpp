@@ -188,14 +188,19 @@ public:
         std::vector<control_flow_graph_x86> cfgs;
         for (unsigned i = 0; i < addresses.size(); ++i)
         {
+            const auto snapshot = debugger_->take_snapshot();
+
             const auto address = addresses.at(i);
 
-            std::cout << std::setw(7) << std::left << "#" + std::to_string(i + 1) + ":"
-                      << std::hex << std::uppercase << address << std::endl;
+            std::cout << '#' << i + 1 << std::endl;
 
-            cfgs.emplace_back(debugger_, address);
+            const auto cfg = control_flow_graph_x86(debugger_, address);
+            cfgs.push_back(cfg);
 
+            cfg.draw();
             std::cout << std::endl;
+
+            debugger_->reset(snapshot);
         }
 
         return cfgs;

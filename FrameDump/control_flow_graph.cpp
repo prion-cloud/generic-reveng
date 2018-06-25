@@ -1,7 +1,6 @@
 #include "stdafx.h"
 
 #include "control_flow_graph.h"
-#include "display.h"
 
 static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string& string)
 {
@@ -21,7 +20,7 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
 
     const auto p_code = PyObject_GetAttrString(main, var_code.c_str());
     const auto length = _PyInt_AsInt(PyObject_GetAttrString(main, var_length.c_str()));
-    
+
     std::vector<uint8_t> code;
     for (auto i = 0; i < length; ++i)
         code.push_back(_PyInt_AsInt(PyList_GetItem(p_code, i)));
@@ -31,88 +30,143 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
     return code;
 }
 
-static void log_event(const std::string& name, const instruction_x86& instruction, const bool full, const uint16_t color = FOREGROUND_WHITE)
-{
-    std::cout << "[" << dsp::colorize(color) << name << dsp::decolorize << "] " << std::hex << std::uppercase << instruction.address;
-
-    if (full)
-        std::cout << " " << instruction.str_mnemonic << " " << instruction.str_operands;
-
-    std::cout << std::endl;
-}
-
 control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, const uint64_t root_address)
 {
     const auto root_instruction = debugger->disassemble_at(root_address);
     if (root_instruction.str_mnemonic != "push")
     {
         std::cout << "Unexpected root" << std::endl;
+
+        root_ = nullptr;
         return;
     }
 
-    const auto snapshot = debugger->take_snapshot();
-
-    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), node_map_);
-
-    debugger->reset(snapshot);
-
-    std::cout << "(" << std::dec << node_map_.size() << ")" << std::endl;
+    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_);
 }
 
-control_flow_graph_x86::node* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, const uint64_t address, const std::vector<uint8_t> stop,
-    std::map<uint64_t, node*>& node_map)
+void control_flow_graph_x86::draw() const
 {
-    const auto cur = new node;
-    node_map.emplace(address, cur);
+    std::set<block> blocks;
+    for (const auto m : map_)
+        blocks.insert(*m.second.first);
 
-    debugger->jump_to(address);
-    cur->instruction = debugger->next_instruction();
-
-    if (debugger->step_into() != UC_ERR_OK)
-        log_event("FAIL", cur->instruction, true, FOREGROUND_RED | FOREGROUND_INTENSITY);
-
-    if (cur->instruction.code == stop)
+    auto id = 'A';
+    for (const auto& block : blocks)
     {
-        log_event("STOP", cur->instruction, false, FOREGROUND_GREEN);
-        return cur;
+        const auto last = block.instructions.back();
+        const auto last_string = last.to_string(last.is_conditional || last.is_volatile);
+
+        const auto width = last_string.size();
+
+        std::cout << id << std::setfill('-') << std::setw(width + 2) << std::left << "(" + std::to_string(block.instructions.size()) + ")" << '+' << std::endl;
+
+        std::cout << std::setfill(' ');
+
+        if (block.instructions.size() > 1)
+            std::cout << "| " << std::setw(width) << std::left << block.instructions.front().to_string(false) << " |" << std::endl;
+        if (block.instructions.size() > 2)
+            std::cout << "| " << std::setw(width) << std::left << ':' << " |" << std::endl;
+        std::cout << "| " << std::setw(width) << std::left << last_string << " |" << std::endl;
+
+        std::cout << '+' << std::string(width + 2, '-') << '+' << std::endl;
+
+        for (const auto n : block.next)
+            std::cout << "-> " << n->instructions.front().to_string(false) << std::endl;
+
+        std::cout << std::endl;
+
+        ++id;
     }
+}
 
-    std::vector<uint64_t> next_addresses;
-    emulation_snapshot snapshot { };
-    if (cur->instruction.type == ins_jump && cur->instruction.is_conditional)
+control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, uint64_t address,
+    const std::vector<uint8_t>& stop, std::map<uint64_t, std::pair<block*, size_t>>& map)
+{
+    const auto cur = new block;
+
+    const std::function<block*(uint64_t)> split_existing = [cur, &map](const uint64_t next_address)
     {
-        log_event("FORK", cur->instruction, false, FOREGROUND_YELLOW);
-        next_addresses.push_back(address + cur->instruction.code.size());
-        next_addresses.push_back(std::get<op_immediate>(cur->instruction.operands.at(0).value));
+        const auto [orig, index] = map.at(next_address);
 
-        snapshot = debugger->take_snapshot();
-    }
-    else next_addresses.push_back(debugger->next_instruction().address);
-
-    if (cur->instruction.is_volatile)
-        log_event("VOLA", cur->instruction, true);
-
-    for (unsigned i = 0; i < next_addresses.size(); ++i)
-    {
-        const auto next_address = next_addresses.at(i);
-
-        node* next;
-        if (node_map.find(next_address) == node_map.end())
+        if (index > 0)
         {
-            if (i > 0)
-                debugger->reset(snapshot);
+            const auto begin = orig->instructions.begin() + index;
+            const auto end = orig->instructions.end();
 
-            next = build(debugger, next_address, stop, node_map);
+            const auto next = new block;
+            next->instructions = std::vector<instruction_x86>(begin, end);
+            next->next = orig->next;
+
+            for (auto j = 0; j < end - begin; ++j)
+                map[(begin + j)->address] = std::make_pair(next, j);
+
+            orig->instructions.erase(begin, end);
+
+            if (orig == cur)
+                next->next.push_back(next);
+            else orig->next = { next };
+
+            return next;
+        }
+
+        return orig;
+    };
+
+    do
+    {
+        map.emplace(address, std::make_pair(cur, cur->instructions.size()));
+
+        debugger->jump_to(address);
+
+        const auto instruction = debugger->next_instruction();
+        cur->instructions.push_back(instruction);
+
+        if (debugger->step_into() != UC_ERR_OK)
+            std::cout << "FAIL: " << instruction.to_string(true) << std::endl;
+
+        if (instruction.code == stop)
+            break;
+
+        std::vector<uint64_t> next_addresses;
+        emulation_snapshot snapshot;
+        if (instruction.type == ins_jump && instruction.is_conditional)
+        {
+            next_addresses.push_back(address + instruction.code.size());
+            next_addresses.push_back(std::get<op_immediate>(instruction.operands.at(0).value));
+
+            snapshot = debugger->take_snapshot();
         }
         else
         {
-            log_event("MERG", cur->instruction, false, FOREGROUND_MAGENTA | FOREGROUND_INTENSITY);
-            next = node_map.at(next_address);
+            const auto next_address = debugger->next_instruction().address;
+
+            if (map.find(next_address) == map.end())
+            {
+                address = next_address;
+                continue;
+            }
+
+            cur->next.push_back(split_existing(next_address));
+            break;
         }
 
-        cur->next.push_back(next);
-        next->previous.push_back(cur);
+        for (const auto next_address : next_addresses)
+        {
+            cur->next.push_back(map.find(next_address) == map.end()
+                ? build(debugger, next_address, stop, map)
+                : split_existing(next_address));
+
+            debugger->reset(snapshot);
+        }
+
+        break;
     }
+    while (true);
 
     return cur;
+}
+
+bool operator<(const control_flow_graph_x86::block& block1, const control_flow_graph_x86::block& block2)
+{
+    return block1.instructions.front().address < block2.instructions.front().address;
 }
