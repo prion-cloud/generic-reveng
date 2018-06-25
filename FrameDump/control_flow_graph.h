@@ -6,8 +6,10 @@ class control_flow_graph_x86
     {
         std::vector<instruction_x86> instructions;
 
-        std::set<block*> next;
         std::set<block*> previous;
+        std::set<block*> next;
+
+        std::string to_string() const;
     };
 
     block* root_;

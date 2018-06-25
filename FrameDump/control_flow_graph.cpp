@@ -3,6 +3,10 @@
 #include "control_flow_graph.h"
 #include "display.h"
 
+#define CHAR_ID '*'
+#define CHAR_PREV '#'
+#define CHAR_NEXT '~'
+
 static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::string& string)
 {
     const std::string var_code = "v1";
@@ -30,6 +34,53 @@ static std::vector<uint8_t> assemble_x86(const uint64_t address, const std::stri
 
     return code;
 }
+static void replace_first(std::string& string, const char old_char, const char new_char)
+{
+    const auto pos = string.find_first_of(old_char);
+
+    if (pos == std::string::npos)
+        return;
+
+    string = string.substr(0, pos) + new_char + string.substr(pos + 1);
+}
+
+std::string control_flow_graph_x86::block::to_string() const
+{
+    const std::string l = "| ";
+    const std::string r = " |";
+
+    const auto h = '-';
+
+    const auto eu = '.';
+    const auto ed = '\'';
+
+    std::ostringstream ss;
+
+    const auto last = instructions.back();
+    const auto last_string = last.to_string(last.is_conditional || last.is_volatile);
+
+    const auto width = last_string.size();
+
+    ss << CHAR_ID << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(instructions.size()) + ")" << eu;
+    for (unsigned i = 0; i < previous.size(); ++i)
+        ss << ' ' << CHAR_PREV;
+    ss << std::endl;
+
+    ss << std::setfill(' ');
+
+    if (instructions.size() > 1)
+        ss << l << std::setw(width) << std::left << instructions.front().to_string(false) << r << std::endl;
+    if (instructions.size() > 2)
+        ss << l << std::setw(width) << std::left << ':' << r << std::endl;
+    ss << l << std::setw(width) << std::left << last_string << r << std::endl;
+
+    ss << ed << std::string(width + 2, '-') << ed;
+    for (unsigned i = 0; i < next.size(); ++i)
+        ss << ' ' << CHAR_NEXT;
+    ss << std::endl << std::endl;
+
+    return ss.str();
+}
 
 control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, const uint64_t root_address)
 {
@@ -47,59 +98,38 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
 
 void control_flow_graph_x86::draw() const
 {
-    std::map<block, char> block_map;
+    std::map<block, char> map1;
+    std::map<char, block> map2;
 
     auto id = 'A';
     for (const auto m : map_)
     {
-        const auto [it, b] = block_map.try_emplace(*m.second.first, id);
-        if (b) ++id;
+        const auto [it, b] = map1.try_emplace(*m.second.first, id);
+        if (b)
+            map2.emplace(id++, *m.second.first);
     }
 
-    const std::string l = "| ";
-    const std::string r = " |";
-
-    const auto h = '-';
-
-    const auto eu = '.';
-    const auto ed = '\'';
-
-    std::map<char, std::string> string_map;
-    for (const auto& [block, block_id] : block_map)
+    for (const auto& [block_id, block] : map2)
     {
-        std::ostringstream ss;
+        const auto no_pred = block.previous.empty();
+        const auto no_succ = block.next.empty();
 
-        const auto last = block.instructions.back();
-        const auto last_string = last.to_string(last.is_conditional || last.is_volatile);
+        if (no_pred || no_succ)
+        {
+            std::cout << dsp::colorize(FOREGROUND_INTENSITY |
+                (no_pred ? (no_succ ? FOREGROUND_YELLOW : FOREGROUND_GREEN) : FOREGROUND_RED));
+        }
 
-        const auto width = last_string.size();
+        auto block_string = block.to_string();
 
-        ss << block_id << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(block.instructions.size()) + ")" << eu;
+        replace_first(block_string, CHAR_ID, block_id);
+
         for (const auto p : block.previous)
-            ss << ' ' << block_map.at(*p);
-        ss << std::endl;
-
-        ss << std::setfill(' ');
-
-        if (block.instructions.size() > 1)
-            ss << l << std::setw(width) << std::left << block.instructions.front().to_string(false) << r << std::endl;
-        if (block.instructions.size() > 2)
-            ss << l << std::setw(width) << std::left << ':' << r << std::endl;
-        ss << l << std::setw(width) << std::left << last_string << r << std::endl;
-
-        ss << ed << std::string(width + 2, '-') << ed;
+            replace_first(block_string, CHAR_PREV, map1.at(*p));
         for (const auto n : block.next)
-            ss << ' ' << block_map.at(*n);
-        ss << std::endl << std::endl;
+            replace_first(block_string, CHAR_NEXT, map1.at(*n));
 
-        string_map.emplace(block_id, ss.str());
-    }
-
-    for (const auto& [block_id, string] : string_map)
-    {
-        if (block_id == block_map.at(*root_))
-            std::cout << dsp::colorize(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-        std::cout << string << dsp::decolorize;
+        std::cout << block_string << dsp::decolorize;
     }
 }
 
@@ -124,8 +154,8 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         if (index == 0)
         {
             // Block does not have to be split
-            cur->next.insert(orig);
             orig->previous.insert(cur);
+            cur->next.insert(orig);
             return true;
         }
 
@@ -202,8 +232,8 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
                 {
                     // Recursively create a new successor
                     const auto next = build(debugger, next_address, stop, map);
-                    cur->next.insert(next);
                     next->previous.insert(cur);
+                    cur->next.insert(next);
                 }
 
                 // Reset to original state
