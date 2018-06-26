@@ -96,6 +96,8 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
     }
 
     root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_);
+
+    paths_ = enumerate_paths(root_);
 }
 
 void control_flow_graph_x86::draw() const
@@ -268,6 +270,36 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
     }
 
     return cur;
+}
+
+std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const b, std::map<block*, bool> map)
+{
+    if (map[b])
+        return { };
+
+    if (b->next.empty())
+    {
+        std::vector<block*> blocks;
+        for (const auto [block, visited] : map)
+        {
+            if (visited)
+                blocks.push_back(block);
+        }
+        blocks.push_back(b);
+        return { path { blocks } };
+    }
+
+    std::vector<path> paths;
+    map[b] = true;
+
+    for (const auto n : b->next)
+    {
+        const auto next = enumerate_paths(n, map);
+        paths.insert(paths.end(), next.begin(), next.end());
+    }
+
+    map[b] = false;
+    return paths;
 }
 
 bool operator<(const control_flow_graph_x86::block& block1, const control_flow_graph_x86::block& block2)
