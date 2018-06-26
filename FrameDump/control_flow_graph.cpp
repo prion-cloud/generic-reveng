@@ -95,7 +95,8 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
         return;
     }
 
-    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_);
+    std::map<block*, block*> redir;
+    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_, redir);
 
     paths_ = enumerate_paths(root_);
 }
@@ -138,13 +139,13 @@ void control_flow_graph_x86::draw() const
 }
 
 control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, uint64_t address,
-    const std::vector<uint8_t>& stop, std::map<uint64_t, std::pair<block*, size_t>>& map)
+    const std::vector<uint8_t>& stop, std::map<uint64_t, std::pair<block*, size_t>>& map, std::map<block*, block*>& redir)
 {
     // New (current) block
     const auto cur = new block;
 
     // Appends an existing block at the specified address as successor
-    const std::function<bool(uint64_t)> success = [cur, &map](const uint64_t next_address)
+    const std::function<bool(uint64_t)> success = [cur, &map, &redir](const uint64_t next_address)
     {
         const auto map_it = map.find(next_address);
         if (map_it == map.end())
@@ -193,6 +194,9 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         }
         next->previous.insert(cur);
 
+        // Redirect later successor declarations
+        redir[orig] = next;
+
         return true;
     };
 
@@ -230,14 +234,20 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
             // Save current emulation state
             const auto snapshot = debugger->take_snapshot();
 
+            // Reset a prior redirection
+            redir[cur] = cur;
+
             for (const auto next_address : next_addresses)
             {
                 if (!success(next_address))
                 {
                     // Recursively create a new successor
-                    const auto next = build(debugger, next_address, stop, map);
-                    next->previous.insert(cur);
-                    cur->next.insert(next);
+                    const auto next = build(debugger, next_address, stop, map, redir);
+
+                    // React to eventual redirections
+                    const auto r = redir[cur];
+                    next->previous.insert(r);
+                    r->next.insert(next);
                 }
 
                 // Reset to original state
