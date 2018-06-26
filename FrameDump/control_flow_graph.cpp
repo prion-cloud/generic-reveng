@@ -79,7 +79,6 @@ std::string control_flow_graph_x86::block::to_string() const
     ss << std::string(padding, ' ') << ed << std::string(width + 2, '-') << ed;
     for (unsigned i = 0; i < next.size(); ++i)
         ss << ' ' << CHAR_NEXT;
-    ss << std::endl << std::endl;
 
     return ss.str();
 }
@@ -134,7 +133,23 @@ void control_flow_graph_x86::draw() const
         for (const auto n : block.next)
             replace_first(block_string, CHAR_NEXT, map1.at(*n));
 
-        std::cout << block_string << dsp::decolorize;
+        std::cout << block_string << std::endl << std::endl << dsp::decolorize;
+    }
+
+    std::cout << "Found " << paths_.size() << " path";
+    if (paths_.size() > 1)
+        std::cout << 's';
+    std::cout << " without cycles:" << std::endl;
+    for (const auto& p : paths_)
+    {
+        for (unsigned i = 0; i < p.blocks.size(); ++i)
+        {
+            if (i > 0)
+                std::cout << '-';
+            std::cout << map1.at(*p.blocks.at(i));
+        }
+
+        std::cout << std::endl;
     }
 }
 
@@ -282,33 +297,27 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
     return cur;
 }
 
-std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const b, std::map<block*, bool> map)
+std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const root,
+    std::map<block*, bool> map, std::vector<block*> passed)
 {
-    if (map[b])
+    if (map[root])
         return { };
 
-    if (b->next.empty())
-    {
-        std::vector<block*> blocks;
-        for (const auto [block, visited] : map)
-        {
-            if (visited)
-                blocks.push_back(block);
-        }
-        blocks.push_back(b);
-        return { path { blocks } };
-    }
+    passed.push_back(root);
+
+    if (root->next.empty())
+        return { path { passed } };
 
     std::vector<path> paths;
-    map[b] = true;
+    map[root] = true;
 
-    for (const auto n : b->next)
+    for (const auto n : root->next)
     {
-        const auto next = enumerate_paths(n, map);
+        const auto next = enumerate_paths(n, map, passed);
         paths.insert(paths.end(), next.begin(), next.end());
     }
 
-    map[b] = false;
+    map[root] = false;
     return paths;
 }
 

@@ -34,7 +34,7 @@ private:
     static block* build(const std::shared_ptr<debugger>& debugger, uint64_t address, const std::vector<uint8_t>& stop,
         std::map<uint64_t, std::pair<block*, size_t>>& map, std::map<block*, block*>& redir);
 
-    static std::vector<path> enumerate_paths(block* b, std::map<block*, bool> map = { });
+    static std::vector<path> enumerate_paths(block* root, std::map<block*, bool> map = { }, std::vector<block*> passed = { });
 
     friend bool operator<(const block& block1, const block& block2);
 };
