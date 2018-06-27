@@ -18,7 +18,6 @@ enum instruction_type
     ins_pop,
     ins_call,
     ins_return,
-    ins_conditon,
     ins_arithmetic
 };
 
@@ -47,6 +46,8 @@ struct instruction_x86
     std::string str_operands;
 
     std::vector<operand_x86> operands;
+
+    bool sets_flags { };
 
     instruction_x86() = default;
     instruction_x86(cs_insn cs_insn);

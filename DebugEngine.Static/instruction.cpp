@@ -43,6 +43,16 @@ instruction_x86::instruction_x86(const cs_insn cs_insn)
     operands = std::vector<operand_x86>(cs_insn.detail->x86.operands, cs_insn.detail->x86.operands + cs_insn.detail->x86.op_count);
 
     is_volatile = type == ins_return || (type == ins_jump || type == ins_call) && operands.at(0).type != op_immediate;
+
+    sets_flags = false;
+    for (auto i = 0; i < cs_insn.detail->regs_write_count; ++i)
+    {
+        if (cs_insn.detail->regs_write[i] == X86_REG_EFLAGS)
+        {
+            sets_flags = true;
+            break;
+        }
+    }
 }
 
 std::string instruction_x86::to_string(const bool full) const
@@ -142,10 +152,6 @@ static void inspect_type(const x86_insn id, instruction_type& type, bool& is_con
     case X86_INS_RETF:
     case X86_INS_RETFQ:
         type = ins_return;
-        break;
-    case X86_INS_CMP:
-    case X86_INS_TEST:
-        type = ins_conditon;
         break;
     case X86_INS_ADD:
     case X86_INS_DIV:
