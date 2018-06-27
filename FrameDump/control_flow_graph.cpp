@@ -127,7 +127,7 @@ void control_flow_graph_x86::draw() const
 
         for (const auto p : block.previous)
             replace_first(block_string, CHAR_PREV, map1.at(*p));
-        for (const auto n : block.next)
+        for (const auto [c, n] : block.next)
             replace_first(block_string, CHAR_NEXT, map1.at(*n));
 
         std::cout << block_string << std::endl << std::endl << dsp::decolorize;
@@ -157,7 +157,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
     const auto cur = new block;
 
     // Appends an existing block at the specified address as successor
-    const std::function<bool(uint64_t)> success = [cur, &map, &redir](const uint64_t next_address)
+    const std::function<bool(uint64_t, std::optional<x86_insn>)> success = [cur, &map, &redir](const uint64_t next_address, const std::optional<x86_insn> condition)
     {
         const auto map_it = map.find(next_address);
         if (map_it == map.end())
@@ -172,7 +172,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         {
             // Block does not have to be split
             orig->previous.insert(cur);
-            cur->next.insert(orig);
+            cur->next.emplace_back(condition, orig);
             return true;
         }
 
@@ -193,13 +193,14 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         orig->instructions.erase(begin, end);
 
         // Update successor information
-        cur->next.insert(next);
+        cur->next.emplace_back(condition, next);
         next->next = orig->next;
-        orig->next = { next };
+        orig->next.clear();
+        orig->next.emplace_back(std::nullopt, next);
 
         // Update predecessor information
         next->previous.insert(orig);
-        for (const auto nn : next->next)
+        for (const auto [c, nn] : next->next)
         {
             nn->previous.erase(orig);
             nn->previous.insert(next);
@@ -251,7 +252,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
 
             for (const auto next_address : next_addresses)
             {
-                if (!success(next_address))
+                if (!success(next_address, instruction.id))
                 {
                     // Recursively create a new successor
                     const auto next = build(debugger, next_address, stop, map, redir);
@@ -259,7 +260,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
                     // React to eventual redirections
                     const auto r = redir[cur];
                     next->previous.insert(r);
-                    r->next.insert(next);
+                    r->next.emplace_back(instruction.id, next);
                 }
 
                 // Reset to original state
@@ -283,7 +284,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
         {
             const auto next_address = debugger->next_instruction().address;
 
-            if (!success(next_address))
+            if (!success(next_address, std::nullopt))
             {
                 // Advanced address and continue
                 address = next_address;
@@ -295,7 +296,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
 }
 
 std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const root,
-    std::map<block*, bool> map, std::vector<block*> passed)
+    std::map<block*, bool> map, std::vector<x86_insn> conditions, std::vector<block*> passed)
 {
     if (map[root])
         return { };
@@ -303,14 +304,16 @@ std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_path
     passed.push_back(root);
 
     if (root->next.empty())
-        return { path { passed } };
+        return { path { conditions, passed } };
 
     std::vector<path> paths;
     map[root] = true;
 
-    for (const auto n : root->next)
+    for (const auto [c, n] : root->next)
     {
-        const auto next = enumerate_paths(n, map, passed);
+        if (c.has_value())
+            conditions.push_back(c.value());
+        const auto next = enumerate_paths(n, map, conditions, passed);
         paths.insert(paths.end(), next.begin(), next.end());
     }
 
