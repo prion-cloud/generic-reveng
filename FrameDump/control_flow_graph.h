@@ -17,8 +17,6 @@ class control_flow_graph_x86
         std::vector<block*> blocks;
     };
 
-    block* root_;
-
     std::map<uint64_t, std::pair<block*, size_t>> map_;
 
     std::vector<path> paths_;

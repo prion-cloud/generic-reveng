@@ -89,15 +89,12 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
     if (root_instruction.str_mnemonic != "push")
     {
         std::cout << "Unexpected root" << std::endl;
-
-        root_ = nullptr;
         return;
     }
 
     std::map<block*, block*> redir;
-    root_ = build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_, redir);
-
-    paths_ = enumerate_paths(root_);
+    paths_ = enumerate_paths(
+        build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_, redir));
 }
 
 void control_flow_graph_x86::draw() const
