@@ -56,8 +56,8 @@ public:
     int get_bytes(uint64_t address, size_t count, std::vector<uint8_t>& bytes);
 
     // --- TODO Q&D
-    emulation_snapshot take_snapshot() const;
-    void reset(const emulation_snapshot& snapshot) const;
+    context get_context() const;
+    void set_context(const context& context) const;
 
     uint64_t image_base() const;
     std::vector<code_section> sections() const;

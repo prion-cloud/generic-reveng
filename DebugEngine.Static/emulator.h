@@ -8,7 +8,7 @@
 #define REG64_DEFAULT 0xDEF
 
 // --- TODO Q&D
-struct emulation_snapshot
+struct context
 {
     uint64_t instruction_pointer { };
 
@@ -59,8 +59,8 @@ public:
     TPL void mem_write(uint64_t address, T value, int index) const;
 
     // --- TODO Q&D
-    emulation_snapshot take_snapshot() const;
-    void reset(emulation_snapshot snapshot);
+    context get_context() const;
+    void set_context(context context);
     // ---
 
     // Registers

@@ -133,13 +133,13 @@ int debugger::get_bytes(const uint64_t address, const size_t count, std::vector<
 }
 
 // --- TODO Q&D
-emulation_snapshot debugger::take_snapshot() const
+context debugger::get_context() const
 {
-    return emulator_->take_snapshot();
+    return emulator_->get_context();
 }
-void debugger::reset(const emulation_snapshot& snapshot) const
+void debugger::set_context(const context& context) const
 {
-    emulator_->reset(snapshot);
+    emulator_->set_context(context);
 }
 
 uint64_t debugger::image_base() const

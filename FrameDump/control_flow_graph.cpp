@@ -247,7 +247,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
             next_addresses.push_back(std::get<op_immediate>(instruction.operands.at(0).value));
 
             // Save current emulation state
-            const auto snapshot = debugger->take_snapshot();
+            const auto context = debugger->get_context();
 
             // Reset a prior redirection
             redir[cur] = cur;
@@ -266,7 +266,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
                 }
 
                 // Reset to original state
-                debugger->reset(snapshot);
+                debugger->set_context(context);
             }
         }
 /*

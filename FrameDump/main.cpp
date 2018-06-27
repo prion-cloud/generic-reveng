@@ -188,7 +188,7 @@ public:
         std::vector<control_flow_graph_x86> cfgs;
         for (unsigned i = 0; i < addresses.size(); ++i)
         {
-            const auto snapshot = debugger_->take_snapshot();
+            const auto context = debugger_->get_context();
 
             const auto address = addresses.at(i);
 
@@ -200,7 +200,7 @@ public:
             cfg.draw();
             std::cout << std::endl;
 
-            debugger_->reset(snapshot);
+            debugger_->set_context(context);
         }
 
         return cfgs;

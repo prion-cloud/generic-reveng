@@ -116,17 +116,17 @@ std::string emulator::mem_read_string(const uint64_t address) const
 }
 
 // --- TODO Q&D
-emulation_snapshot emulator::take_snapshot() const
+context emulator::get_context() const
 {
-    emulation_snapshot snapshot;
+    context context;
 
-    snapshot.instruction_pointer = reg_read<uint64_t>(X86_REG_RIP);
+    context.instruction_pointer = reg_read<uint64_t>(X86_REG_RIP);
 
-    snapshot.stack_pointer = reg_read<uint64_t>(X86_REG_RSP);
-    snapshot.base_pointer = reg_read<uint64_t>(X86_REG_RBP);
+    context.stack_pointer = reg_read<uint64_t>(X86_REG_RSP);
+    context.base_pointer = reg_read<uint64_t>(X86_REG_RBP);
 
-    snapshot.stack_data = std::vector<uint8_t>(stack_size_);
-    mem_read(stack_top_, snapshot.stack_data);
+    context.stack_data = std::vector<uint8_t>(stack_size_);
+    mem_read(stack_top_, context.stack_data);
 
     for (const auto reg : register_map_)
     {
@@ -138,25 +138,25 @@ emulation_snapshot emulator::take_snapshot() const
             break;
         default:
             if (reg.second == UINT64_MAX && reg_read<uint64_t>(reg.first) != REG64_DEFAULT)
-                snapshot.register_values.emplace(reg.first, reg_read<uint64_t>(reg.first));
+                context.register_values.emplace(reg.first, reg_read<uint64_t>(reg.first));
         }
     }
 
-    return snapshot;
+    return context;
 }
-void emulator::reset(const emulation_snapshot snapshot)
+void emulator::set_context(const context context)
 {
-    reg_write<uint64_t>(X86_REG_RIP, snapshot.instruction_pointer);
+    reg_write<uint64_t>(X86_REG_RIP, context.instruction_pointer);
 
-    reg_write<uint64_t>(X86_REG_RSP, snapshot.stack_pointer);
-    reg_write<uint64_t>(X86_REG_RBP, snapshot.base_pointer);
+    reg_write<uint64_t>(X86_REG_RSP, context.stack_pointer);
+    reg_write<uint64_t>(X86_REG_RBP, context.base_pointer);
 
-    FATAL_IF(snapshot.stack_data.size() != stack_size_);
-    mem_map(stack_top_, snapshot.stack_data, false);
+    FATAL_IF(context.stack_data.size() != stack_size_);
+    mem_map(stack_top_, context.stack_data, false);
 
     initialize_registers();
 
-    for (const auto reg : snapshot.register_values)
+    for (const auto reg : context.register_values)
         reg_write<uint64_t>(reg.first, reg.second);
 }
 // ---
