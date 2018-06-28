@@ -29,6 +29,11 @@ struct operand_x86
 
     operand_x86() = default;
     operand_x86(cs_x86_op cs_op);
+
+    static operand_x86 from_register(x86_reg id);
+    static operand_x86 from_immediate(int64_t value);
+    static operand_x86 from_memory(uint64_t address);
+    static operand_x86 from_float(double value);
 };
 struct instruction_x86
 {

@@ -27,6 +27,39 @@ operand_x86::operand_x86(const cs_x86_op cs_op)
     default:;
     }
 }
+
+operand_x86 operand_x86::from_register(const x86_reg id)
+{
+    operand_x86 operand;
+    operand.type = op_register;
+    operand.value = id;
+    return operand;
+}
+operand_x86 operand_x86::from_immediate(const int64_t value)
+{
+    operand_x86 operand;
+    operand.type = op_immediate;
+    operand.value = value;
+    return operand;
+}
+operand_x86 operand_x86::from_memory(const uint64_t address)
+{
+    x86_op_mem value { 0 };
+    value.disp = address;
+
+    operand_x86 operand;
+    operand.type = op_memory;
+    operand.value = value;
+    return operand;
+}
+operand_x86 operand_x86::from_float(const double value)
+{
+    operand_x86 operand;
+    operand.type = op_float;
+    operand.value = value;
+    return operand;
+}
+
 instruction_x86::instruction_x86(const cs_insn cs_insn)
 {
     id = static_cast<x86_insn>(cs_insn.id);
@@ -125,7 +158,6 @@ static void inspect_type(const x86_insn id, instruction_type& type, bool& is_con
     case X86_INS_MOV:
     case X86_INS_MOVABS:
     case X86_INS_MOVUPD:
-    case X86_INS_XCHG:
         type = ins_move;
         break;
     case X86_INS_PUSH:
