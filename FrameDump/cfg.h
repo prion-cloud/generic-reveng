@@ -1,10 +1,12 @@
 #pragma once
 
+#include "traceback.h"
+
 class cfg_x86
 {
     struct block
     {
-        std::vector<instruction_x86> instructions;
+        std::vector<traceback_x86> trace;
 
         std::set<block*> previous;
         std::vector<std::pair<std::optional<x86_insn>, block*>> next;

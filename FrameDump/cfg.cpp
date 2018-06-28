@@ -56,23 +56,23 @@ std::string cfg_x86::block::to_string() const
 
     std::ostringstream ss;
 
-    const auto last = instructions.back();
-    const auto last_string = last.to_string(last.is_conditional || last.is_volatile);
+    const auto last = trace.back();
+    const auto last_string = last.instruction.to_string(last.instruction.is_conditional || last.instruction.is_volatile);
 
     const auto width = last_string.size();
 
     const auto padding = 1;
 
-    ss << std::string(padding, ' ') << CHAR_ID << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(instructions.size()) + ")" << eu;
+    ss << std::string(padding, ' ') << CHAR_ID << std::setfill(h) << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(trace.size()) + ")" << eu;
     for (unsigned i = 0; i < previous.size(); ++i)
         ss << ' ' << CHAR_PREV;
     ss << std::endl;
 
     ss << std::setfill(' ');
 
-    if (instructions.size() > 1)
-        ss << std::string(padding, ' ') << l << std::setw(width) << std::left << instructions.front().to_string(false) << r << std::endl;
-    if (instructions.size() > 2)
+    if (trace.size() > 1)
+        ss << std::string(padding, ' ') << l << std::setw(width) << std::left << trace.front().instruction.to_string(false) << r << std::endl;
+    if (trace.size() > 2)
         ss << std::string(padding, ' ') << l << std::setw(width) << std::left << ':' << r << std::endl;
     ss << std::string(padding, ' ') << l << std::setw(width) << std::left << last_string << r << std::endl;
 
@@ -176,21 +176,21 @@ cfg_x86::block* cfg_x86::build(const std::shared_ptr<debugger>& debugger, uint64
             return true;
         }
 
-        const auto begin = orig->instructions.begin() + index;
-        const auto end = orig->instructions.end();
+        const auto begin = orig->trace.begin() + index;
+        const auto end = orig->trace.end();
 
         const auto next = new block;
 
         // Copy tail
-        next->instructions = std::vector<instruction_x86>(begin, end);
+        next->trace = std::vector<traceback_x86>(begin, end);
 
         // Update map
         // TODO: Inefficient with large blocks
         for (auto j = 0; j < end - begin; ++j)
-            map[(begin + j)->address] = std::make_pair(next, j);
+            map[(begin + j)->instruction.address] = std::make_pair(next, j);
 
         // Truncate tail
-        orig->instructions.erase(begin, end);
+        orig->trace.erase(begin, end);
 
         // Update successor information
         cur->next.emplace_back(condition, next);
@@ -217,18 +217,12 @@ cfg_x86::block* cfg_x86::build(const std::shared_ptr<debugger>& debugger, uint64
     while (cur->next.empty())
     {
         // Map address to block and index
-        map.emplace(address, std::make_pair(cur, cur->instructions.size()));
+        map.emplace(address, std::make_pair(cur, cur->trace.size()));
 
+        // Emulate instruction and apped traceback
         debugger->jump_to(address);
-
         const auto instruction = debugger->next_instruction();
-
-        // Append instruction
-        cur->instructions.push_back(instruction);
-
-        // Emulate instruction
-        if (debugger->step_into() != UC_ERR_OK)
-            std::cout << "FAIL: " << instruction.to_string(true) << std::endl;
+        cur->trace.emplace_back(instruction, debugger->step_into(), debugger->get_context());
 
         if (instruction.code == stop)
         {
@@ -323,5 +317,5 @@ std::vector<cfg_x86::path> cfg_x86::enumerate_paths(block* const root, std::map<
 
 bool operator<(const cfg_x86::block& block1, const cfg_x86::block& block2)
 {
-    return block1.instructions.front().address < block2.instructions.front().address;
+    return block1.trace.front().instruction.address < block2.trace.front().instruction.address;
 }
