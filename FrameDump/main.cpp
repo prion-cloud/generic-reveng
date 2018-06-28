@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "cfg.h"
+#include "deobfuscator.h"
 #include "display.h"
 
 #define FILE_1 "text1.dis"
@@ -174,39 +174,6 @@ static std::vector<uint64_t> addresses =
 */
 };
 
-class deobfuscator_x86
-{
-    std::shared_ptr<debugger> debugger_;
-
-public:
-
-    explicit deobfuscator_x86(loader& loader, std::vector<uint8_t> code)
-        : debugger_(std::make_shared<debugger>(loader, code)) { }
-
-    std::vector<cfg_x86> inspect_framed(std::vector<uint64_t> addresses) const
-    {
-        std::vector<cfg_x86> cfgs;
-        for (unsigned i = 0; i < addresses.size(); ++i)
-        {
-            const auto context = debugger_->get_context();
-
-            const auto address = addresses.at(i);
-
-            std::cout << '#' << i + 1 << std::endl << std::endl;
-
-            const auto cfg = cfg_x86(debugger_, address);
-            cfgs.push_back(cfg);
-
-            cfg.draw();
-            std::cout << std::endl;
-
-            debugger_->set_context(context);
-        }
-
-        return cfgs;
-    }
-};
-
 int main(const int argc, char* argv[])
 {
     dsp::h_console = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -247,7 +214,16 @@ int main(const int argc, char* argv[])
 
         loader_pe loader;
 
-        const auto graphs = deobfuscator_x86(loader, code).inspect_framed(addresses);
+        const auto deobfuscator = deobfuscator_x86(loader, code);
+
+        for (unsigned i = 0; i < addresses.size(); ++i)
+        {
+            std::cout << '#' << i + 1 << std::endl << std::endl;
+
+            deobfuscator.deobfuscate(addresses.at(i));
+
+            std::cin.get();
+        }
     }
     catch (std::runtime_error& err)
     {
