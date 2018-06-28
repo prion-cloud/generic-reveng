@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "control_flow_graph.h"
+#include "cfg.h"
 #include "display.h"
 
 #define FILE_1 "text1.dis"
@@ -183,9 +183,9 @@ public:
     explicit deobfuscator_x86(loader& loader, std::vector<uint8_t> code)
         : debugger_(std::make_shared<debugger>(loader, code)) { }
 
-    std::vector<control_flow_graph_x86> inspect_framed(std::vector<uint64_t> addresses) const
+    std::vector<cfg_x86> inspect_framed(std::vector<uint64_t> addresses) const
     {
-        std::vector<control_flow_graph_x86> cfgs;
+        std::vector<cfg_x86> cfgs;
         for (unsigned i = 0; i < addresses.size(); ++i)
         {
             const auto context = debugger_->get_context();
@@ -194,7 +194,7 @@ public:
 
             std::cout << '#' << i + 1 << std::endl << std::endl;
 
-            const auto cfg = control_flow_graph_x86(debugger_, address);
+            const auto cfg = cfg_x86(debugger_, address);
             cfgs.push_back(cfg);
 
             cfg.draw();

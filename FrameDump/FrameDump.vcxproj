@@ -85,14 +85,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="control_flow_graph.h" />
+    <ClInclude Include="cfg.h" />
     <ClInclude Include="data_flow_tree.h" />
     <ClInclude Include="display.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="display.cpp" />
-    <ClCompile Include="control_flow_graph.cpp" />
+    <ClCompile Include="cfg.cpp" />
     <ClCompile Include="data_flow_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "control_flow_graph.h"
+#include "cfg.h"
 #include "display.h"
 
 #define CHAR_ID '*'
@@ -44,7 +44,7 @@ static void replace_first(std::string& string, const char old_char, const char n
     string = string.substr(0, pos) + new_char + string.substr(pos + 1);
 }
 
-std::string control_flow_graph_x86::block::to_string() const
+std::string cfg_x86::block::to_string() const
 {
     const std::string l = "| ";
     const std::string r = " |";
@@ -83,7 +83,7 @@ std::string control_flow_graph_x86::block::to_string() const
     return ss.str();
 }
 
-control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, const uint64_t root_address)
+cfg_x86::cfg_x86(const std::shared_ptr<debugger>& debugger, const uint64_t root_address)
 {
     const auto root_instruction = debugger->disassemble_at(root_address);
     if (root_instruction.str_mnemonic != "push")
@@ -97,7 +97,7 @@ control_flow_graph_x86::control_flow_graph_x86(const std::shared_ptr<debugger>& 
         build(debugger, root_address, assemble_x86(0, "pop " + root_instruction.str_operands), map_, redir));
 }
 
-void control_flow_graph_x86::draw() const
+void cfg_x86::draw() const
 {
     std::map<block, char> map1;
     std::map<char, block> map2;
@@ -150,8 +150,8 @@ void control_flow_graph_x86::draw() const
     }
 }
 
-control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_ptr<debugger>& debugger, uint64_t address,
-    const std::vector<uint8_t>& stop, std::map<uint64_t, std::pair<block*, size_t>>& map, std::map<block*, block*>& redir)
+cfg_x86::block* cfg_x86::build(const std::shared_ptr<debugger>& debugger, uint64_t address, const std::vector<uint8_t>& stop,
+    std::map<uint64_t, std::pair<block*, size_t>>& map, std::map<block*, block*>& redir)
 {
     // New (current) block
     const auto cur = new block;
@@ -295,7 +295,7 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
     return cur;
 }
 
-std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const root, std::map<block*, bool> map,
+std::vector<cfg_x86::path> cfg_x86::enumerate_paths(block* const root, std::map<block*, bool> map,
     std::vector<x86_insn> conditions, std::vector<block*> passed)
 {
     if (map[root])
@@ -321,7 +321,7 @@ std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_path
     return paths;
 }
 
-bool operator<(const control_flow_graph_x86::block& block1, const control_flow_graph_x86::block& block2)
+bool operator<(const cfg_x86::block& block1, const cfg_x86::block& block2)
 {
     return block1.instructions.front().address < block2.instructions.front().address;
 }

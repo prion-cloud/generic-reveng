@@ -1,6 +1,6 @@
 #pragma once
 
-class control_flow_graph_x86
+class cfg_x86
 {
     struct block
     {
@@ -24,7 +24,7 @@ class control_flow_graph_x86
 
 public:
 
-    control_flow_graph_x86(const std::shared_ptr<debugger>& debugger, uint64_t root_address);
+    cfg_x86(const std::shared_ptr<debugger>& debugger, uint64_t root_address);
 
     void draw() const;
 
