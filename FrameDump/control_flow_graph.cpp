@@ -295,8 +295,8 @@ control_flow_graph_x86::block* control_flow_graph_x86::build(const std::shared_p
     return cur;
 }
 
-std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const root,
-    std::map<block*, bool> map, std::vector<x86_insn> conditions, std::vector<block*> passed)
+std::vector<control_flow_graph_x86::path> control_flow_graph_x86::enumerate_paths(block* const root, std::map<block*, bool> map,
+    std::vector<x86_insn> conditions, std::vector<block*> passed)
 {
     if (map[root])
         return { };

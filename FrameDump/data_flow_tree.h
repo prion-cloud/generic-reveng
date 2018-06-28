@@ -1,6 +1,6 @@
 #pragma once
 
-class data_flow_tree
+class data_flow_tree_x86
 {
     
 };
