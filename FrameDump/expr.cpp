@@ -22,7 +22,7 @@ std::string expr::constant::evaluate() const
     std::ostringstream ss;
     if (value_ < 0)
         ss << "(-" << std::hex << std::uppercase << -value_ << ")";
-    else ss << value_;
+    else ss << std::hex << std::uppercase << value_;
     return ss.str();
 }
 expr::variable::variable(const x86_reg id)
@@ -60,6 +60,11 @@ expr expr::make_const(const int64_t value)
 expr expr::make_var(const x86_reg id)
 {
     return expr(new variable(id));
+}
+
+bool operator<(const expr& expr1, const expr& expr2)
+{
+    return expr1.evaluate() < expr2.evaluate();
 }
 
 expr::expr(node* const root)

@@ -4,26 +4,76 @@
 
 void data_monitor::apply(const instruction_x86& instruction)
 {
-    for (const auto& [reg, data] : inspect_changes(instruction))
-        map_[reg] = data;
+    std::map<x86_reg, expr> register_updates;
+    std::map<expr, expr> memory_updates;
+
+    inspect_updates(instruction, register_updates, memory_updates);
+
+    for (const auto& [reg, data_expr] : register_updates)
+        register_map_[reg] = data_expr;
+
+    for (const auto& [mem_expr, data_expr] : memory_updates)
+        memory_map_[mem_expr] = data_expr;
 }
 
-expr data_monitor::safe_at(const x86_reg reg) const
+std::string data_monitor::check(const x86_reg reg) const
 {
-    const auto it = map_.find(reg);
+    return safe_at_reg(reg).evaluate();
+}
 
-    if (it == map_.end())
+expr data_monitor::safe_at_reg(const x86_reg reg) const
+{
+    const auto it = register_map_.find(reg);
+
+    if (it == register_map_.end())
         return expr::make_var(reg);
 
     return it->second;
 }
-
-std::map<x86_reg, expr> data_monitor::inspect_changes(const instruction_x86& instruction) const
+expr data_monitor::safe_at_mem(const expr expr) const
 {
-    std::map<x86_reg, expr> changes
+    const auto it = memory_map_.find(expr);
+
+    if (it == memory_map_.end())
+        return expr;
+
+    return it->second;
+}
+
+expr data_monitor::to_expr(const x86_op_mem mem) const
+{
+    std::optional<expr> expr = std::nullopt;
+
+    if (mem.base != 0)
+        expr = safe_at_reg(static_cast<x86_reg>(mem.base));
+    if (mem.index != 0)
     {
-        { X86_REG_RIP, expr::make_const(/*static_cast<int64_t>(*/instruction.address/*)*/) }
+        const auto index = safe_at_reg(static_cast<x86_reg>(mem.index));
+        if (expr.has_value())
+            expr = expr->append('+', index);
+        else expr = index;
+        if (mem.scale != 1)
+            expr = expr->append('*', expr::make_const(mem.scale));
+    }
+    if (mem.disp != 0)
+    {
+        const auto disp = expr::make_const(mem.disp);
+        if (expr.has_value())
+            expr = expr->append('+', disp);
+        else expr = disp;
+    }
+
+    return *expr;
+}
+
+void data_monitor::inspect_updates(const instruction_x86& instruction,
+    std::map<x86_reg, expr>& reg_updates, std::map<expr, expr>& mem_updates) const
+{
+    reg_updates =
+    {
+        { X86_REG_RIP, expr::make_const(/*static_cast<int64_t>(*/instruction.address/*)*/) } // TODO
     };
+    mem_updates = { };
 
     std::optional<operand_x86> op0 = std::nullopt;
     if (!instruction.operands.empty())
@@ -35,107 +85,99 @@ std::map<x86_reg, expr> data_monitor::inspect_changes(const instruction_x86& ins
     switch (instruction.type)
     {
     case ins_push:
-    case ins_call:
-        changes.emplace(X86_REG_RSP, safe_at(X86_REG_RSP).append('-', expr::make_const(8)));
+        {
+            const auto rsp = safe_at_reg(X86_REG_RSP).append('-', expr::make_const(8));
+            reg_updates.emplace(X86_REG_RSP, rsp);
+            if (op0->type == op_register)
+                mem_updates.emplace(rsp, safe_at_reg(std::get<op_register>(op0->value)));
+            if (op0->type == op_immediate)
+                mem_updates.emplace(rsp, expr::make_const(std::get<op_immediate>(op0->value)));
+        }
         break;
     case ins_pop:
+        {
+            const auto rsp = safe_at_reg(X86_REG_RSP);
+            reg_updates.emplace(std::get<op_register>(op0->value), safe_at_mem(rsp));
+            reg_updates.emplace(X86_REG_RSP, rsp.append('+', expr::make_const(8)));
+        }
+        break;
+    case ins_call:
+        {
+            const auto rsp = safe_at_reg(X86_REG_RSP).append('-', expr::make_const(8));
+            reg_updates.emplace(X86_REG_RSP, rsp);
+            mem_updates.emplace(rsp, expr::make_const(instruction.address + instruction.code.size())); // TODO: reg_updates[RIP]
+        }
+        break;
     case ins_return:
-        changes.emplace(X86_REG_RSP, safe_at(X86_REG_RSP).append('+', expr::make_const(8)));
+        {
+            const auto rsp = safe_at_reg(X86_REG_RSP);
+            reg_updates.emplace(X86_REG_RIP, safe_at_mem(rsp));
+            reg_updates.emplace(X86_REG_RSP, rsp.append('+', expr::make_const(8)));
+        }
         break;
     case ins_move:
         if (op0->type == op_register)
         {
             const auto reg0 = std::get<op_register>(op0->value);
             if (op1->type == op_register)
-                changes.emplace(reg0, safe_at(std::get<op_register>(op1->value)));
+                reg_updates.emplace(reg0, safe_at_reg(std::get<op_register>(op1->value)));
             if (op1->type == op_immediate)
-            {
-                std::ostringstream ss;
-                ss << std::hex << std::uppercase << std::get<op_immediate>(op1->value);
-                changes.emplace(reg0, ss.str());
-            }
+                reg_updates.emplace(reg0, expr::make_const(std::get<op_immediate>(op1->value)));
             if (op1->type == op_memory)
-                changes.emplace(reg0, "[???]");
+                reg_updates.emplace(reg0, safe_at_mem(to_expr(std::get<op_memory>(op1->value))));
+        }
+        if (op0->type == op_memory)
+        {
+            const auto mem0 = std::get<op_memory>(op0->value);
+            if (op1->type == op_register)
+                mem_updates.emplace(to_expr(mem0), safe_at_reg(std::get<op_register>(op1->value)));
+            if (op1->type == op_immediate)
+                mem_updates.emplace(to_expr(mem0), expr::make_const(std::get<op_immediate>(op1->value)));
         }
         break;
     case ins_arithmetic:
         if (instruction.id == X86_INS_MUL)
         {
-            changes.emplace(X86_REG_RAX, safe_at(X86_REG_RAX).append('*', safe_at(std::get<op_register>(op0->value))));
-            changes.emplace(X86_REG_RDX, expr::make_const(0));
+            reg_updates.emplace(X86_REG_RAX, safe_at_reg(X86_REG_RAX).append('*', safe_at_reg(std::get<op_register>(op0->value))));
+            reg_updates.emplace(X86_REG_RDX, expr::make_const(0));
         }
         else if (instruction.id == X86_INS_DIV)
         {
-            const auto rax = safe_at(X86_REG_RAX);
-            const auto reg0 = safe_at(std::get<op_register>(op0->value));
-            changes.emplace(X86_REG_RAX, rax.append('/', reg0));
-            changes.emplace(X86_REG_RDX, rax.append('%', reg0));
+            const auto rax = safe_at_reg(X86_REG_RAX);
+            const auto reg0 = safe_at_reg(std::get<op_register>(op0->value));
+            reg_updates.emplace(X86_REG_RAX, rax.append('/', reg0));
+            reg_updates.emplace(X86_REG_RDX, rax.append('%', reg0));
         }
-        else if (op0->type == op_register)
+        else
         {
             expr other;
             if (op1->type == op_register)
-                other = safe_at(std::get<op_register>(op1->value));
+                other = safe_at_reg(std::get<op_register>(op1->value));
             if (op1->type == op_immediate)
                 other = expr::make_const(std::get<op_immediate>(op1->value));
-            /*if (op1->type == op_memory)
-                ss << "[???]";*/
-            changes.emplace(std::get<op_register>(op0->value),
-                safe_at(std::get<op_register>(op0->value)).append(instruction.id == X86_INS_ADD ? '+' : '-', other));
+            if (op1->type == op_memory)
+                other = safe_at_mem(to_expr(std::get<op_memory>(op1->value)));
+            reg_updates.emplace(std::get<op_register>(op0->value),
+                safe_at_reg(std::get<op_register>(op0->value)).append(instruction.id == X86_INS_ADD ? '+' : '-', other));
         }
         break;
     default:
         if (instruction.id == X86_INS_DEC)
         {
-            if (op0->type == op_register)
-            {
-                const auto reg0 = std::get<op_register>(op0->value);
-                changes.emplace(reg0, safe_at(reg0).append('-', expr::make_const(1)));
-            }
+            const auto reg0 = std::get<op_register>(op0->value);
+            reg_updates.emplace(reg0, safe_at_reg(reg0).append('-', expr::make_const(1)));
         }
         if (instruction.id == X86_INS_INC)
         {
-            if (op0->type == op_register)
-            {
-                const auto reg0 = std::get<op_register>(op0->value);
-                changes.emplace(reg0, safe_at(reg0).append('+', expr::make_const(1)));
-            }
+            const auto reg0 = std::get<op_register>(op0->value);
+            reg_updates.emplace(reg0, safe_at_reg(reg0).append('+', expr::make_const(1)));
         }
         if (instruction.id == X86_INS_LEA)
-        {
-            const auto reg0 = std::get<op_register>(op0->value);
-            const auto mem1 = std::get<op_memory>(op1->value);
-
-            std::optional<expr> expr;
-
-            if (mem1.base != 0)
-                expr = safe_at(static_cast<x86_reg>(mem1.base));
-            if (mem1.index != 0)
-            {
-                const auto index = safe_at(static_cast<x86_reg>(mem1.index));
-                if (expr.has_value())
-                    expr = expr->append('+', index);
-                else expr = index;
-                if (mem1.scale != 1)
-                    expr = expr->append('*', expr::make_const(mem1.scale));
-            }
-            if (mem1.disp != 0)
-            {
-                const auto disp = expr::make_const(mem1.disp);
-                if (expr.has_value())
-                    expr = expr->append('+', disp);
-                else expr = disp;
-            }
-
-            changes.emplace(reg0, *expr);
-        }
+            reg_updates.emplace(std::get<op_register>(op0->value), to_expr(std::get<op_memory>(op1->value)));
         if (instruction.id == X86_INS_NEG)
         {
-            if (op0->type == op_register)
-            {
-                const auto reg0 = std::get<op_register>(op0->value);
-                changes.emplace(reg0, safe_at(reg0).wrap('-'));
-            }
+            const auto reg0 = std::get<op_register>(op0->value);
+            reg_updates.emplace(reg0, safe_at_reg(reg0).wrap('-'));
         }
         if (instruction.id == X86_INS_XCHG)
         {
@@ -145,17 +187,24 @@ std::map<x86_reg, expr> data_monitor::inspect_changes(const instruction_x86& ins
                 if (op1->type == op_register)
                 {
                     const auto reg1 = std::get<op_register>(op1->value);
-                    changes.emplace(reg0, safe_at(reg1));
-                    changes.emplace(reg1, safe_at(reg0));
+                    reg_updates.emplace(reg0, safe_at_reg(reg1));
+                    reg_updates.emplace(reg1, safe_at_reg(reg0));
                 }
                 if (op1->type == op_memory)
-                    changes.emplace(reg0, "[???]");
+                {
+                    const auto mem1 = std::get<op_memory>(op1->value);
+                    reg_updates.emplace(reg0, safe_at_mem(to_expr(mem1)));
+                    mem_updates.emplace(to_expr(mem1), safe_at_reg(reg0));
+                }
             }
             if (op0->type == op_memory)
-                changes.emplace(std::get<op_register>(op1->value), "[???]");
+            {
+                const auto mem0 = std::get<op_memory>(op0->value);
+                const auto reg1 = std::get<op_register>(op1->value);
+                mem_updates.emplace(to_expr(mem0), safe_at_reg(reg1));
+                reg_updates.emplace(reg1, safe_at_mem(to_expr(mem0)));
+            }
         }
         break;
     }
-
-    return changes;
 }

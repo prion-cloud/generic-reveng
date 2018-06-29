@@ -5,11 +5,11 @@ class expr
     class node
     {
     public:
-        virtual ~node() = 0;
+        virtual ~node() = default;
         virtual std::string evaluate() const = 0;
     };
 
-    class op_unary : node
+    class op_unary : public node
     {
         char op_;
         node* next_;
@@ -17,7 +17,7 @@ class expr
         op_unary(char op, node* next);
         std::string evaluate() const override;
     };
-    class op_binary : node
+    class op_binary : public node
     {
         char op_;
         node* left_;
@@ -27,14 +27,14 @@ class expr
         std::string evaluate() const override;
     };
 
-    class constant : node
+    class constant : public node
     {
         int64_t value_;
     public:
         explicit constant(int64_t value);
         std::string evaluate() const override;
     };
-    class variable : node
+    class variable : public node
     {
         x86_reg id_;
     public:
@@ -55,6 +55,8 @@ public:
 
     static expr make_const(int64_t value);
     static expr make_var(x86_reg id);
+
+    friend bool operator<(const expr& expr1, const expr& expr2);
 
 private:
 
