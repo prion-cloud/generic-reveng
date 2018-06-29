@@ -1,8 +1,10 @@
 #pragma once
 
+#include "expr.h"
+
 class data_monitor
 {
-    std::map<x86_reg, std::string> map_;
+    std::map<x86_reg, expr> map_;
 
 public:
 
@@ -12,7 +14,7 @@ public:
 
 private:
 
-    std::string safe_at(x86_reg reg) const;
+    expr safe_at(x86_reg reg) const;
 
-    std::map<x86_reg, std::string> inspect_changes(const instruction_x86& instruction) const;
+    std::map<x86_reg, expr> inspect_changes(const instruction_x86& instruction) const;
 };

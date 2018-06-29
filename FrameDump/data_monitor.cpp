@@ -8,32 +8,21 @@ void data_monitor::apply(const instruction_x86& instruction)
         map_[reg] = data;
 }
 
-static std::string reg_name(const unsigned reg)
-{
-    csh cs;
-    cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
-
-    const std::string name = cs_reg_name(cs, reg);
-
-    cs_close(&cs);
-
-    return name;
-}
-std::string data_monitor::safe_at(const x86_reg reg) const
+expr data_monitor::safe_at(const x86_reg reg) const
 {
     const auto it = map_.find(reg);
 
     if (it == map_.end())
-        return reg_name(reg);
+        return expr::make_var(reg);
 
     return it->second;
 }
 
-std::map<x86_reg, std::string> data_monitor::inspect_changes(const instruction_x86& instruction) const
+std::map<x86_reg, expr> data_monitor::inspect_changes(const instruction_x86& instruction) const
 {
-    std::map<x86_reg, std::string> changes
+    std::map<x86_reg, expr> changes
     {
-        { X86_REG_RIP, std::to_string(instruction.address) }
+        { X86_REG_RIP, expr::make_const(/*static_cast<int64_t>(*/instruction.address/*)*/) }
     };
 
     std::optional<operand_x86> op0 = std::nullopt;
@@ -47,11 +36,11 @@ std::map<x86_reg, std::string> data_monitor::inspect_changes(const instruction_x
     {
     case ins_push:
     case ins_call:
-        changes.emplace(X86_REG_RSP, "(" + safe_at(X86_REG_RSP) + " - 8)");
+        changes.emplace(X86_REG_RSP, safe_at(X86_REG_RSP).append('-', expr::make_const(8)));
         break;
     case ins_pop:
     case ins_return:
-        changes.emplace(X86_REG_RSP, "(" + safe_at(X86_REG_RSP) + " + 8)");
+        changes.emplace(X86_REG_RSP, safe_at(X86_REG_RSP).append('+', expr::make_const(8)));
         break;
     case ins_move:
         if (op0->type == op_register)
@@ -72,32 +61,27 @@ std::map<x86_reg, std::string> data_monitor::inspect_changes(const instruction_x
     case ins_arithmetic:
         if (instruction.id == X86_INS_MUL)
         {
-            changes.emplace(X86_REG_RAX, "(" + safe_at(X86_REG_RAX) + " * " + safe_at(std::get<op_register>(op0->value)));
-            changes.emplace(X86_REG_RDX, "0");
+            changes.emplace(X86_REG_RAX, safe_at(X86_REG_RAX).append('*', safe_at(std::get<op_register>(op0->value))));
+            changes.emplace(X86_REG_RDX, expr::make_const(0));
         }
         else if (instruction.id == X86_INS_DIV)
         {
             const auto rax = safe_at(X86_REG_RAX);
             const auto reg0 = safe_at(std::get<op_register>(op0->value));
-            changes.emplace(X86_REG_RAX, "(" + rax + " / " + reg0 + ")");
-            changes.emplace(X86_REG_RDX, "(" + rax + " % " + reg0 + ")");
+            changes.emplace(X86_REG_RAX, rax.append('/', reg0));
+            changes.emplace(X86_REG_RDX, rax.append('%', reg0));
         }
         else if (op0->type == op_register)
         {
-            std::ostringstream ss;
-            ss << "(" << safe_at(std::get<op_register>(op0->value));
-            if (instruction.id == X86_INS_ADD)
-                ss << " + ";
-            if (instruction.id == X86_INS_SUB)
-                ss << " - ";
+            expr other;
             if (op1->type == op_register)
-                ss << safe_at(std::get<op_register>(op1->value));
+                other = safe_at(std::get<op_register>(op1->value));
             if (op1->type == op_immediate)
-                ss << std::hex << std::uppercase << std::get<op_immediate>(op1->value);
-            if (op1->type == op_memory)
-                ss << "[???]";
-            ss << ")";
-            changes.emplace(std::get<op_register>(op0->value), ss.str());
+                other = expr::make_const(std::get<op_immediate>(op1->value));
+            /*if (op1->type == op_memory)
+                ss << "[???]";*/
+            changes.emplace(std::get<op_register>(op0->value),
+                safe_at(std::get<op_register>(op0->value)).append(instruction.id == X86_INS_ADD ? '+' : '-', other));
         }
         break;
     default:
@@ -106,7 +90,7 @@ std::map<x86_reg, std::string> data_monitor::inspect_changes(const instruction_x
             if (op0->type == op_register)
             {
                 const auto reg0 = std::get<op_register>(op0->value);
-                changes.emplace(reg0, "(" + safe_at(reg0) + " - 1)");
+                changes.emplace(reg0, safe_at(reg0).append('-', expr::make_const(1)));
             }
         }
         if (instruction.id == X86_INS_INC)
@@ -114,39 +98,43 @@ std::map<x86_reg, std::string> data_monitor::inspect_changes(const instruction_x
             if (op0->type == op_register)
             {
                 const auto reg0 = std::get<op_register>(op0->value);
-                changes.emplace(reg0, "(" + safe_at(reg0) + " + 1)");
+                changes.emplace(reg0, safe_at(reg0).append('+', expr::make_const(1)));
             }
         }
         if (instruction.id == X86_INS_LEA)
         {
+            const auto reg0 = std::get<op_register>(op0->value);
             const auto mem1 = std::get<op_memory>(op1->value);
-            std::ostringstream ss;
-            ss << "(";
+
+            std::optional<expr> expr;
+
             if (mem1.base != 0)
-            {
-                ss << safe_at(static_cast<x86_reg>(mem1.base));
-                if (mem1.index != 0 || mem1.disp != 0)
-                    ss << " + ";
-            }
+                expr = safe_at(static_cast<x86_reg>(mem1.base));
             if (mem1.index != 0)
             {
-                ss << safe_at(static_cast<x86_reg>(mem1.index));
+                const auto index = safe_at(static_cast<x86_reg>(mem1.index));
+                if (expr.has_value())
+                    expr = expr->append('+', index);
+                else expr = index;
                 if (mem1.scale != 1)
-                    ss << " * " << mem1.scale;
-                if (mem1.disp != 0)
-                    ss << " + ";
+                    expr = expr->append('*', expr::make_const(mem1.scale));
             }
             if (mem1.disp != 0)
-                ss << std::hex << std::uppercase << mem1.disp;
-            ss << ")";
-            changes.emplace(std::get<op_register>(op0->value), ss.str());
+            {
+                const auto disp = expr::make_const(mem1.disp);
+                if (expr.has_value())
+                    expr = expr->append('+', disp);
+                else expr = disp;
+            }
+
+            changes.emplace(reg0, *expr);
         }
         if (instruction.id == X86_INS_NEG)
         {
             if (op0->type == op_register)
             {
                 const auto reg0 = std::get<op_register>(op0->value);
-                changes.emplace(reg0, "(-(" + safe_at(reg0) + "))");
+                changes.emplace(reg0, safe_at(reg0).wrap('-'));
             }
         }
         if (instruction.id == X86_INS_XCHG)
