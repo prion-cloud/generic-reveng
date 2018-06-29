@@ -86,17 +86,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cfg.h" />
-    <ClInclude Include="data_flow_tree.h" />
+    <ClInclude Include="data_monitor.h" />
     <ClInclude Include="deobfuscator.h" />
     <ClInclude Include="display.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="traceback.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="data_monitor.cpp" />
     <ClCompile Include="deobfuscator.cpp" />
     <ClCompile Include="display.cpp" />
     <ClCompile Include="cfg.cpp" />
-    <ClCompile Include="data_flow_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
