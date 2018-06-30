@@ -26,10 +26,10 @@
     <ClInclude Include="traceback.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="expr.h">
+    <ClInclude Include="data_monitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="data_monitor.h">
+    <ClInclude Include="expr_tree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -52,10 +52,10 @@
     <ClCompile Include="traceback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="expr.cpp">
+    <ClCompile Include="data_monitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="data_monitor.cpp">
+    <ClCompile Include="expr_tree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

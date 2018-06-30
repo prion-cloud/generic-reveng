@@ -1,15 +1,15 @@
 #pragma once
 
-#include "expr.h"
+#include "expr_tree.h"
 
-class data_monitor
+class data_monitor_x86
 {
-    std::map<x86_reg, expr> register_map_;
-    std::map<expr, expr> memory_map_;
+    std::map<x86_reg, const expr_tree_x86*> register_map_;
+    std::map<expr_tree_x86, const expr_tree_x86*> memory_map_;
 
 public:
 
-    data_monitor() = default;
+    data_monitor_x86() = default;
 
     void apply(const instruction_x86& instruction);
 
@@ -17,11 +17,11 @@ public:
 
 private:
 
-    expr safe_at_reg(x86_reg reg) const;
-    expr safe_at_mem(expr expr) const;
+    const expr_tree_x86* safe_at_reg(x86_reg reg) const;
+    const expr_tree_x86* safe_at_mem(const expr_tree_x86* expr) const;
 
-    expr to_expr(x86_op_mem mem) const;
+    const expr_tree_x86* to_expr(x86_op_mem mem) const;
 
     void inspect_updates(const instruction_x86& instruction,
-        std::map<x86_reg, expr>& reg_updates, std::map<expr, expr>& mem_updates) const;
+        std::map<x86_reg, const expr_tree_x86*>& reg_updates, std::map<expr_tree_x86, const expr_tree_x86*>& mem_updates) const;
 };

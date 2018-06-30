@@ -89,7 +89,7 @@
     <ClInclude Include="data_monitor.h" />
     <ClInclude Include="deobfuscator.h" />
     <ClInclude Include="display.h" />
-    <ClInclude Include="expr.h" />
+    <ClInclude Include="expr_tree.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="traceback.h" />
   </ItemGroup>
@@ -98,7 +98,7 @@
     <ClCompile Include="deobfuscator.cpp" />
     <ClCompile Include="display.cpp" />
     <ClCompile Include="cfg.cpp" />
-    <ClCompile Include="expr.cpp" />
+    <ClCompile Include="expr_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
