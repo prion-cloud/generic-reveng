@@ -13,9 +13,11 @@ public:
 
     void apply(const instruction_x86& instruction);
 
-    std::string check(x86_reg reg) const;
+    std::string check_reg(x86_reg reg) const;
+    std::string check_mem(expr_tree_x86 expr) const;
 
-    std::vector<std::string> all() const;
+    std::vector<std::string> all_reg() const;
+    std::vector<std::string> all_mem() const;
 
 private:
 

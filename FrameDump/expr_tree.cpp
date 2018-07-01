@@ -2,50 +2,6 @@
 
 #include "expr_tree.h"
 
-expr_tree_x86::op<'+'>::op(std::vector<const node*> n)
-{
-    std::vector<const constant*> constants;
-    for (const auto nn : n)
-    {
-        if (nn->is_const())
-            constants.push_back(dynamic_cast<const constant*>(nn));
-        else next.push_back(nn);
-    }
-    if (constants.empty())
-        return;
-    auto c = constants.front();
-    for (unsigned i = 1; i < constants.size(); ++i)
-        c = new constant(c->value + constants.at(i)->value);
-    next.push_back(c);
-}
-template <char C>
-std::string expr_tree_x86::op<C>::to_string() const
-{
-    std::ostringstream ss;
-    ss << "(";
-    for (unsigned i = 0; i < next.size(); ++i)
-    {
-        if (i > 0)
-            ss << " " << C << " ";
-        ss << next.at(i)->to_string();
-    }
-    ss << ")";
-    return ss.str();
-}
-template <char C>
-bool expr_tree_x86::op<C>::is_const() const
-{
-    return false;
-}
-template <char C>
-expr_tree_x86::node* expr_tree_x86::op<C>::neg() const
-{
-    std::vector<const node*> n;
-    for (const auto nn : next)
-        n.push_back(nn->neg());
-    return new op<C>(n);
-}
-
 expr_tree_x86::constant::constant(const int64_t value)
     : value(value) { }
 std::string expr_tree_x86::constant::to_string() const
@@ -89,51 +45,108 @@ expr_tree_x86::node* expr_tree_x86::variable::neg() const
     return new variable(id, !negative);
 }
 
+std::string expr_tree_x86::table::to_string() const
+{
+    std::ostringstream ss;
+
+    const auto size0 = entries.size();
+
+    for (unsigned i = 0; i < size0; ++i)
+    {
+        if (i > 0)
+            ss << " + ";
+
+        const auto size1 = entries.at(i).size();
+        for (unsigned j = 0; j < size1; ++j)
+        {
+            if (j > 0)
+                ss << " * ";
+            
+            ss << entries.at(i).at(j)->to_string();
+        }
+    }
+
+    return ss.str();
+}
+bool expr_tree_x86::table::is_zero() const
+{
+    return entries.size() == 1 && entries.at(0).size() == 1 && entries.front().front()->is_const()
+        && dynamic_cast<const constant*>(entries.front().front())->value == 0;
+}
+bool expr_tree_x86::table::is_one() const
+{
+    return entries.size() == 1 && entries.at(0).size() == 1 && entries.front().front()->is_const()
+        && dynamic_cast<const constant*>(entries.front().front())->value == 1;
+}
+
 const expr_tree_x86* expr_tree_x86::neg() const
 {
-    return new expr_tree_x86(root_->neg(), adds_);
+    std::vector<std::vector<const node*>> entries;
+    for (const auto& orig_row : numerator_.entries)
+    {
+        std::vector<const node*> new_row;
+        new_row.push_back(orig_row.front()->neg());
+        new_row.insert(new_row.end(), orig_row.begin() + 1, orig_row.end());
+
+        entries.push_back(new_row);
+    }
+
+    return new expr_tree_x86(table { entries }, denominator_);
 }
 
 const expr_tree_x86* expr_tree_x86::add(const expr_tree_x86* other) const
 {
-    std::vector<const node*> next;
+    if (denominator_.to_string() == other->denominator_.to_string())
+        return new expr_tree_x86(numerator_ + other->numerator_, denominator_);
 
-    if (adds_.find(root_) == adds_.end())
-        next.push_back(root_);
-    else
-    {
-        const auto add_root = dynamic_cast<const op<'+'>*>(root_);
-        next.insert(next.end(), add_root->next.begin(), add_root->next.end());
-    }
-
-    if (other->adds_.find(other->root_) == other->adds_.end())
-        next.push_back(other->root_);
-    else
-    {
-        const auto add_root = dynamic_cast<const op<'+'>*>(other->root_);
-        next.insert(next.end(), add_root->next.begin(), add_root->next.end());
-    }
-
-    const auto adder = new op<'+'>(next);
-    return new expr_tree_x86(adder, { adder });
+    return new expr_tree_x86(
+        numerator_ * other->denominator_ + other->numerator_ * denominator_,
+        denominator_ * other->denominator_);
 }
 const expr_tree_x86* expr_tree_x86::sub(const expr_tree_x86* other) const
 {
     return add(other->neg());
 }
+const expr_tree_x86* expr_tree_x86::mul(const expr_tree_x86* other) const
+{
+    return new expr_tree_x86(numerator_ * other->numerator_, denominator_ * other->denominator_);
+}
+const expr_tree_x86* expr_tree_x86::div(const expr_tree_x86* other) const
+{
+    return new expr_tree_x86(numerator_ * other->denominator_, denominator_ * other->numerator_);
+}
+const expr_tree_x86* expr_tree_x86::mod(const expr_tree_x86* other) const
+{
+    return sub(div(other)->mul(other));
+}
 
 std::string expr_tree_x86::to_string() const
 {
-    return root_->to_string();
+    std::ostringstream ss;
+
+    const auto denom = !denominator_.is_one();
+    if (denom && numerator_.entries.size() > 1)
+        ss << "(";
+
+    ss << numerator_.to_string();
+
+    if (denom)
+    {
+        if (numerator_.entries.size() > 1)
+            ss << ")";
+        ss << " / " << denominator_.to_string();
+    }
+
+    return ss.str();
 }
 
 const expr_tree_x86* expr_tree_x86::make_const(const int64_t value)
 {
-    return new expr_tree_x86(new constant(value), { });
+    return new expr_tree_x86(table { {{ new constant(value) }} }, table { {{ new constant(1) }} });
 }
 const expr_tree_x86* expr_tree_x86::make_var(const x86_reg id)
 {
-    return new expr_tree_x86(new variable(id, false), { });
+    return new expr_tree_x86(table { {{ new variable(id, false) }} }, table { {{ new constant(1) }} });
 }
 
 bool operator<(const expr_tree_x86& expr1, const expr_tree_x86& expr2)
@@ -141,5 +154,81 @@ bool operator<(const expr_tree_x86& expr1, const expr_tree_x86& expr2)
     return expr1.to_string() < expr2.to_string();
 }
 
-expr_tree_x86::expr_tree_x86(const node* root, std::set<const void*> adds)
-    : root_(root), adds_(std::move(adds)) { }
+expr_tree_x86::table operator+(const expr_tree_x86::table& table1, const expr_tree_x86::table& table2)
+{
+    expr_tree_x86::table result;
+
+    std::vector<const expr_tree_x86::constant*> constants;
+
+    for (const auto& next : table1.entries)
+    {
+        if (next.size() == 1 && next.front()->is_const())
+            constants.push_back(dynamic_cast<const expr_tree_x86::constant*>(next.front()));
+        else result.entries.push_back(next);
+    }
+    for (const auto& next : table2.entries)
+    {
+        if (next.size() == 1 && next.front()->is_const())
+            constants.push_back(dynamic_cast<const expr_tree_x86::constant*>(next.front()));
+        else result.entries.push_back(next);
+    }
+
+    if (!constants.empty())
+    {
+        auto value = constants.front()->value;
+        for (unsigned i = 1; i < constants.size(); ++i)
+            value += constants.at(i)->value;
+
+        if (value != 0 || result.entries.empty())
+            result.entries.push_back({ new expr_tree_x86::constant(value) });
+    }
+
+    return result;
+}
+expr_tree_x86::table operator*(const expr_tree_x86::table& table1, const expr_tree_x86::table& table2)
+{
+    expr_tree_x86::table result;
+
+    for (const auto& next1 : table1.entries)
+    {
+        for (const auto& next2 : table2.entries)
+        {
+            std::vector<const expr_tree_x86::constant*> constants;
+
+            std::vector<const expr_tree_x86::node*> next;
+            for (const auto n : next1)
+            {
+                if (n->is_const())
+                    constants.push_back(dynamic_cast<const expr_tree_x86::constant*>(n));
+                else next.push_back(n);
+            }
+            for (const auto n : next2)
+            {
+                if (n->is_const())
+                    constants.push_back(dynamic_cast<const expr_tree_x86::constant*>(n));
+                else next.push_back(n);
+            }
+
+            if (!constants.empty())
+            {
+                auto value = constants.front()->value;
+                for (unsigned i = 1; i < constants.size(); ++i)
+                    value *= constants.at(i)->value;
+
+                if (value != 1 || next.empty())
+                    next.push_back(new expr_tree_x86::constant(value));
+            }
+
+            result.entries.push_back(next);
+        }
+    }
+
+    return result;
+}
+
+expr_tree_x86::expr_tree_x86(table numerator, table denominator)
+    : numerator_(std::move(numerator)), denominator_(std::move(denominator))
+{
+    if (numerator_.is_zero())
+        denominator_ = table { {{ new constant(1) }} };
+}

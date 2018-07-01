@@ -10,16 +10,6 @@ class expr_tree_x86
         virtual node* neg() const = 0;
     };
 
-    template <char C>
-    struct op : node
-    {
-        std::vector<const node*> next;
-        explicit op(std::vector<const node*> next);
-        std::string to_string() const override;
-        bool is_const() const override;
-        node* neg() const override;
-    };
-
     struct constant : node
     {
         int64_t value;
@@ -38,9 +28,16 @@ class expr_tree_x86
         node* neg() const override;
     };
 
-    const node* root_;
+    struct table
+    {
+        std::vector<std::vector<const node*>> entries;
+        std::string to_string() const;
+        bool is_zero() const;
+        bool is_one() const;
+    };
 
-    std::set<const void*> adds_;
+    table numerator_;
+    table denominator_;
 
 public:
 
@@ -48,6 +45,9 @@ public:
 
     const expr_tree_x86* add(const expr_tree_x86* other) const;
     const expr_tree_x86* sub(const expr_tree_x86* other) const;
+    const expr_tree_x86* mul(const expr_tree_x86* other) const;
+    const expr_tree_x86* div(const expr_tree_x86* other) const;
+    const expr_tree_x86* mod(const expr_tree_x86* other) const;
 
     std::string to_string() const;
 
@@ -56,7 +56,10 @@ public:
 
     friend bool operator<(const expr_tree_x86& expr1, const expr_tree_x86& expr2);
 
+    friend table operator+(const table& table1, const table& table2);
+    friend table operator*(const table& table1, const table& table2);
+
 private:
 
-    expr_tree_x86(const node* root, std::set<const void*> adds);
+    expr_tree_x86(table numerator, table denominator);
 };
