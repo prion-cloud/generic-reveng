@@ -15,6 +15,8 @@ public:
 
     std::string check(x86_reg reg) const;
 
+    std::vector<std::string> all() const;
+
 private:
 
     const expr_tree_x86* safe_at_reg(x86_reg reg) const;

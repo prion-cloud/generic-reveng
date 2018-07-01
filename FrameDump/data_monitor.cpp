@@ -18,7 +18,17 @@ void data_monitor_x86::apply(const instruction_x86& instruction)
 
 std::string data_monitor_x86::check(const x86_reg reg) const
 {
-    return safe_at_reg(reg)->to_string();
+    return expr_tree_x86::make_var(reg)->to_string() + " <- " + safe_at_reg(reg)->to_string();
+}
+
+std::vector<std::string> data_monitor_x86::all() const
+{
+    std::vector<std::string> result;
+
+    for (const auto [reg, expr] : register_map_)
+        result.push_back(check(reg));
+
+    return result;
 }
 
 const expr_tree_x86* data_monitor_x86::safe_at_reg(const x86_reg reg) const
@@ -26,7 +36,7 @@ const expr_tree_x86* data_monitor_x86::safe_at_reg(const x86_reg reg) const
     const auto it = register_map_.find(reg);
 
     if (it == register_map_.end())
-        return new expr_tree_x86(reg);
+        return expr_tree_x86::make_var(reg);
 
     return it->second;
 }
@@ -57,7 +67,7 @@ const expr_tree_x86* data_monitor_x86::to_expr(const x86_op_mem mem) const
     }
     if (mem.disp != 0)
     {
-        const auto disp = new expr_tree_x86(mem.disp);
+        const auto disp = expr_tree_x86::make_const(mem.disp);
         if (e != nullptr)
             e = e->add(disp);
         else e = disp;
@@ -71,7 +81,7 @@ void data_monitor_x86::inspect_updates(const instruction_x86& instruction,
 {
     reg_updates =
     {
-        { X86_REG_RIP, new expr_tree_x86(instruction.address) } // TODO
+        { X86_REG_RIP, expr_tree_x86::make_const(instruction.address) } // TODO
     };
     mem_updates = { };
 
@@ -86,33 +96,33 @@ void data_monitor_x86::inspect_updates(const instruction_x86& instruction,
     {
     case ins_push:
         {
-            const auto rsp = safe_at_reg(X86_REG_RSP)->add(new expr_tree_x86(int64_t { -8 }));
+            const auto rsp = safe_at_reg(X86_REG_RSP)->sub(expr_tree_x86::make_const(8));
             reg_updates.emplace(X86_REG_RSP, rsp);
             if (op0->type == op_register)
                 mem_updates.emplace(*rsp, safe_at_reg(std::get<op_register>(op0->value)));
             if (op0->type == op_immediate)
-                mem_updates.emplace(*rsp, new expr_tree_x86(std::get<op_immediate>(op0->value)));
+                mem_updates.emplace(*rsp, expr_tree_x86::make_const(std::get<op_immediate>(op0->value)));
         }
         break;
     case ins_pop:
         {
             const auto rsp = safe_at_reg(X86_REG_RSP);
             reg_updates.emplace(std::get<op_register>(op0->value), safe_at_mem(rsp));
-            reg_updates.emplace(X86_REG_RSP, rsp->add(new expr_tree_x86(int64_t { 8 })));
+            reg_updates.emplace(X86_REG_RSP, rsp->add(expr_tree_x86::make_const(8)));
         }
         break;
     case ins_call:
         {
-            const auto rsp = safe_at_reg(X86_REG_RSP)->add(new expr_tree_x86(int64_t { -8 }));
+            const auto rsp = safe_at_reg(X86_REG_RSP)->sub(expr_tree_x86::make_const(8));
             reg_updates.emplace(X86_REG_RSP, rsp);
-            mem_updates.emplace(*rsp, new expr_tree_x86(instruction.address + instruction.code.size())); // TODO: reg_updates[RIP]
+            mem_updates.emplace(*rsp, expr_tree_x86::make_const(instruction.address + instruction.code.size())); // TODO: reg_updates[RIP]
         }
         break;
     case ins_return:
         {
             const auto rsp = safe_at_reg(X86_REG_RSP);
             reg_updates.emplace(X86_REG_RIP, safe_at_mem(rsp));
-            reg_updates.emplace(X86_REG_RSP, rsp->add(new expr_tree_x86(int64_t { 8 })));
+            reg_updates.emplace(X86_REG_RSP, rsp->add(expr_tree_x86::make_const(8)));
         }
         break;
     case ins_move:
@@ -122,7 +132,7 @@ void data_monitor_x86::inspect_updates(const instruction_x86& instruction,
             if (op1->type == op_register)
                 reg_updates.emplace(reg0, safe_at_reg(std::get<op_register>(op1->value)));
             if (op1->type == op_immediate)
-                reg_updates.emplace(reg0, new expr_tree_x86(std::get<op_immediate>(op1->value)));
+                reg_updates.emplace(reg0, expr_tree_x86::make_const(std::get<op_immediate>(op1->value)));
             if (op1->type == op_memory)
                 reg_updates.emplace(reg0, safe_at_mem(to_expr(std::get<op_memory>(op1->value))));
         }
@@ -132,7 +142,7 @@ void data_monitor_x86::inspect_updates(const instruction_x86& instruction,
             if (op1->type == op_register)
                 mem_updates.emplace(*to_expr(mem0), safe_at_reg(std::get<op_register>(op1->value)));
             if (op1->type == op_immediate)
-                mem_updates.emplace(*to_expr(mem0), new expr_tree_x86(std::get<op_immediate>(op1->value)));
+                mem_updates.emplace(*to_expr(mem0), expr_tree_x86::make_const(std::get<op_immediate>(op1->value)));
         }
         break;
     case ins_arithmetic:
@@ -152,30 +162,35 @@ void data_monitor_x86::inspect_updates(const instruction_x86& instruction,
         //{
         if (instruction.id == X86_INS_MUL || instruction.id == X86_INS_DIV)
             break;
-        if (instruction.id == X86_INS_ADD || op1->type == op_immediate)
+        if (op0->type == op_register)
         {
             const expr_tree_x86* other = nullptr;
             if (op1->type == op_register)
                 other = safe_at_reg(std::get<op_register>(op1->value));
             if (op1->type == op_immediate)
-                other = new expr_tree_x86(instruction.id == X86_INS_ADD ? std::get<op_immediate>(op1->value) : -std::get<op_immediate>(op1->value));
+                other = expr_tree_x86::make_const(std::get<op_immediate>(op1->value));
             if (op1->type == op_memory)
                 other = safe_at_mem(to_expr(std::get<op_memory>(op1->value)));
-            reg_updates.emplace(std::get<op_register>(op0->value),
-                safe_at_reg(std::get<op_register>(op0->value))->add(other));
+            const auto reg0 = std::get<op_register>(op0->value);
+            const expr_tree_x86* result = nullptr;
+            if (instruction.id == X86_INS_ADD)
+                result = safe_at_reg(reg0)->add(other);
+            if (instruction.id == X86_INS_SUB)
+                result = safe_at_reg(reg0)->sub(other);
+            reg_updates.emplace(reg0, result);
         }
-        //}
+        // TODO: 
         break;
     default:
         if (instruction.id == X86_INS_DEC)
         {
             const auto reg0 = std::get<op_register>(op0->value);
-            reg_updates.emplace(reg0, safe_at_reg(reg0)->add(new expr_tree_x86(int64_t { -1 })));
+            reg_updates.emplace(reg0, safe_at_reg(reg0)->add(expr_tree_x86::make_const(-1)));
         }
         if (instruction.id == X86_INS_INC)
         {
             const auto reg0 = std::get<op_register>(op0->value);
-            reg_updates.emplace(reg0, safe_at_reg(reg0)->add(new expr_tree_x86(int64_t { 1 })));
+            reg_updates.emplace(reg0, safe_at_reg(reg0)->add(expr_tree_x86::make_const(1)));
         }
         if (instruction.id == X86_INS_LEA)
             reg_updates.emplace(std::get<op_register>(op0->value), to_expr(std::get<op_memory>(op1->value)));

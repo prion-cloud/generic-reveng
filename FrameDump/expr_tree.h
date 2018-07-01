@@ -2,52 +2,61 @@
 
 class expr_tree_x86
 {
-    enum class op_un { neg };
-    enum class op_bin { add, sub, mul, div };
-
-    enum expr_type
+    struct node
     {
-        t_const,
-        t_reg,
-        t_un,
-        t_bin
+        virtual ~node() = default;
+        virtual std::string to_string() const = 0;
+        virtual bool is_const() const = 0;
+        virtual node* neg() const = 0;
     };
 
-    expr_type type_;
+    template <char C>
+    struct op : node
+    {
+        std::vector<const node*> next;
+        explicit op(std::vector<const node*> next);
+        std::string to_string() const override;
+        bool is_const() const override;
+        node* neg() const override;
+    };
 
-    std::variant<int64_t, x86_reg, op_un, op_bin> value_;
+    struct constant : node
+    {
+        int64_t value;
+        explicit constant(int64_t value);
+        std::string to_string() const override;
+        bool is_const() const override;
+        node* neg() const override;
+    };
+    struct variable : node
+    {
+        x86_reg id;
+        bool negative;
+        variable(x86_reg id, bool negative);
+        std::string to_string() const override;
+        bool is_const() const override;
+        node* neg() const override;
+    };
 
-    const expr_tree_x86* left_;
-    const expr_tree_x86* right_;
+    const node* root_;
+
+    std::set<const void*> adds_;
 
 public:
 
-    explicit expr_tree_x86(int64_t value);
-    explicit expr_tree_x86(x86_reg id);
+    const expr_tree_x86* neg() const;
 
-    expr_tree_x86* add(const expr_tree_x86* other) const;
+    const expr_tree_x86* add(const expr_tree_x86* other) const;
+    const expr_tree_x86* sub(const expr_tree_x86* other) const;
 
     std::string to_string() const;
+
+    static const expr_tree_x86* make_const(int64_t value);
+    static const expr_tree_x86* make_var(x86_reg id);
 
     friend bool operator<(const expr_tree_x86& expr1, const expr_tree_x86& expr2);
 
 private:
 
-    expr_tree_x86(op_un op, const expr_tree_x86* next);
-    expr_tree_x86(op_bin op, const expr_tree_x86* left, const expr_tree_x86* right);
-
-    bool is_const() const;
-    bool is_var() const;
-
-    const std::map<op_un, char> map_un_
-    {
-        { op_un::neg, '-' }
-    };
-    const std::map<op_bin, char> map_bin_
-    {
-        { op_bin::add, '+' },
-        { op_bin::sub, '-' },
-        { op_bin::mul, '*' },
-        { op_bin::div, '/' }
-    };
+    expr_tree_x86(const node* root, std::set<const void*> adds);
 };
