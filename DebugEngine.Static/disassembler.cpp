@@ -30,7 +30,7 @@ disassembler::~disassembler()
     cs_close(&cs_);
 }
 
-instruction_x86 disassembler::disassemble(const uint64_t address, const std::vector<uint8_t> code) const
+instruction_x86 disassembler::disassemble(const uint64_t address, const std::vector<uint8_t>& code) const
 {
     cs_insn* insn;
     FATAL_IF(!cs_disasm(cs_, &code.at(0), code.size(), address, 1, &insn));

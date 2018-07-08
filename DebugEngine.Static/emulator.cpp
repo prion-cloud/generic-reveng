@@ -21,10 +21,10 @@ emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint
 
         max_scale_ = UINT64_MAX;
 
-        reg_sp_id_ = UC_X86_REG_RSP;
-        reg_bp_id_ = UC_X86_REG_RBP;
+        reg_sp_id_ = X86_REG_RSP;
+        reg_bp_id_ = X86_REG_RBP;
 
-        reg_ip_id_ = UC_X86_REG_RIP;
+        reg_ip_id_ = X86_REG_RIP;
 
         break;
 #else
@@ -34,10 +34,10 @@ emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint
 
         max_scale_ = UINT32_MAX;
 
-        reg_sp_id_ = UC_X86_REG_ESP;
-        reg_bp_id_ = UC_X86_REG_EBP;
+        reg_sp_id_ = X86_REG_ESP;
+        reg_bp_id_ = X86_REG_EBP;
 
-        reg_ip_id_ = UC_X86_REG_EIP;
+        reg_ip_id_ = X86_REG_EIP;
 
         break;
 #endif
@@ -48,6 +48,8 @@ emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint
     }
 
     FATAL_IF(uc_open(UC_ARCH_X86, mode, &uc_));
+
+    initialize_registers();
 }
 emulator::~emulator()
 {
@@ -56,9 +58,9 @@ emulator::~emulator()
 
 // Memory
 
-void emulator::mem_map(const uint64_t address, const std::vector<uint8_t> buffer, const bool map /*TODO Q&D*/)
+void emulator::mem_map(const uint64_t address, const std::vector<uint8_t>& buffer, const bool map /*TODO Q&D mem_write*/)
 {
-    if (buffer.size() == 0)
+    if (buffer.empty())
         return;
 
     if (map)
@@ -114,17 +116,48 @@ std::string emulator::mem_read_string(const uint64_t address) const
 }
 
 // --- TODO Q&D
-std::vector<uint8_t> emulator::get_stack() const
+context emulator::get_context() const
 {
-    std::vector<uint8_t> memory(stack_size_);
-    mem_read(stack_top_, memory);
+    context context;
 
-    return memory;
+    context.instruction_pointer = reg_read<uint64_t>(X86_REG_RIP);
+
+    context.stack_pointer = reg_read<uint64_t>(X86_REG_RSP);
+    context.base_pointer = reg_read<uint64_t>(X86_REG_RBP);
+
+    context.stack_data = std::vector<uint8_t>(stack_size_);
+    mem_read(stack_top_, context.stack_data);
+
+    for (const auto reg : register_map_)
+    {
+        switch (reg.first)
+        {
+        case X86_REG_RIP:
+        case X86_REG_RSP:
+        case X86_REG_RBP:
+            break;
+        default:
+            if (reg.second == UINT64_MAX && reg_read<uint64_t>(reg.first) != REG64_DEFAULT)
+                context.register_values.emplace(reg.first, reg_read<uint64_t>(reg.first));
+        }
+    }
+
+    return context;
 }
-void emulator::set_stack(const std::vector<uint8_t> memory)
+void emulator::set_context(const context context)
 {
-    FATAL_IF(memory.size() != stack_size_);
-    mem_map(stack_top_, memory, false);
+    reg_write<uint64_t>(X86_REG_RIP, context.instruction_pointer);
+
+    reg_write<uint64_t>(X86_REG_RSP, context.stack_pointer);
+    reg_write<uint64_t>(X86_REG_RBP, context.base_pointer);
+
+    FATAL_IF(context.stack_data.size() != stack_size_);
+    mem_map(stack_top_, context.stack_data, false);
+
+    initialize_registers();
+
+    for (const auto reg : context.register_values)
+        reg_write<uint64_t>(reg.first, reg.second);
 }
 // ---
 
@@ -154,4 +187,23 @@ int emulator::emulate_any() const
 int emulator::emulate_once() const
 {
     return uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 1);
+}
+
+// --
+
+void emulator::initialize_registers() const
+{
+    for (const auto reg : register_map_)
+    {
+        switch (reg.first)
+        {
+        case X86_REG_RIP:
+        case X86_REG_RSP:
+        case X86_REG_RBP:
+            break;
+        default:
+            if (reg.second == UINT64_MAX)
+                reg_write<uint64_t>(reg.first, REG64_DEFAULT);
+        }
+    }
 }

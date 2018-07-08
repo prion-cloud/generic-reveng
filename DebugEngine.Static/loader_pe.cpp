@@ -3,7 +3,7 @@
 #include "loader.h"
 
 loader_pe::header_pe::header_pe() = default;
-loader_pe::header_pe::header_pe(const std::vector<uint8_t> buffer)
+loader_pe::header_pe::header_pe(const std::vector<uint8_t>& buffer)
 {
     auto it = buffer.begin();
 
@@ -69,7 +69,7 @@ uint16_t loader_pe::load(const std::vector<uint8_t> bytes)
 
     const auto stack_size = header_.stack_commit;
     // Create emulator
-    emulator_ = std::make_shared<emulator>(header_.machine/*-->*/, stack_size, 0xffffffff - stack_size + 1/*<-- TODO Q&D*/);
+    emulator_ = new emulator(header_.machine/*-->*/, stack_size, 0xffffffff - stack_size + 1/*<-- TODO Q&D*/);
 
     // Map all sections
     emulator_->mem_map(header_.image_base, std::vector<uint8_t>(bytes.begin(), bytes.begin() + PAGE_SIZE));

@@ -2,12 +2,14 @@
 
 #include <array>
 #include <deque>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <set>
 #include <sstream>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <Windows.h>

@@ -20,13 +20,13 @@ class loader
 {
 protected:
     
-    std::shared_ptr<emulator> emulator_;
+    emulator* emulator_;
 
 public:
 
     loader();
 
-    std::shared_ptr<emulator> get_emulator() const;
+    std::unique_ptr<emulator> get_emulator() const;
 
     virtual ~loader() = default;
 
@@ -73,7 +73,7 @@ public:
     std::vector<code_section> sections() const override;
     // ---
 
-    static std::vector<uint8_t> create_aid(uint16_t machine, uint64_t base_address, std::vector<uint8_t> bytes);
+    static std::vector<uint8_t> create_aid(uint16_t machine, uint64_t base_address, const std::vector<uint8_t>& bytes);
 };
 
 // Initializer for machine code emulation of PE binaries
@@ -82,19 +82,19 @@ class loader_pe : public loader
     // Important properties of a PE file header
     struct header_pe
     {
-        WORD machine;
+        WORD machine { };
 
-        ULONGLONG image_base;
-        ULONGLONG stack_commit;
+        ULONGLONG image_base { };
+        ULONGLONG stack_commit { };
 
-        DWORD entry_point;
+        DWORD entry_point { };
 
-        IMAGE_DATA_DIRECTORY import_directory;
+        IMAGE_DATA_DIRECTORY import_directory { };
 
         std::vector<IMAGE_SECTION_HEADER> section_headers;
 
         header_pe();
-        explicit header_pe(std::vector<uint8_t> buffer);
+        explicit header_pe(const std::vector<uint8_t>& buffer);
     };
 
     bool defer_imports_;

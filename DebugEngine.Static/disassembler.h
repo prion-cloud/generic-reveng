@@ -6,12 +6,12 @@
 
 class disassembler
 {
-    csh cs_;
+    csh cs_ { };
 
 public:
 
     explicit disassembler(uint16_t machine);
     ~disassembler();
 
-    instruction_x86 disassemble(uint64_t address, std::vector<uint8_t> code) const;
+    instruction_x86 disassemble(uint64_t address, const std::vector<uint8_t>& code) const;
 };

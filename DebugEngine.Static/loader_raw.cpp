@@ -15,7 +15,7 @@ uint16_t loader_raw::load(const std::vector<uint8_t> bytes)
     const auto base_address = parse_to<uint64_t>(it);
     const auto code = std::vector<uint8_t>(it, bytes.end());
 
-    emulator_ = std::make_shared<emulator>(machine/*-->*/, PAGE_SIZE, 0xffffffff - PAGE_SIZE + 1/*<-- TODO Q&D*/);
+    emulator_ = new emulator(machine/*-->*/, PAGE_SIZE, 0xffffffff - PAGE_SIZE + 1/*<-- TODO Q&D*/);
 
     emulator_->mem_map(base_address, code);
 
@@ -55,13 +55,14 @@ TPL std::vector<uint8_t> to_bytes(T value)
 
     const auto size = sizeof(T);
 
-    for (auto i = 0; i < size; ++i)
+    bytes.reserve(size);
+    for (unsigned i = 0; i < size; ++i)
         bytes.push_back(static_cast<uint8_t>(value >> i * 8));
 
     return bytes;
 }
 
-std::vector<uint8_t> loader_raw::create_aid(const uint16_t machine, const uint64_t base_address, const std::vector<uint8_t> bytes)
+std::vector<uint8_t> loader_raw::create_aid(const uint16_t machine, const uint64_t base_address, const std::vector<uint8_t>& bytes)
 {
     std::vector<uint8_t> aid;
 

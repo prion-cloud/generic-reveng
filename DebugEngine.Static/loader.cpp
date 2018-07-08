@@ -5,9 +5,9 @@
 loader::loader()
     : emulator_(nullptr) { }
 
-std::shared_ptr<emulator> loader::get_emulator() const
+std::unique_ptr<emulator> loader::get_emulator() const
 {
-    return emulator_;
+    return std::unique_ptr<emulator>(emulator_);
 }
 
 void loader::initialize_environment(const size_t stack_size, const double stack_fill, const uint64_t entry_address) const
