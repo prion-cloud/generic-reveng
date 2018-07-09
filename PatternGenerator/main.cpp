@@ -4,7 +4,7 @@
 #include "data_flow.h"
 #include "disassembly.h"
 #include "frame_detector.h"
-#include "rule.h"
+#include "rule_set.h"
 
 static std::vector<uint64_t> addresses
 {
@@ -114,7 +114,7 @@ int main(const int argc, char* argv[])
             flow_map[data_flow].push_back(seq);
     }
 
-    deobfuscation_rule_set rule_set;
+    rule_set rule_set;
     for (const auto& [data_flow, seqs] : flow_map)
     {
         for (const auto& seq : seqs)
@@ -123,7 +123,8 @@ int main(const int argc, char* argv[])
         }
     }
 
-    rule_set.json_serialize("pattern_database.json");
+    auto stream = std::wofstream("pattern_database.json");
+    rule_set.json_serialize(stream);
 
 /* ---------------------------------------------------------------- */
 
