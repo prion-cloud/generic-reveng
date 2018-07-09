@@ -49,6 +49,9 @@
     <ClCompile Include="rule_set.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="disassembly.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Capstone\build\capstone.lib" />
