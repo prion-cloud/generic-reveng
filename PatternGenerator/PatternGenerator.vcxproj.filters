@@ -50,4 +50,8 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Capstone\build\capstone.lib" />
+    <Library Include="..\Unicorn\unicorn_static.lib" />
+  </ItemGroup>
 </Project>
