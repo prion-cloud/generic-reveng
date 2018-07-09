@@ -89,7 +89,6 @@
     <ClInclude Include="control_flow.h" />
     <ClInclude Include="data_flow.h" />
     <ClInclude Include="display.h" />
-    <ClInclude Include="frame_detector.h" />
     <ClInclude Include="instruction.h" />
     <ClInclude Include="disassembly.h" />
     <ClInclude Include="rule_set.h" />

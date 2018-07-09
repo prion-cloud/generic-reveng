@@ -14,9 +14,6 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="frame_detector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="instruction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
