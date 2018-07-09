@@ -7,35 +7,35 @@ struct instruction
     enum operand_type
     {
         op_register,
-        op_memory,
         op_immediate,
+        op_memory,
         op_float
     };
     struct operand
     {
         operand_type type;
-        std::variant<x86_reg, x86_op_mem, int64_t, double> value;
+        std::variant<x86_reg, int64_t, x86_op_mem, double> value;
 
-        operand(cs_x86_op cs_operand);
+        explicit operand(cs_x86_op cs_operand);
     };
 
     x86_insn id;
-    
-    bool is_jump;
-    bool is_conditional;
-
-    bool sets_flags;
 
     uint64_t address;
 
     std::vector<uint8_t> code;
 
-    std::vector<operand> operands;
-
     std::string str_mnemonic;
     std::string str_operands;
 
-    instruction(cs_insn cs_instruction);
+    bool flag;
+
+    std::vector<operand> operands;
+
+    explicit instruction(cs_insn cs_instruction);
+
+    bool is_jump() const;
+    bool is_conditional() const;
 
     std::string to_string(bool full) const;
 };

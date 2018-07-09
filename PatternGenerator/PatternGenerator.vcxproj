@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClCompile Include="disassembly.cpp" />
     <ClCompile Include="display.cpp" />
+    <ClCompile Include="instruction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rule_set.cpp" />
     <ClCompile Include="stdafx.cpp">
