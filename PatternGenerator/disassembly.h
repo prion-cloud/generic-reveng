@@ -1,9 +1,7 @@
 #pragma once
 
-#include "../Bin-Capstone/capstone.h"
-#include "../Bin-Unicorn/unicorn.h"
-
-#include "instruction.h"
+#include <capstone.h>
+#include <unicorn.h>
 
 class disassembly
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Bin-Capstone/capstone.h"
+#include <capstone.h>
 
 struct instruction
 {

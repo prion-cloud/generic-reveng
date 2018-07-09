@@ -1,8 +1,7 @@
 #include "stdafx.h"
 
 #include <cpprest/json.h>
-
-#include "../Pretty/pretty.h"
+#include <pretty.h>
 
 #include "rule_set.h"
 
