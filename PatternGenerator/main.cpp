@@ -78,7 +78,7 @@ int main(const int argc, char* argv[])
     for (const auto [start, stop] : addresses)
     {
         const control_flow control_flow(disassembly, start, stop);
-        control_flow.draw();
+        std::cout << control_flow.to_string() << std::endl << std::endl;
 
         const auto blocks = control_flow.get_blocks();
         pool.insert(pool.end(), blocks.begin(), blocks.end());

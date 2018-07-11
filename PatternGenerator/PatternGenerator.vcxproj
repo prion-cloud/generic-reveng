@@ -95,6 +95,7 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="control_flow.cpp" />
     <ClCompile Include="data_flow.cpp" />
     <ClCompile Include="disassembly.cpp" />
     <ClCompile Include="display.cpp" />
