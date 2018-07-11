@@ -12,6 +12,7 @@ class data_flow
             virtual std::string to_string() const = 0;
             virtual node* neg() const = 0;
             virtual bool is_const(int64_t value) const = 0;
+            virtual std::optional<int64_t> get_const_value() const = 0;
         };
 
         struct constant : node
@@ -21,11 +22,13 @@ class data_flow
             std::string to_string() const override;
             node* neg() const override;
             bool is_const(int64_t value) const override;
+            std::optional<int64_t> get_const_value() const override;
         };
 
         struct non_const : node
         {
             bool is_const(int64_t value) const override;
+            std::optional<int64_t> get_const_value() const override;
         };
 
         template <char C>
@@ -84,6 +87,8 @@ class data_flow
 
         std::string to_string() const;
 
+        std::optional<int64_t> get_const_value() const;
+
         expression memorize() const;
 
         expression neg() const;
@@ -134,6 +139,8 @@ class data_flow
         expression_variant& operator&=(const expression_variant& expr_var);
         expression_variant& operator|=(const expression_variant& expr_var);
         expression_variant& operator^=(const expression_variant& expr_var);
+
+        const std::vector<expression>& operator*() const;
 
     private:
 
@@ -247,10 +254,14 @@ class data_flow
 public:
 
     data_flow() = default;
+    explicit data_flow(const instruction& instruction);
+    explicit data_flow(const instruction_sequence& instruction_sequence);
 
     std::vector<std::string> to_string() const;
 
     void apply(const instruction& instruction);
+
+    std::vector<uint64_t> inspect_rip();
 
     friend bool operator<(const data_flow& flow1, const data_flow& flow2);
 

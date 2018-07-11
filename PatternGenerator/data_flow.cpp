@@ -22,10 +22,18 @@ bool data_flow::expression::constant::is_const(const int64_t value) const
 {
     return this->value == value;
 }
+std::optional<int64_t> data_flow::expression::constant::get_const_value() const
+{
+    return value;
+}
 
 bool data_flow::expression::non_const::is_const(int64_t) const
 {
     return false;
+}
+std::optional<int64_t> data_flow::expression::non_const::get_const_value() const
+{
+    return std::nullopt;
 }
 
 template<char C>
@@ -174,6 +182,11 @@ data_flow::expression::node* data_flow::expression::var_memory::neg() const
 std::string data_flow::expression::to_string() const
 {
     return root_->to_string();
+}
+
+std::optional<int64_t> data_flow::expression::get_const_value() const
+{
+    return root_->get_const_value();
 }
 
 data_flow::expression data_flow::expression::memorize() const
@@ -343,6 +356,11 @@ data_flow::expression_variant& data_flow::expression_variant::operator^=(const e
     return *this;
 }
 
+const std::vector<data_flow::expression>& data_flow::expression_variant::operator*() const
+{
+    return base_;
+}
+
 void data_flow::expression_variant::transform(expression_variant other, const std::function<expression(expression, expression)>& function)
 {
     std::vector<expression> new_base;
@@ -428,6 +446,15 @@ std::map<data_flow::expression, data_flow::expression_variant> const* data_flow:
     return &base_;
 }
 
+data_flow::data_flow(const instruction& instruction)
+{
+    apply(instruction);
+}
+data_flow::data_flow(const instruction_sequence& instruction_sequence)
+{
+    throw; // TODO
+}
+
 std::vector<std::string> data_flow::to_string() const
 {
     return map_.to_string();
@@ -477,6 +504,9 @@ void data_flow::apply(const instruction& instruction)
     case X86_INS_CMOVP:
     case X86_INS_CMOVS:
         map_[*op0].concat(map_[*op1]);
+        break;
+    case X86_INS_CMP:
+        // TODO
         break;
     case X86_INS_DIV:
         {
@@ -546,6 +576,9 @@ void data_flow::apply(const instruction& instruction)
     case X86_INS_SUB:
         map_[*op0] -= map_[*op1];
         break;
+    case X86_INS_TEST:
+        // TODO
+        break;
     case X86_INS_XCHG:
         {
             const auto xchg = map_[*op0];
@@ -559,6 +592,19 @@ void data_flow::apply(const instruction& instruction)
     default:
         throw;
     }
+}
+
+std::vector<uint64_t> data_flow::inspect_rip()
+{
+    std::vector<uint64_t> result;
+    for (const auto expr : *map_[X86_REG_RIP])
+    {
+        const auto value = expr.get_const_value();
+        if (value.has_value())
+            result.push_back(*value);
+    }
+
+    return result;
 }
 
 bool operator<(const data_flow& flow1, const data_flow& flow2)
