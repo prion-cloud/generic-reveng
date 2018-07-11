@@ -14,10 +14,6 @@ std::string data_flow::expression::constant::to_string() const
 
     return ss.str();
 }
-data_flow::expression::node* data_flow::expression::constant::neg() const
-{
-    return new constant(-value);
-}
 bool data_flow::expression::constant::is_const(const int64_t value) const
 {
     return this->value == value;
@@ -83,60 +79,34 @@ std::string data_flow::expression::op_assoc<C>::to_string() const
 
 data_flow::expression::op_add::op_add(const std::vector<node*>& next)
     : op_assoc<'+'>(next, 0, [](const int64_t a, const int64_t b) { return a + b; }) { }
-data_flow::expression::node* data_flow::expression::op_add::neg() const
-{
-    std::vector<node*> negated;
-    for (const auto n : next)
-        negated.push_back(n->neg());
-
-    return new op_add(negated);
-}
 data_flow::expression::op_mul::op_mul(const std::vector<node*>& next)
     : op_assoc<'*'>(next, 1, [](const int64_t a, const int64_t b) { return a * b; }) { }
-data_flow::expression::node* data_flow::expression::op_mul::neg() const
-{
-    std::vector<node*> negated;
-    auto found_constant = false;
-    for (unsigned i = 0; i < next.size(); ++i)
-    {
-        const auto n = next.at(i);
-
-        if (dynamic_cast<constant*>(n) != nullptr)
-        {
-            negated.push_back(n->neg());
-            found_constant = true;
-        }
-        else if (i == next.size() - 1 && !found_constant)
-            negated.push_back(n->neg());
-        else negated.push_back(n);
-    }
-
-    return new op_add(negated);
-}
-
-data_flow::expression::barrier::barrier(const bool negative)
-    : negative(negative) { }
 
 template<char C>
-data_flow::expression::op<C>::op(node* const left, node* const right, const bool negative)
-    : barrier(negative), left(left), right(right) { }
+data_flow::expression::op_unary<C>::op_unary(node* next)
+    : next(next) { }
+template<char C>
+std::string data_flow::expression::op_unary<C>::to_string() const
+{
+    std::ostringstream ss;
+    ss << "(" << C << "(" << next->to_string() << "))";
+    return ss.str();
+}
+
+template<char C>
+data_flow::expression::op<C>::op(node* const left, node* const right)
+    : left(left), right(right) { }
 template<char C>
 std::string data_flow::expression::op<C>::to_string() const
 {
     std::ostringstream ss;
-    if (negative)
-        ss << "-";
     ss << "(" << left->to_string() << " " << C << " " << right->to_string() << ")";
 
     return ss.str();
-}template<char C>
-data_flow::expression::node* data_flow::expression::op<C>::neg() const
-{
-    return new op<C>(left, right, !negative);
 }
 
-data_flow::expression::var_register::var_register(const x86_reg id, const bool negative)
-    : barrier(negative), id(id)
+data_flow::expression::var_register::var_register(const x86_reg id)
+    : id(id)
 {
     if (id == X86_REG_INVALID)
         throw;
@@ -144,8 +114,6 @@ data_flow::expression::var_register::var_register(const x86_reg id, const bool n
 std::string data_flow::expression::var_register::to_string() const
 {
     std::ostringstream ss;
-    if (negative)
-        ss << "(-";
 
     csh cs;
     cs_open(CS_ARCH_X86, CS_MODE_64, &cs);
@@ -154,29 +122,16 @@ std::string data_flow::expression::var_register::to_string() const
 
     cs_close(&cs);
 
-    if (negative)
-        ss << ")";
-
     return ss.str();
 }
-data_flow::expression::node* data_flow::expression::var_register::neg() const
-{
-    return new var_register(id, !negative);
-}
-data_flow::expression::var_memory::var_memory(node* const descriptor, const bool negative)
-    : barrier(negative), descriptor(descriptor) { }
+data_flow::expression::var_memory::var_memory(node* const descriptor)
+    : descriptor(descriptor) { }
 std::string data_flow::expression::var_memory::to_string() const
 {
     std::ostringstream ss;
-    if (negative)
-        ss << "-";
     ss << "[" << descriptor->to_string() << "]";
 
     return ss.str();
-}
-data_flow::expression::node* data_flow::expression::var_memory::neg() const
-{
-    return new var_memory(descriptor, !negative);
 }
 
 std::string data_flow::expression::to_string() const
@@ -194,11 +149,6 @@ data_flow::expression data_flow::expression::memorize() const
     return expression(new var_memory(root_));
 }
 
-data_flow::expression data_flow::expression::neg() const
-{
-    return expression(root_->neg());
-}
-
 data_flow::expression data_flow::expression::make_var(const x86_reg id)
 {
     return expression(new var_register(id));
@@ -206,6 +156,23 @@ data_flow::expression data_flow::expression::make_var(const x86_reg id)
 data_flow::expression data_flow::expression::make_const(const int64_t value)
 {
     return expression(new constant(value));
+}
+
+data_flow::expression data_flow::expression::operator-() const
+{
+    const auto c = dynamic_cast<constant*>(root_);
+    if (c == nullptr)
+        return expression(new op_unary<'-'>(root_));
+
+    return make_const(-c->value);
+}
+data_flow::expression data_flow::expression::operator~() const
+{
+    const auto c = dynamic_cast<constant*>(root_);
+    if (c == nullptr)
+        return expression(new op_unary<'~'>(root_));
+
+    return make_const(~c->value);
 }
 
 data_flow::expression operator+(const data_flow::expression& expr1, const data_flow::expression& expr2)
@@ -218,14 +185,19 @@ data_flow::expression operator+(const data_flow::expression& expr1, const data_f
     data_flow::expression::node* root;
     const auto add = new data_flow::expression::op_add({ expr1.root_, expr2.root_ });
     if (add->next.size() < 2)
+    {
+        if (add->next.empty())
+            return data_flow::expression::make_const(0);
+
         root = add->next.front();
+    }
     else root = add;
 
     return data_flow::expression(root);
 }
 data_flow::expression operator-(const data_flow::expression& expr1, const data_flow::expression& expr2)
 {
-    return expr1 + expr2.neg();
+    return expr1 + -expr2;
 }
 data_flow::expression operator*(const data_flow::expression& expr1, const data_flow::expression& expr2)
 {
@@ -270,6 +242,15 @@ data_flow::expression operator^(const data_flow::expression& expr1, const data_f
     return data_flow::expression(new data_flow::expression::op<'^'>(expr1.root_, expr2.root_));
 }
 
+data_flow::expression operator<<(const data_flow::expression& expr1, const data_flow::expression& expr2)
+{
+    return data_flow::expression(new data_flow::expression::op<'<'>(expr1.root_, expr2.root_));
+}
+data_flow::expression operator>>(const data_flow::expression& expr1, const data_flow::expression& expr2)
+{
+    return data_flow::expression(new data_flow::expression::op<'>'>(expr1.root_, expr2.root_));
+}
+
 data_flow::expression::expression(node* root)
     : root_(root)
 {
@@ -308,10 +289,15 @@ data_flow::expression data_flow::expression_variant::memorize() const
     return base_.front().memorize();
 }
 
-void data_flow::expression_variant::neg()
+void data_flow::expression_variant::negate()
 {
     for (auto& e : base_)
-        e = e.neg();
+        e = -e;
+}
+void data_flow::expression_variant::invert()
+{
+    for (auto& e : base_)
+        e = ~e;
 }
 
 data_flow::expression_variant& data_flow::expression_variant::operator+=(const expression_variant& expr_var)
@@ -353,6 +339,17 @@ data_flow::expression_variant& data_flow::expression_variant::operator|=(const e
 data_flow::expression_variant& data_flow::expression_variant::operator^=(const expression_variant& expr_var)
 {
     transform(expr_var, [](const expression e1, const expression e2) { return e1 ^ e2; });
+    return *this;
+}
+
+data_flow::expression_variant& data_flow::expression_variant::operator<<=(const expression_variant& expr_var)
+{
+    transform(expr_var, [](const expression e1, const expression e2) { return e1 << e2; });
+    return *this;
+}
+data_flow::expression_variant& data_flow::expression_variant::operator>>=(const expression_variant& expr_var)
+{
+    transform(expr_var, [](const expression e1, const expression e2) { return e1 >> e2; });
     return *this;
 }
 
@@ -547,14 +544,20 @@ void data_flow::apply(const instruction& instruction)
         break;
     case X86_INS_MOV:
     case X86_INS_MOVABS:
+    case X86_INS_MOVSX:
+    case X86_INS_MOVSXD:
     case X86_INS_MOVUPD:
+    case X86_INS_MOVZX:
         map_[*op0] = map_[*op1];
         break;
     case X86_INS_MUL:
         map_[X86_REG_RAX] *= map_[*op0];
         break;
     case X86_INS_NEG:
-        map_[*op0].neg();
+        map_[*op0].negate();
+        break;
+    case X86_INS_NOT:
+        map_[*op0].invert();
         break;
     case X86_INS_OR:
         map_[*op0] |= map_[*op1];
@@ -572,6 +575,12 @@ void data_flow::apply(const instruction& instruction)
     case X86_INS_RETFQ:
         map_[X86_REG_RIP] = map_[map_[X86_REG_RSP].memorize()];
         map_[X86_REG_RSP] += 8i64;
+        break;
+    case X86_INS_SHL:
+        map_[*op0] <<= map_[*op1];
+        break;
+    case X86_INS_SHR:
+        map_[*op0] >>= map_[*op1];
         break;
     case X86_INS_SUB:
         map_[*op0] -= map_[*op1];

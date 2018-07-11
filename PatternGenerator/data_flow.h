@@ -10,7 +10,6 @@ class data_flow
         {
             virtual ~node() = default;
             virtual std::string to_string() const = 0;
-            virtual node* neg() const = 0;
             virtual bool is_const(int64_t value) const = 0;
             virtual std::optional<int64_t> get_const_value() const = 0;
         };
@@ -20,7 +19,6 @@ class data_flow
             int64_t value;
             explicit constant(int64_t value);
             std::string to_string() const override;
-            node* neg() const override;
             bool is_const(int64_t value) const override;
             std::optional<int64_t> get_const_value() const override;
         };
@@ -35,50 +33,48 @@ class data_flow
         struct op_assoc : non_const
         {
             std::vector<node*> next;
-            explicit op_assoc(std::vector<node*> next, int64_t base, const std::function<int64_t(int64_t, int64_t)>& func);
+            explicit op_assoc(std::vector<node*> next, int64_t base,
+                const std::function<int64_t(int64_t, int64_t)>& func);
             std::string to_string() const override;
         };
 
         struct op_add : op_assoc<'+'>
         {
             explicit op_add(const std::vector<node*>& next);
-            node* neg() const override;
         };
         struct op_mul : op_assoc<'*'>
         {
             explicit op_mul(const std::vector<node*>& next);
-            node* neg() const override;
-        };
-
-        struct barrier : non_const
-        {
-            bool negative;
-            explicit barrier(bool negative);
         };
 
         template <char C>
-        struct op : barrier
+        struct op_unary : non_const
+        {
+            node* next;
+            explicit op_unary(node* next);
+            std::string to_string() const override;
+        };
+
+        template <char C>
+        struct op : non_const
         {
             node* left;
             node* right;
-            explicit op(node* left, node* right, bool negative = false);
+            explicit op(node* left, node* right);
             std::string to_string() const override;
-            node* neg() const override;
         };
 
-        struct var_register : barrier
+        struct var_register : non_const
         {
             x86_reg id;
-            explicit var_register(x86_reg id, bool negative = false);
+            explicit var_register(x86_reg id);
             std::string to_string() const override;
-            node* neg() const override;
         };
-        struct var_memory : barrier
+        struct var_memory : non_const
         {
             node* descriptor;
-            explicit var_memory(node* descriptor, bool negative = false);
+            explicit var_memory(node* descriptor);
             std::string to_string() const override;
-            node* neg() const override;
         };
 
         node* root_;
@@ -91,10 +87,11 @@ class data_flow
 
         expression memorize() const;
 
-        expression neg() const;
-
         static expression make_var(x86_reg id);
         static expression make_const(int64_t value);
+
+        expression operator-() const;
+        expression operator~() const;
 
         friend expression operator+(const expression& expr1, const expression& expr2);
         friend expression operator-(const expression& expr1, const expression& expr2);
@@ -105,6 +102,9 @@ class data_flow
         friend expression operator&(const expression& expr1, const expression& expr2);
         friend expression operator|(const expression& expr1, const expression& expr2);
         friend expression operator^(const expression& expr1, const expression& expr2);
+
+        friend expression operator<<(const expression& expr1, const expression& expr2);
+        friend expression operator>>(const expression& expr1, const expression& expr2);
 
     private:
 
@@ -128,7 +128,8 @@ class data_flow
 
         expression memorize() const;
 
-        void neg();
+        void negate();
+        void invert();
 
         expression_variant& operator+=(const expression_variant& expr_var);
         expression_variant& operator-=(const expression_variant& expr_var);
@@ -139,6 +140,9 @@ class data_flow
         expression_variant& operator&=(const expression_variant& expr_var);
         expression_variant& operator|=(const expression_variant& expr_var);
         expression_variant& operator^=(const expression_variant& expr_var);
+
+        expression_variant& operator<<=(const expression_variant& expr_var);
+        expression_variant& operator>>=(const expression_variant& expr_var);
 
         const std::vector<expression>& operator*() const;
 
@@ -278,6 +282,9 @@ private:
     friend expression operator&(const expression& expr1, const expression& expr2);
     friend expression operator|(const expression& expr1, const expression& expr2);
     friend expression operator^(const expression& expr1, const expression& expr2);
+
+    friend expression operator<<(const expression& expr1, const expression& expr2);
+    friend expression operator>>(const expression& expr1, const expression& expr2);
 
     friend expression_variant operator/(expression_variant expr_var1, const expression_variant& expr_var2);
     friend expression_variant operator%(expression_variant expr_var1, const expression_variant& expr_var2);
