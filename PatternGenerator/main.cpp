@@ -114,10 +114,14 @@ int main(const int argc, char* argv[])
     for (const auto [start, stop] : addresses)
     {
         const control_flow control_flow(disassembly, start, stop);
-        //std::cout << control_flow.to_string() << std::endl << std::endl;
+        //control_flow.draw();
+        //std::cout << std::endl;
 
         const auto blocks = control_flow.get_blocks();
-        std::cout << "CFG: " << std::hex << std::uppercase << start << " (" << std::dec << blocks.size() << ")" << std::endl;
+        size_t sum = 0;
+        for (const auto& block : blocks)
+            sum += block->size();
+        std::cout << "CFG: " << std::hex << std::uppercase << start << " (" << std::dec << blocks.size() << ", " << sum << ")" << std::endl;
 
         pool.insert(pool.end(), blocks.begin(), blocks.begin() + 10);
     }

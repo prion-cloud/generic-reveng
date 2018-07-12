@@ -13,6 +13,7 @@ class data_flow
             virtual bool is_const(int64_t value) const;
             virtual std::optional<x86_reg> get_reg_value() const;
             virtual std::optional<int64_t> get_const_value() const;
+            virtual std::optional<int64_t> get_add_value() const;
         };
 
         struct constant : node
@@ -36,6 +37,7 @@ class data_flow
         struct op_add : op_assoc<'+'>
         {
             explicit op_add(const std::vector<node*>& next);
+            std::optional<int64_t> get_add_value() const override;
         };
         struct op_mul : op_assoc<'*'>
         {
@@ -81,6 +83,7 @@ class data_flow
         
         std::optional<x86_reg> get_reg_value() const;
         std::optional<int64_t> get_const_value() const;
+        std::optional<int64_t> get_add_value() const;
 
         expression memorize() const;
 

@@ -13,8 +13,9 @@
       "movabs $reg:r3, $num:n3"
     ],
     "replacement": [
-      "mov $reg:r3, $num:n3",
-      "mov $reg:r2, $num:n1"
+      "movabs $reg:r3, $num:n3",
+      "movabs $reg:r2, $num:n1",
+      "sub rsp, 18"
     ]
   }
 ]

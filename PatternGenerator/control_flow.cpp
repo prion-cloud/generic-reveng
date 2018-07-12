@@ -65,7 +65,7 @@ control_flow::control_flow(const disassembly& disassembly, const uint64_t start,
     blocks_ = enumerate_blocks(build(disassembly, start, stop, map, redir));
 }
 
-std::string control_flow::to_string() const
+void control_flow::draw() const
 {
     std::map<char, block const*> block_map;
     std::map<block const*, char> id_map;
@@ -78,13 +78,21 @@ std::string control_flow::to_string() const
         ++id;
     }
     
-    std::ostringstream ss;
     auto line_break = false;
-
     for (const auto [id, block] : block_map)
     {
         if (line_break)
-            ss << std::endl << std::endl;
+            std::cout << std::endl << std::endl;
+
+        const auto color = !line_break || block->next.empty();
+
+        if (color)
+        {
+            if (!line_break)
+                std::cout << dsp::colorize(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+            else if (block->next.empty())
+                std::cout << dsp::colorize(FOREGROUND_RED | FOREGROUND_INTENSITY);
+        }
 
         auto block_string = block->to_string();
 
@@ -93,12 +101,16 @@ std::string control_flow::to_string() const
         for (const auto next : block->next)
             replace_first(block_string, placeholder::next, id_map.at(next));
 
-        ss << block_string;
+        std::cout << block_string;
+
+        if (color)
+            std::cout << dsp::decolorize;
+
+        if (block->next.empty())
+            break;
 
         line_break = true;
     }
-
-    return ss.str();
 }
 
 std::vector<instruction_sequence> control_flow::get_blocks() const

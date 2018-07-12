@@ -14,6 +14,10 @@ std::optional<int64_t> data_flow::expression::node::get_const_value() const
 {
     return std::nullopt;
 }
+std::optional<int64_t> data_flow::expression::node::get_add_value() const
+{
+    return std::nullopt;
+}
 
 data_flow::expression::constant::constant(const int64_t value)
     : value(value) { }
@@ -83,6 +87,10 @@ std::string data_flow::expression::op_assoc<C>::to_string() const
 
 data_flow::expression::op_add::op_add(const std::vector<node*>& next)
     : op_assoc<'+'>(next, 0, [](const int64_t a, const int64_t b) { return a + b; }) { }
+std::optional<int64_t> data_flow::expression::op_add::get_add_value() const
+{
+    return next.at(1)->get_const_value();
+}
 data_flow::expression::op_mul::op_mul(const std::vector<node*>& next)
     : op_assoc<'*'>(next, 1, [](const int64_t a, const int64_t b) { return a * b; }) { }
 
@@ -154,6 +162,10 @@ std::optional<x86_reg> data_flow::expression::get_reg_value() const
 std::optional<int64_t> data_flow::expression::get_const_value() const
 {
     return root_->get_const_value();
+}
+std::optional<int64_t> data_flow::expression::get_add_value() const
+{
+    return root_->get_add_value();
 }
 
 data_flow::expression data_flow::expression::memorize() const
@@ -659,9 +671,22 @@ std::vector<std::wstring> data_flow::get_replacement() const
         const auto reg = expr.get_reg_value();
         if (reg.has_value() && *reg != X86_REG_RIP)
         {
+            if (*reg == X86_REG_RSP)
+            {
+                const auto add = (*expr_var).front().get_add_value();
+                if (add.has_value())
+                {
+                    std::wostringstream ss;
+                    ss << L"sub rsp, ";
+                    ss << std::hex << std::uppercase << -*add;
+                    result.push_back(ss.str());
+                }
+                continue;
+            }
+
             const auto num = (*expr_var).front().get_const_value();
             if (num.has_value())
-                result.push_back(L"mov " + reg_map.at(*reg) + L", " + num_map.at(*num));
+                result.push_back(L"movabs " + reg_map.at(*reg) + L", " + num_map.at(*num));
         }
     }
 
