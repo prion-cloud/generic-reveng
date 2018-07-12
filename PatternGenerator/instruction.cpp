@@ -190,7 +190,9 @@ instruction_sequence_representation instruction_sequence::get_representation(std
     const std::function<std::wstring(int64_t)> get_num = [&num_map](const int64_t num)
     {
         if (num == -8)                      // TODO
-            return std::wstring(L"8");      // TODO
+            return std::wstring(L"0x8");    // TODO
+        if (num == 0x10)                    // TODO
+            return std::wstring(L"0x10");   // TODO
 
         if (num_map.find(num) == num_map.end())
         {

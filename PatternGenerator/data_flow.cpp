@@ -677,7 +677,7 @@ std::vector<std::wstring> data_flow::get_replacement() const
                 if (add.has_value())
                 {
                     std::wostringstream ss;
-                    ss << L"sub rsp, ";
+                    ss << L"sub rsp, 0x";
                     ss << std::hex << std::uppercase << -*add;
                     result.push_back(ss.str());
                 }

@@ -51,6 +51,16 @@ static std::vector<uint8_t> load(const std::string& file_name)
 int main(const int argc, char* argv[])
 {
     dsp::h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+    
+    CONSOLE_FONT_INFOEX cfi;
+    cfi.cbSize = sizeof cfi;
+    cfi.nFont = 0;
+    cfi.dwFontSize.X = 0;
+    cfi.dwFontSize.Y = 24;
+    cfi.FontFamily = FF_DONTCARE;
+    cfi.FontWeight = FW_NORMAL;
+    wcscpy_s(cfi.FaceName, L"Consolas");
+    SetCurrentConsoleFontEx(dsp::h_console, FALSE, &cfi);
 
     if (argc != 2)
     {
