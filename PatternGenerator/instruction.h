@@ -34,10 +34,16 @@ struct instruction
 
     explicit instruction(cs_insn cs_instruction);
 
-    bool is_jump() const;
-    bool is_conditional() const;
-
     std::string to_string(bool full) const;
+
+    std::wstring get_representation() const;
+};
+
+struct instruction_sequence_representation
+{
+    std::vector<std::wstring> value;
+
+    friend bool operator<(const instruction_sequence_representation& seq1, const instruction_sequence_representation& seq2);
 };
 
 class instruction_sequence
@@ -46,10 +52,14 @@ class instruction_sequence
 
 public:
 
+    instruction_sequence() = default;
     explicit instruction_sequence(std::vector<instruction> instructions);
+
+    instruction_sequence_representation get_representation(std::map<x86_reg, std::wstring>& reg_map, std::map<int64_t, std::wstring>& num_map) const;
 
     std::vector<instruction_sequence> power() const;
 
+    std::vector<instruction>* operator->();
     std::vector<instruction> const* operator->() const;
 
     friend bool operator<(const instruction_sequence& sequence1, const instruction_sequence& sequence2);

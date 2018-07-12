@@ -191,10 +191,10 @@ control_flow::block* control_flow::build(const disassembly& disassembly, uint64_
         if (next_addresses.empty())
         {
             // TODO: Use emulation to go on
-            break;
+            throw;
         }
 
-        if (next_addresses.size() > 1)
+        if (next_addresses.size() > 1)// || instruction.is_jump())
         {
             // Reset a prior redirection
             redir[cur] = cur;

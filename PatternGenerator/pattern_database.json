@@ -1,0 +1,20 @@
+[
+  {
+    "pattern": [
+      "mov [rsp - 8], $reg:r1",
+      "lea rsp, [rsp - 8]",
+      "movabs $reg:r1, $num:n1",
+      "xchg [rsp], $reg:r1",
+      "mov [rsp - 8], $reg:r2",
+      "lea rsp, [rsp - 8]",
+      "mov [rsp - 8], $reg:r3",
+      "lea rsp, [rsp - 8]",
+      "mov $reg:r2, [rsp + $num:n2]",
+      "movabs $reg:r3, $num:n3"
+    ],
+    "replacement": [
+      "mov $reg:r3, $num:n3",
+      "mov $reg:r2, $num:n1"
+    ]
+  }
+]

@@ -41,6 +41,25 @@ disassembly::~disassembly()
     uc_close(uc_);
 }
 
+//uint64_t disassembly::emulate(const uint64_t address) const
+//{
+//    uc_emu_start(uc_, address, -1, 0, 1);
+//
+//    uint64_t next_address;
+//    uc_reg_read(uc_, UC_X86_REG_RIP, &next_address);
+//
+//    return next_address;
+//}
+
+//void const* disassembly::get_context() const
+//{
+//    std::copy()
+//}
+//void disassembly::set_context(void* context)
+//{
+//    uc_ = static_cast<uc_engine*>(context);
+//}
+
 instruction disassembly::operator[](const uint64_t address) const
 {
     const size_t buffer_size = 0x10;
@@ -67,7 +86,7 @@ void disassembly::mem_map(const uint64_t address, const size_t size) const
     if (size % PAGE_SIZE > 0)
         virt_size += PAGE_SIZE;
 
-    uc_mem_map(uc_, address, virt_size, UC_PROT_ALL);
+    uc_mem_map(uc_, address, virt_size, UC_PROT_READ);
 }
 void disassembly::mem_map(const uint64_t address, const std::vector<uint8_t>& buffer) const
 {
