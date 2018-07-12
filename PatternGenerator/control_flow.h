@@ -11,7 +11,7 @@ class control_flow
         instruction_sequence instruction_sequence;
         std::vector<block*> next;
 
-        std::string to_string() const;
+        std::string to_string(bool prev, unsigned& mid) const;
     };
 
     std::vector<block*> blocks_;

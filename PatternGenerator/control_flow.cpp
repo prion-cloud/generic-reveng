@@ -7,18 +7,27 @@ enum class placeholder : char
     id = '#',
     next = '~'
 };
-static void replace_first(std::string& string, const placeholder placeholder, const char new_char)
+static void replace_first(std::string& string, const placeholder placeholder, const std::string& substitute)
 {
     const auto pos = string.find_first_of(static_cast<char>(placeholder));
 
     if (pos == std::string::npos)
         return;
 
-    string = string.substr(0, pos) + new_char + string.substr(pos + 1);
+    for (unsigned i = 0; i < substitute.size(); ++i)
+        string = string.substr(0, pos + i) + substitute.at(i) + string.substr(pos + i + 1);
+}
+static std::string to_string_hex(const unsigned value)
+{
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << value;
+    return ss.str();
 }
 
-std::string control_flow::block::to_string() const
+std::string control_flow::block::to_string(const bool prev, unsigned& mid) const
 {
+    const unsigned console_width = 120;
+
     const std::string l = "| ";
     const std::string r = " |";
 
@@ -27,6 +36,9 @@ std::string control_flow::block::to_string() const
     const auto eu = '.';
     const auto ed = '\'';
 
+    const auto mid_top = '^';
+    const auto mid_bottom = 'v';
+
     std::ostringstream ss;
 
     const auto first = instruction_sequence->front();
@@ -34,25 +46,42 @@ std::string control_flow::block::to_string() const
     const auto last = instruction_sequence->back();
     const auto last_string = last.to_string(true);
 
-    const auto width = first_string.size() > last_string.size() ? first_string.size() : last_string.size();
+    const auto inner_width = first_string.size() > last_string.size() ? first_string.size() : last_string.size();
+    const auto outer_width = inner_width + l.size() + r.size();
 
-    const auto padding = 1;
+    const auto h_width = outer_width - 2;
 
-    ss << std::string(padding, ' ') << static_cast<char>(placeholder::id) << std::setfill(h)
-       << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(instruction_sequence->size()) + ")"
-       << eu << std::endl;
+    const auto padding = console_width / 2 - outer_width / 2;
+    const auto mid_add = h_width / 2 - (h_width + 1) % 2;
+
+    mid = padding + mid_add + 1;
+
+    ss << std::string(padding, ' ') << static_cast<char>(placeholder::id);
+    if (prev)
+        ss << std::string(mid_add, h) << mid_top << std::string(h_width / 2, h);
+    else ss << std::string(h_width, h);
+    ss << eu << std::endl;
+    // << std::setfill(h)
+    // << std::setw(width + l.size() + r.size() - 2) << std::left << "(" + std::to_string(instruction_sequence->size()) + ")"
+    // << eu << std::endl;
 
     ss << std::setfill(' ');
 
     if (instruction_sequence->size() > 1)
-        ss << std::string(padding, ' ') << l << std::setw(width) << std::left << first_string << r << std::endl;
+        ss << std::string(padding, ' ') << l << std::setw(inner_width) << std::left << first_string << r << std::endl;
     if (instruction_sequence->size() > 2)
-        ss << std::string(padding, ' ') << l << std::setw(width) << std::left << ':' << r << std::endl;
-    ss << std::string(padding, ' ') << l << std::setw(width) << std::left << last_string << r << std::endl;
+        ss << std::string(padding, ' ') << l << std::setw(inner_width) << std::left << ':' << r << std::endl;
 
-    ss << std::string(padding, ' ') << ed << std::string(width + 2, '-') << ed;
-    for (unsigned i = 0; i < next.size(); ++i)
-        ss << ' ' << static_cast<char>(placeholder::next);
+    ss << std::string(padding, ' ') << l << std::setw(inner_width) << std::left << last_string << r << std::endl;
+
+    ss << std::string(padding, ' ') << ed;
+    if (!next.empty())
+        ss << std::string(mid_add, h) << mid_bottom << std::string(h_width / 2, h);
+    else ss << std::string(h_width, h);
+    ss << ed;
+
+    //for (unsigned i = 0; i < next.size(); ++i)
+    //    ss << ' ' << static_cast<char>(placeholder::next);
 
     return ss.str();
 }
@@ -67,49 +96,58 @@ control_flow::control_flow(const disassembly& disassembly, const uint64_t start,
 
 void control_flow::draw() const
 {
-    std::map<char, block const*> block_map;
-    std::map<block const*, char> id_map;
+    std::map<unsigned, block const*> block_map;
+    std::map<block const*, unsigned> id_map;
 
-    auto id = 'A';
+    unsigned id = 0;
     for (const auto& block : blocks_)
     {
         block_map.emplace(id, block);
         id_map.emplace(block, id);
         ++id;
     }
-    
-    auto line_break = false;
+
+    auto first = true;
     for (const auto [id, block] : block_map)
     {
-        if (line_break)
-            std::cout << std::endl << std::endl;
-
-        const auto color = !line_break || block->next.empty();
-
+        const auto color = first || block->next.empty();
         if (color)
         {
-            if (!line_break)
+            if (first)
                 std::cout << dsp::colorize(FOREGROUND_GREEN | FOREGROUND_INTENSITY);
             else if (block->next.empty())
                 std::cout << dsp::colorize(FOREGROUND_RED | FOREGROUND_INTENSITY);
         }
 
-        auto block_string = block->to_string();
+        unsigned mid;
+        auto block_string = block->to_string(!first, mid);
 
-        replace_first(block_string, placeholder::id, id);
+        replace_first(block_string, placeholder::id, to_string_hex(id));
 
-        for (const auto next : block->next)
-            replace_first(block_string, placeholder::next, id_map.at(next));
-
+        /*for (const auto next : block->next)
+            replace_first(block_string, placeholder::next, id_map.at(next));*/
+        
+        if (!first)
+            std::cout << std::endl;
         std::cout << block_string;
+        for (const auto next : block->next)
+            std::cout << " " << std::hex << std::uppercase << id_map.at(next);
+
+        if (!block->next.empty())
+        {
+            std::cout << std::endl << std::string(mid, ' ') << '|';
+        }
 
         if (color)
             std::cout << dsp::decolorize;
 
-        if (block->next.empty())
+        /*if (block->next.empty())
+            break;*/
+        
+        if (!first)
             break;
 
-        line_break = true;
+        first = false;
     }
 }
 

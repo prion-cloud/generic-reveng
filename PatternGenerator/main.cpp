@@ -51,7 +51,7 @@ static std::vector<uint8_t> load(const std::string& file_name)
 int main(const int argc, char* argv[])
 {
     dsp::h_console = GetStdHandle(STD_OUTPUT_HANDLE);
-    
+
     CONSOLE_FONT_INFOEX cfi;
     cfi.cbSize = sizeof cfi;
     cfi.nFont = 0;
@@ -60,7 +60,10 @@ int main(const int argc, char* argv[])
     cfi.FontFamily = FF_DONTCARE;
     cfi.FontWeight = FW_NORMAL;
     wcscpy_s(cfi.FaceName, L"Consolas");
-    SetCurrentConsoleFontEx(dsp::h_console, FALSE, &cfi);
+    SetCurrentConsoleFontEx(dsp::h_console, FALSE, &cfi);
+
+    //const SMALL_RECT rect { 0, 0, 2000, 20 };
+    //SetConsoleWindowInfo(dsp::h_console, true, &rect);
 
     if (argc != 2)
     {
@@ -124,9 +127,10 @@ int main(const int argc, char* argv[])
     for (const auto [start, stop] : addresses)
     {
         const control_flow control_flow(disassembly, start, stop);
-        //control_flow.draw();
-        //std::cout << std::endl;
-
+        control_flow.draw();
+        std::cout << std::endl;
+    }
+/*
         const auto blocks = control_flow.get_blocks();
         size_t sum = 0;
         for (const auto& block : blocks)
@@ -194,6 +198,7 @@ int main(const int argc, char* argv[])
 
     auto stream = std::wofstream("pattern_database.json");
     rule_set.json_serialize(stream);
+*/
 
     std::cout << std::endl << "COMPLETE" << std::endl;
     std::cin.get();

@@ -713,11 +713,9 @@ bool operator<(const data_flow::expression& expr1, const data_flow::expression& 
 
 data_flow::expression_variant operator/(data_flow::expression_variant expr_var1, const data_flow::expression_variant & expr_var2)
 {
-    expr_var1 /= expr_var2;
-    return expr_var1;
+    return expr_var1 /= expr_var2;
 }
 data_flow::expression_variant operator%(data_flow::expression_variant expr_var1, const data_flow::expression_variant & expr_var2)
 {
-    expr_var1 %= expr_var2;
-    return expr_var1;
+    return expr_var1 %= expr_var2;
 }
