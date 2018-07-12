@@ -20,7 +20,7 @@ public:
 
     control_flow(const disassembly& disassembly, uint64_t start, uint64_t stop);
 
-    std::string to_string() const;
+    void draw() const;
 
     std::vector<instruction_sequence> get_blocks() const;
 

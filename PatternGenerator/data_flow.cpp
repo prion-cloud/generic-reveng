@@ -2,6 +2,23 @@
 
 #include "data_flow.h"
 
+bool data_flow::expression::node::is_const(int64_t) const
+{
+    return false;
+}
+std::optional<x86_reg> data_flow::expression::node::get_reg_value() const
+{
+    return std::nullopt;
+}
+std::optional<int64_t> data_flow::expression::node::get_const_value() const
+{
+    return std::nullopt;
+}
+std::optional<int64_t> data_flow::expression::node::get_add_value() const
+{
+    return std::nullopt;
+}
+
 data_flow::expression::constant::constant(const int64_t value)
     : value(value) { }
 std::string data_flow::expression::constant::to_string() const
@@ -21,15 +38,6 @@ bool data_flow::expression::constant::is_const(const int64_t value) const
 std::optional<int64_t> data_flow::expression::constant::get_const_value() const
 {
     return value;
-}
-
-bool data_flow::expression::non_const::is_const(int64_t) const
-{
-    return false;
-}
-std::optional<int64_t> data_flow::expression::non_const::get_const_value() const
-{
-    return std::nullopt;
 }
 
 template<char C>
@@ -79,6 +87,10 @@ std::string data_flow::expression::op_assoc<C>::to_string() const
 
 data_flow::expression::op_add::op_add(const std::vector<node*>& next)
     : op_assoc<'+'>(next, 0, [](const int64_t a, const int64_t b) { return a + b; }) { }
+std::optional<int64_t> data_flow::expression::op_add::get_add_value() const
+{
+    return next.at(1)->get_const_value();
+}
 data_flow::expression::op_mul::op_mul(const std::vector<node*>& next)
     : op_assoc<'*'>(next, 1, [](const int64_t a, const int64_t b) { return a * b; }) { }
 
@@ -124,6 +136,10 @@ std::string data_flow::expression::var_register::to_string() const
 
     return ss.str();
 }
+std::optional<x86_reg> data_flow::expression::var_register::get_reg_value() const
+{
+    return id;
+}
 data_flow::expression::var_memory::var_memory(node* const descriptor)
     : descriptor(descriptor) { }
 std::string data_flow::expression::var_memory::to_string() const
@@ -139,9 +155,17 @@ std::string data_flow::expression::to_string() const
     return root_->to_string();
 }
 
+std::optional<x86_reg> data_flow::expression::get_reg_value() const
+{
+    return root_->get_reg_value();
+}
 std::optional<int64_t> data_flow::expression::get_const_value() const
 {
     return root_->get_const_value();
+}
+std::optional<int64_t> data_flow::expression::get_add_value() const
+{
+    return root_->get_add_value();
 }
 
 data_flow::expression data_flow::expression::memorize() const
@@ -442,6 +466,10 @@ std::map<data_flow::expression, data_flow::expression_variant> const* data_flow:
 {
     return &base_;
 }
+const std::map<data_flow::expression, data_flow::expression_variant>& data_flow::expression_map::operator*() const
+{
+    return base_;
+}
 
 data_flow::data_flow(const instruction& instruction)
 {
@@ -449,7 +477,10 @@ data_flow::data_flow(const instruction& instruction)
 }
 data_flow::data_flow(const instruction_sequence& instruction_sequence)
 {
-    throw; // TODO
+    sequence_ = instruction_sequence;
+
+    for (unsigned i = 0; i < instruction_sequence->size(); ++i)
+        apply(instruction_sequence->at(i));
 }
 
 std::vector<std::string> data_flow::to_string() const
@@ -603,6 +634,15 @@ void data_flow::apply(const instruction& instruction)
     }
 }
 
+bool data_flow::empty() const
+{
+    return map_->empty();
+}
+size_t data_flow::size() const
+{
+    return map_->size();
+}
+
 std::vector<uint64_t> data_flow::inspect_rip()
 {
     std::vector<uint64_t> result;
@@ -611,6 +651,43 @@ std::vector<uint64_t> data_flow::inspect_rip()
         const auto value = expr.get_const_value();
         if (value.has_value())
             result.push_back(*value);
+    }
+
+    return result;
+}
+
+std::vector<std::wstring> data_flow::get_replacement() const
+{
+    if (!sequence_.has_value())
+        throw;
+
+    std::map<x86_reg, std::wstring> reg_map;
+    std::map<int64_t, std::wstring> num_map;
+    const auto rep = sequence_->get_representation(reg_map, num_map);
+
+    std::vector<std::wstring> result;
+    for (const auto& [expr, expr_var] : *map_)
+    {
+        const auto reg = expr.get_reg_value();
+        if (reg.has_value() && *reg != X86_REG_RIP)
+        {
+            if (*reg == X86_REG_RSP)
+            {
+                const auto add = (*expr_var).front().get_add_value();
+                if (add.has_value())
+                {
+                    std::wostringstream ss;
+                    ss << L"sub rsp, 0x";
+                    ss << std::hex << std::uppercase << -*add;
+                    result.push_back(ss.str());
+                }
+                continue;
+            }
+
+            const auto num = (*expr_var).front().get_const_value();
+            if (num.has_value())
+                result.push_back(L"movabs " + reg_map.at(*reg) + L", " + num_map.at(*num));
+        }
     }
 
     return result;

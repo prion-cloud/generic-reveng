@@ -32,8 +32,10 @@ public:
     explicit disassembly(const std::vector<uint8_t>& code);
     ~disassembly();
 
-    std::map<x86_reg, uint64_t> get_context();
-    void set_context(std::map<x86_reg, uint64_t> context);
+    //uint64_t emulate(uint64_t address) const;
+
+    //void const* get_context() const;
+    //void set_context(void* context);
 
     instruction operator[](uint64_t address) const;
 

@@ -10,8 +10,10 @@ class data_flow
         {
             virtual ~node() = default;
             virtual std::string to_string() const = 0;
-            virtual bool is_const(int64_t value) const = 0;
-            virtual std::optional<int64_t> get_const_value() const = 0;
+            virtual bool is_const(int64_t value) const;
+            virtual std::optional<x86_reg> get_reg_value() const;
+            virtual std::optional<int64_t> get_const_value() const;
+            virtual std::optional<int64_t> get_add_value() const;
         };
 
         struct constant : node
@@ -23,14 +25,8 @@ class data_flow
             std::optional<int64_t> get_const_value() const override;
         };
 
-        struct non_const : node
-        {
-            bool is_const(int64_t value) const override;
-            std::optional<int64_t> get_const_value() const override;
-        };
-
         template <char C>
-        struct op_assoc : non_const
+        struct op_assoc : node
         {
             std::vector<node*> next;
             explicit op_assoc(std::vector<node*> next, int64_t base,
@@ -41,6 +37,7 @@ class data_flow
         struct op_add : op_assoc<'+'>
         {
             explicit op_add(const std::vector<node*>& next);
+            std::optional<int64_t> get_add_value() const override;
         };
         struct op_mul : op_assoc<'*'>
         {
@@ -48,7 +45,7 @@ class data_flow
         };
 
         template <char C>
-        struct op_unary : non_const
+        struct op_unary : node
         {
             node* next;
             explicit op_unary(node* next);
@@ -56,7 +53,7 @@ class data_flow
         };
 
         template <char C>
-        struct op : non_const
+        struct op : node
         {
             node* left;
             node* right;
@@ -64,13 +61,14 @@ class data_flow
             std::string to_string() const override;
         };
 
-        struct var_register : non_const
+        struct var_register : node
         {
             x86_reg id;
             explicit var_register(x86_reg id);
             std::string to_string() const override;
+            std::optional<x86_reg> get_reg_value() const override;
         };
-        struct var_memory : non_const
+        struct var_memory : node
         {
             node* descriptor;
             explicit var_memory(node* descriptor);
@@ -82,8 +80,10 @@ class data_flow
     public:
 
         std::string to_string() const;
-
+        
+        std::optional<x86_reg> get_reg_value() const;
         std::optional<int64_t> get_const_value() const;
+        std::optional<int64_t> get_add_value() const;
 
         expression memorize() const;
 
@@ -168,6 +168,7 @@ class data_flow
         expression_variant& operator[](instruction::operand operand);
 
         std::map<expression, expression_variant> const* operator->() const;
+        const std::map<expression, expression_variant>& operator*() const;
 
     private:
 
@@ -255,6 +256,8 @@ class data_flow
 
     expression_map map_;
 
+    std::optional<instruction_sequence> sequence_;
+
 public:
 
     data_flow() = default;
@@ -265,7 +268,12 @@ public:
 
     void apply(const instruction& instruction);
 
+    bool empty() const;
+    size_t size() const;
+
     std::vector<uint64_t> inspect_rip();
+
+    std::vector<std::wstring> get_replacement() const;
 
     friend bool operator<(const data_flow& flow1, const data_flow& flow2);
 
