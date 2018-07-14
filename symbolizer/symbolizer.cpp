@@ -2,6 +2,6 @@
 
 int main()
 {
-	std::cin.get();
+    std::cout << "This could be your ad." << std::endl;
 	return 0;
 }
