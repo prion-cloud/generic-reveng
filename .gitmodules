@@ -1,9 +1,0 @@
-[submodule "Capstone"]
-	path = Capstone
-	url = git@github.com:aquynh/capstone.git
-[submodule "Unicorn"]
-	path = Unicorn
-	url = git@github.com:unicorn-engine/unicorn.git
-[submodule "Pretty"]
-	path = Pretty
-	url = git@github.com:superbr4in/json-prettifier.git
