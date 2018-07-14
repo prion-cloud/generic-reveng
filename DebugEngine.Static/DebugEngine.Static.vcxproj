@@ -154,6 +154,7 @@
     <ClInclude Include="debugger.h" />
     <ClInclude Include="disassembler.h" />
     <ClInclude Include="emulator.h" />
+    <ClInclude Include="instruction.h" />
     <ClInclude Include="loader.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
@@ -162,7 +163,11 @@
     <ClCompile Include="disassembler.cpp" />
     <ClCompile Include="emulator.cpp" />
     <ClInclude Include="emulator_tpl.cpp" />
+    <ClCompile Include="instruction.cpp" />
+    <ClCompile Include="loader.cpp" />
     <ClCompile Include="loader_pe.cpp" />
+    <ClCompile Include="loader_raw.cpp" />
+    <ClInclude Include="loader_tpl.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

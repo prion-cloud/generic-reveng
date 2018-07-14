@@ -33,6 +33,12 @@
     <ClInclude Include="disassembler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="loader_tpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -48,6 +54,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="disassembler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loader_raw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instruction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

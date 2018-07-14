@@ -2,30 +2,29 @@
 
 #include "emulator.h"
 
-bool emulator::mem_region_less::operator()(const uc_mem_region a, const uc_mem_region b) const
+bool operator<(const uc_mem_region a, const uc_mem_region b)
 {
     return a.end <= b.begin;
 }
 
-emulator::emulator(const uint16_t machine)
+emulator::emulator(const uint16_t machine, const uint64_t stack_size, const uint64_t stack_top)
+    : stack_size_(stack_size), stack_top_(stack_top)
 {
-    mem_regions_ = std::set<uc_mem_region, mem_region_less>();
-
     auto mode = static_cast<uc_mode>(0);
 
     switch (machine)
     {
 #ifdef _WIN64
     case IMAGE_FILE_MACHINE_AMD64:
-        
+
         mode = UC_MODE_64;
 
         max_scale_ = UINT64_MAX;
 
-        reg_sp_id_ = UC_X86_REG_RSP;
-        reg_bp_id_ = UC_X86_REG_RBP;
+        reg_sp_id_ = X86_REG_RSP;
+        reg_bp_id_ = X86_REG_RBP;
 
-        reg_ip_id_ = UC_X86_REG_RIP;
+        reg_ip_id_ = X86_REG_RIP;
 
         break;
 #else
@@ -35,18 +34,22 @@ emulator::emulator(const uint16_t machine)
 
         max_scale_ = UINT32_MAX;
 
-        reg_sp_id_ = UC_X86_REG_ESP;
-        reg_bp_id_ = UC_X86_REG_EBP;
+        reg_sp_id_ = X86_REG_ESP;
+        reg_bp_id_ = X86_REG_EBP;
 
-        reg_ip_id_ = UC_X86_REG_EIP;
+        reg_ip_id_ = X86_REG_EIP;
 
         break;
 #endif
     default:
-        THROW;
+        std::ostringstream message;
+        message << "Invalid machine specification: " << std::hex << std::showbase << machine;
+        THROW(message.str());
     }
 
-    E_FAT(uc_open(UC_ARCH_X86, mode, &uc_));
+    FATAL_IF(uc_open(UC_ARCH_X86, mode, &uc_));
+
+    initialize_registers();
 }
 emulator::~emulator()
 {
@@ -55,30 +58,30 @@ emulator::~emulator()
 
 // Memory
 
-void emulator::mem_map(const uint64_t address, void* buffer, const size_t size)
+void emulator::mem_map(const uint64_t address, const std::vector<uint8_t>& buffer, const bool map /*TODO Q&D mem_write*/)
 {
-    if (size == 0x0)
+    if (buffer.empty())
         return;
 
-    auto virt_size = PAGE_SIZE * (size / PAGE_SIZE);
-    if (size % PAGE_SIZE > 0)
-        virt_size += PAGE_SIZE;
+    if (map)
+    {
+        auto virt_size = PAGE_SIZE * (buffer.size() / PAGE_SIZE);
+        if (buffer.size() % PAGE_SIZE > 0)
+            virt_size += PAGE_SIZE;
 
-    const uint32_t perms = UC_PROT_ALL;
+        const uint32_t perms = UC_PROT_ALL;
 
-    E_FAT(uc_mem_map(uc_, address, virt_size, perms));
+        FATAL_IF(uc_mem_map(uc_, address, virt_size, perms));
 
-    uc_mem_region region;
-    region.begin = address;
-    region.end = address + virt_size;
-    region.perms = perms;
+        uc_mem_region region;
+        region.begin = address;
+        region.end = address + virt_size;
+        region.perms = perms;
 
-    mem_regions_.insert(region);
-    
-    if (buffer == nullptr)
-        return;
+        mem_regions_.insert(region);
+    }
 
-    E_FAT(uc_mem_write(uc_, address, buffer, size));
+    FATAL_IF(uc_mem_write(uc_, address, &buffer.at(0), buffer.size()));
 }
 
 bool emulator::mem_is_mapped(const uint64_t address) const
@@ -91,9 +94,9 @@ bool emulator::mem_is_mapped(const uint64_t address) const
     return mem_regions_.lower_bound(cmp_region) != mem_regions_.upper_bound(cmp_region);
 }
 
-void emulator::mem_read(const uint64_t address, void* buffer, const size_t size) const
+void emulator::mem_read(const uint64_t address, std::vector<uint8_t>& buffer) const
 {
-    E_FAT(uc_mem_read(uc_, address, buffer, size));
+    FATAL_IF(uc_mem_read(uc_, address, &buffer.at(0), buffer.size()));
 }
 
 std::string emulator::mem_read_string(const uint64_t address) const
@@ -112,37 +115,95 @@ std::string emulator::mem_read_string(const uint64_t address) const
     return std::string(chars.begin(), chars.end());
 }
 
-// Registers
-
-void emulator::init_regs(const uint64_t stack_pointer, const uint64_t instruction_pointer) const
+// --- TODO Q&D
+context emulator::get_context() const
 {
-    reg_write(reg_sp_id_, stack_pointer);
-    reg_write(reg_bp_id_, stack_pointer);
+    context context;
 
-    jump(instruction_pointer);
+    context.instruction_pointer = reg_read<uint64_t>(X86_REG_RIP);
+
+    context.stack_pointer = reg_read<uint64_t>(X86_REG_RSP);
+    context.base_pointer = reg_read<uint64_t>(X86_REG_RBP);
+
+    context.stack_data = std::vector<uint8_t>(stack_size_);
+    mem_read(stack_top_, context.stack_data);
+
+    for (const auto reg : register_map_)
+    {
+        switch (reg.first)
+        {
+        case X86_REG_RIP:
+        case X86_REG_RSP:
+        case X86_REG_RBP:
+            break;
+        default:
+            if (reg.second == UINT64_MAX && reg_read<uint64_t>(reg.first) != REG64_DEFAULT)
+                context.register_values.emplace(reg.first, reg_read<uint64_t>(reg.first));
+        }
+    }
+
+    return context;
 }
+void emulator::set_context(const context context)
+{
+    reg_write<uint64_t>(X86_REG_RIP, context.instruction_pointer);
+
+    reg_write<uint64_t>(X86_REG_RSP, context.stack_pointer);
+    reg_write<uint64_t>(X86_REG_RBP, context.base_pointer);
+
+    FATAL_IF(context.stack_data.size() != stack_size_);
+    mem_map(stack_top_, context.stack_data, false);
+
+    initialize_registers();
+
+    for (const auto reg : context.register_values)
+        reg_write<uint64_t>(reg.first, reg.second);
+}
+// ---
+
+// Registers
 
 uint64_t emulator::address() const
 {
     return reg_read<uint64_t>(reg_ip_id_);
 }
-void emulator::jump(const uint64_t address) const
+void emulator::jump_to(const uint64_t address) const
 {
     reg_write(reg_ip_id_, address);
 }
 
-// Emulation
-
-int emulator::run() const
+void emulator::resize_stack(const uint64_t pointer) const
 {
-    return R_FAILURE; // TODO
+    reg_write(reg_sp_id_, pointer);
+    reg_write(reg_bp_id_, pointer);
 }
 
-int emulator::step_into() const
+// Emulation
+
+int emulator::emulate_any() const
+{
+    return uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 0);
+}
+int emulator::emulate_once() const
 {
     return uc_emu_start(uc_, reg_read<uint64_t>(reg_ip_id_), -1, 0, 1);
 }
-int emulator::step_over() const
+
+// --
+
+void emulator::initialize_registers() const
 {
-    return R_FAILURE; // TODO
+    for (const auto reg : register_map_)
+    {
+        switch (reg.first)
+        {
+        case X86_REG_RIP:
+        case X86_REG_RSP:
+        case X86_REG_RBP:
+            break;
+        default:
+            if (reg.second == UINT64_MAX)
+                reg_write<uint64_t>(reg.first, REG64_DEFAULT);
+        }
+    }
 }

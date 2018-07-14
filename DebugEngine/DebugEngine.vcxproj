@@ -153,10 +153,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="cli_debug.h" />
+    <ClInclude Include="console.h" />
+    <ClInclude Include="console_printer.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cli_debug.cpp" />
+    <ClCompile Include="console.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="console_printer.cpp" />
+    <ClInclude Include="console_printer_tpl.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
