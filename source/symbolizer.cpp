@@ -1,4 +1,4 @@
-#include "symbolizer.h"
+#include <iostream>
 
 int main()
 {
