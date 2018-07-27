@@ -1,9 +1,9 @@
 [submodule "capstone"]
 	path = capstone
-	url = git@github.com:aquynh/capstone.git
+	url = https://github.com/aquynh/capstone.git
 [submodule "rapidjson"]
 	path = rapidjson
-	url = git@github.com:Tencent/rapidjson.git
+	url = https://github.com/Tencent/rapidjson.git
 [submodule "catch2"]
 	path = catch2
-	url = git@github.com:catchorg/Catch2.git
+	url = https://github.com/catchorg/Catch2.git
