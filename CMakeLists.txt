@@ -13,7 +13,7 @@ add_executable ( symbolizer_test
   "test/test_capstone.cpp"
   "test/test_data_flow.cpp" )
 
-find_library ( CAPSTONE_LIB capstone PATHS "capstone/build/" )
+add_subdirectory ( "capstone/" )
 
-target_link_libraries ( symbolizer "${CAPSTONE_LIB}" )
-target_link_libraries ( symbolizer_test "${CAPSTONE_LIB}" )
+target_link_libraries ( symbolizer "capstone/capstone_dll" )
+target_link_libraries ( symbolizer_test "capstone/capstone_dll" )
