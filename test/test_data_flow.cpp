@@ -21,7 +21,7 @@ static cs_insn make_insn(const x86_insn id, const std::vector<cs_x86_op>& operan
     insn.id = id;
 
     cs_x86 x86 { };
-    x86.op_count = operands.size();
+    x86.op_count = static_cast<uint8_t>(operands.size());
     std::copy(operands.begin(), operands.end(), x86.operands);
 
     const auto detail = new cs_detail{};
