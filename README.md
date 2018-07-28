@@ -1,27 +1,16 @@
-### 🚧 This project is currently under construction. 🚧
+# 🚧 This project is currently under construction. 🚧
 
-Clone with submodules:
+## Cloning
+Make sure to include all submodules:
 ```
 git clone --recurse-submodules https://github.com/superbr4in/generic-reveng.git
 cd generic-reveng
 ```
 
-Create `nmake` files:
-```
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=RELEASE -G "NMake Makefiles" ..
-```
+## Building
 
-Build `capstone`:
-```
-cd capstone
-nmake
-```
+### Linux
+🚫 *Build not yet possible*
 
-Build project:
-```
-cd ..
-nmake
-cp capstone/capstone.dll ./
-```
+### Windows
+Execute the `build_windows` batch file to build the project.
