@@ -13,6 +13,11 @@ add_executable ( symbolizer_test
   "test/test_capstone.cpp"
   "test/test_data_flow.cpp" )
 
+include_directories (
+  "capstone/include/"
+  "catch2/single_include/"
+  "rapidjson/include/" )
+
 set ( CAPSTONE_BUILD_STATIC  OFF CACHE BOOL "Capstone: Build static library" )
 set ( CAPSTONE_BUILD_TESTS   OFF CACHE BOOL "Capstone: Build tests" )
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../capstone/include/capstone.h"
-
 #include <functional>
 #include <string>
 #include <vector>
+
+#include "capstone.h"
 
 class data_entry
 {
