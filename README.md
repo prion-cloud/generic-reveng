@@ -13,4 +13,4 @@ cd generic-reveng
 🚫 *Build not yet possible*
 
 ### Windows
-Execute the `build_windows` batch file to build the project.
+Executing the `build_windows` batch file will create the project's executables in the `build\` directory.
