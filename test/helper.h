@@ -11,6 +11,11 @@ public:
 
     test_data() = default;
 
+    void add(In value)
+    {
+        base_.emplace_back(value, value);
+    }
+
     void add(In in, Out out)
     {
         base_.emplace_back(in, out);

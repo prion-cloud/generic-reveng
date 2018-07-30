@@ -5,7 +5,7 @@
 
 #define TAG_CAPSTONE "[capstone]"
 
-TEST_CASE("cs_disasm", TAG_CAPSTONE)
+TEST_CASE("Disassembling", TAG_CAPSTONE)
 {
     test_data<std::vector<uint8_t>, std::vector<std::pair<std::string, std::string>>> test_data;
     test_data.add(

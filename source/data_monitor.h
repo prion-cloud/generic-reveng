@@ -1,10 +1,12 @@
 #pragma once
 
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "capstone.h"
+#include "intermediate.h"
 
 class data_entry
 {
@@ -71,9 +73,7 @@ public:
 
     data_entry() = default;
 
-    data_entry(const x86_reg& reg);
-    data_entry(const uint64_t& imm);
-    data_entry(const double& fp);
+    data_entry(cs_x86_op const& operand);
 
     const std::string& str() const;
 
@@ -111,11 +111,11 @@ private:
     data_entry operator-() const;
 };
 
-class data_flow
+class data_monitor
 {
     struct data_entry_hash
     {
-        std::size_t operator()(const data_entry& k) const;
+        std::size_t operator()(const data_entry& entry) const;
     };
 
     class data_map
@@ -123,37 +123,23 @@ class data_flow
         std::unordered_map<data_entry, data_entry, data_entry_hash> base_;
 
     public:
+        /*
+        data_entry parse(data_source const& source, std::vector<cs_x86_op> const& operands) const;
 
-        std::vector<std::string> str() const;
-
-        data_entry effect(const x86_op_mem& mem, const bool& memorize);
-
-        data_entry& operator[](const data_entry& container);
-        data_entry& operator[](const cs_x86_op& operand);
-
+        data_entry& operator[](data_destination const& destination);
+        */
         std::vector<std::pair<data_entry, data_entry>> operator*() const;
     };
+
+    data_ir const& ir_;
 
     data_map map_;
 
 public:
 
-    data_flow() = default;
-
-    std::vector<std::string> str() const;
+    explicit data_monitor(data_ir const& ir);
 
     std::vector<std::pair<data_entry, data_entry>> status() const;
 
-    void commit(const cs_insn& instruction);
-
-private:
-
-    // --- TODO: Convenience only
-
-    static data_entry memorize(data_entry entry);
-
-    friend data_entry operator/(data_entry first, const data_entry& second);
-    friend data_entry operator%(data_entry first, const data_entry& second);
-
-    // ---
+    std::string commit(cs_insn const& instruction);
 };

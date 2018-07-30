@@ -3,15 +3,14 @@ cmake_minimum_required ( VERSION 3.8 )
 add_compile_options ( "/std:c++17" )
 
 add_executable ( symbolizer
-  "source/data_flow.cpp" "source/data_flow.h"
+  "source/data_monitor.cpp"
   "source/symbolizer.cpp" )
 
 add_executable ( symbolizer_test
-  "source/data_flow.cpp" "source/data_flow.h"
-  "test/helper.h"
+  "source/data_monitor.cpp"
   "test/test.cpp"
   "test/test_capstone.cpp"
-  "test/test_data_flow.cpp" )
+  "test/test_data_monitor.cpp"
 
 include_directories (
   "capstone/include/"

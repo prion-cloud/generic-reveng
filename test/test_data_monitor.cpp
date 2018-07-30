@@ -1,9 +1,9 @@
 #include "catch2/catch.hpp"
 #include "helper.h"
 
-#include "../source/data_flow.h"
+#include "../source/data_monitor.h"
 
-#define TAG_DATA_FLOW "[data_flow]"
+#define TAG_DATA_MONITOR "[data_monitor]"
 
 static cs_x86_op make_op(const x86_reg reg)
 {
@@ -11,7 +11,14 @@ static cs_x86_op make_op(const x86_reg reg)
     op.type = X86_OP_REG;
     op.reg = reg;
 
-    // ReSharper disable once CppSomeObjectMembersMightNotBeInitialized
+    return op;
+}
+static cs_x86_op make_op(const int64_t imm)
+{
+    cs_x86_op op { };
+    op.type = X86_OP_IMM;
+    op.imm = imm;
+
     return op;
 }
 
@@ -32,8 +39,9 @@ static cs_insn make_insn(const x86_insn id, const std::vector<cs_x86_op>& operan
     return insn;
 }
 
-TEST_CASE("commit", TAG_DATA_FLOW)
+TEST_CASE("Commitment", TAG_DATA_MONITOR)
 {
+    /*
     test_data<std::vector<cs_insn>, std::vector<std::pair<data_entry, data_entry>>> test_data;
     test_data.add(
         {
@@ -41,16 +49,23 @@ TEST_CASE("commit", TAG_DATA_FLOW)
         },
         {
             { X86_REG_RAX, X86_REG_RBX }
-        }
-    );
+        });
+    test_data.add(
+        {
+            make_insn(X86_INS_MOV,{ make_op(X86_REG_R11), make_op(0x42i64) })
+        },
+        {
+            { X86_REG_R11, 0x42ui64 }
+        });
 
     for (const auto& [in, out] : *test_data)
     {
-        data_flow data_flow;
+        data_monitor monitor;
 
         for (const auto& instruction : in)
-            data_flow.commit(instruction);
+            monitor.commit(instruction);
 
-        REQUIRE(data_flow.status() == out);
+        REQUIRE(monitor.status() == out);
     }
+    */
 }
