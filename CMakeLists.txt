@@ -4,13 +4,18 @@ add_compile_options ( "/std:c++17" )
 
 add_executable ( symbolizer
   "source/data_monitor.cpp"
+  "source/intermediate.cpp"
+  "source/intermediate_json.cpp"
   "source/symbolizer.cpp" )
 
 add_executable ( symbolizer_test
   "source/data_monitor.cpp"
+  "source/intermediate.cpp"
+  "source/intermediate_json.cpp"
   "test/test.cpp"
   "test/test_capstone.cpp"
   "test/test_data_monitor.cpp"
+  "test/test_intermediate.cpp" )
 
 include_directories (
   "capstone/include/"
