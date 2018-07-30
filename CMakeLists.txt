@@ -18,9 +18,9 @@ add_executable ( symbolizer_test
   "test/test_intermediate.cpp" )
 
 include_directories (
-  "capstone/include/"
-  "catch2/single_include/"
-  "rapidjson/include/" )
+  "thirdparty/capstone/include/"
+  "thirdparty/catch2/single_include/"
+  "thirdparty/rapidjson/include/" )
 
 set ( CAPSTONE_BUILD_STATIC  OFF CACHE BOOL "Capstone: Build static library" )
 set ( CAPSTONE_BUILD_TESTS   OFF CACHE BOOL "Capstone: Build tests" )
@@ -33,7 +33,7 @@ set ( CAPSTONE_SPARC_SUPPORT OFF CACHE BOOL "Capstone: Sparc support" )
 set ( CAPSTONE_SYSZ_SUPPORT  OFF CACHE BOOL "Capstone: SystemZ support" )
 set ( CAPSTONE_XCORE_SUPPORT OFF CACHE BOOL "Capstone: XCore support" )
 
-add_subdirectory ( "capstone/" )
+add_subdirectory ( "thirdparty/capstone/" )
 
-target_link_libraries ( symbolizer "capstone/capstone_dll" )
-target_link_libraries ( symbolizer_test "capstone/capstone_dll" )
+target_link_libraries ( symbolizer "thirdparty/capstone/capstone_dll" )
+target_link_libraries ( symbolizer_test "thirdparty/capstone/capstone_dll" )
