@@ -4,11 +4,11 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RELEASE -G "NMake Makefiles" ..
 
-cd capstone
+cd thirdparty\capstone\
 nmake
 
-cd ..
+cd ..\..
 nmake
-xcopy capstone\capstone.dll .\
+xcopy thirdparty\capstone\capstone.dll .\
 
 cd ..
