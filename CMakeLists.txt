@@ -8,6 +8,7 @@ add_executable ( symbolizer
   "source/data_monitor.cpp"
   "source/intermediate.cpp"
   "source/json_intermediate.cpp"
+  "source/instruction.cpp"
   "source/symbolizer.cpp" )
 
 add_executable ( symbolizer_test
