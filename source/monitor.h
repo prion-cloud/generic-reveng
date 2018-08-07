@@ -10,7 +10,7 @@ class monitor
 {
     class data_map
     {
-        std::unordered_map<value, value> base_;
+        std::unordered_map<value, value, value_hash> base_;
 
     public:
 

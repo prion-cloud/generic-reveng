@@ -2,29 +2,27 @@
 
 value translator::flow::specificator::evaluate(instruction const& instruction) const
 {
-    auto const& operand = std::visit([instruction](std::variant<unsigned, instruction::operand> const& variant)
+    auto const val = value(std::visit([instruction](std::variant<unsigned, instruction::operand> const& variant)
     {
         if (variant.index() == 0)
             return instruction.operands.at(std::get<0>(variant));
 
         return std::get<1>(variant);
-    }, value_);
-
-    auto const result = value(operand);
+    }, value_));
 
     if (!modification_.has_value())
-        return result;
+        return val;
 
     switch (*modification_)
     {
     case modification::neg:
-        return result.negate();
+        return -val;
     case modification::inv:
-        return result.invert();
+        return ~val;
     case modification::ref:
-        return result.reference();
+        return val.reference();
     case modification::ind:
-        return result.indirect();
+        return val.indirect();
     default:
         throw std::runtime_error("Unknown modification");
     }
@@ -32,22 +30,28 @@ value translator::flow::specificator::evaluate(instruction const& instruction) c
 
 std::pair<value, value> translator::flow::evaluate(instruction const& instruction) const
 {
-    auto const destination = destination_.evaluate(instruction);
-    auto const source = sources_.front().evaluate(instruction);
+    return std::make_pair(destination_.evaluate(instruction), evaluate_sources(instruction));
+}
+
+value translator::flow::evaluate_sources(instruction const& instruction) const
+{
+    std::vector<value> values;
+    for (auto const& source : sources_)
+        values.push_back(source.evaluate(instruction));
 
     if (!operation_.has_value())
-        return std::make_pair(destination, source);
+        return values.front();
 
     switch (*operation_)
     {
     case operation::add:
-        return std::make_pair(destination, source + sources_.at(1).evaluate(instruction));
+        return values.front() + values.at(1);
     case operation::sub:
-        return std::make_pair(destination, source - sources_.at(1).evaluate(instruction));
+        return values.front() - values.at(1);
     case operation::mul:
-        return std::make_pair(destination, source * sources_.at(1).evaluate(instruction));
+        return values.front() * values.at(1);
     case operation::div:
-        return std::make_pair(destination, source / sources_.at(1).evaluate(instruction));
+        return values.front() / values.at(1);
     default:
         throw std::runtime_error("Unknown operation");
     }

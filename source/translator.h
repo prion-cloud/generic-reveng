@@ -33,6 +33,10 @@ class translator
     public:
 
         std::pair<value, value> evaluate(instruction const& instruction) const;
+
+    private:
+
+        value evaluate_sources(instruction const& instruction) const;
     };
 
     std::unordered_map<unsigned, std::vector<flow>> dictionary_;
