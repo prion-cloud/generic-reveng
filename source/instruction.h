@@ -16,24 +16,24 @@ struct memory_descriptor
 
     int64_t displacement;
 
-    explicit memory_descriptor(x86_op_mem const& cs_memory_descriptor);
-    // TODO: arm_op_mem ...
+    explicit memory_descriptor(x86_op_mem const& cs_memory_descriptor); // TODO: x86
 };
 
 struct instruction
 {
-    enum class operand_type { reg, imm, mem, fp };
+    enum class operand_type { imm, flp, reg, mem };
 
     struct operand
     {
         operand_type type;
-        std::variant<unsigned, int64_t, memory_descriptor, double> value;
+        std::variant<int64_t, double, unsigned, memory_descriptor> value;
 
-        explicit operand(cs_x86_op const& cs_operand);
-        // TODO: cs_arm_op ...
+        explicit operand(cs_x86_op const& cs_operand); // TODO: x86
     };
 
     unsigned id;
+
+    std::vector<uint8_t> code;
 
     std::vector<operand> operands;
 
