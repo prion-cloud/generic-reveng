@@ -17,7 +17,7 @@ class translator
         {
             enum class modification { neg, inv, ref, ind };
 
-            std::variant<unsigned, instruction::operand> value_;
+            std::variant<unsigned, operand> value_;
             std::optional<modification> modification_;
 
         public:

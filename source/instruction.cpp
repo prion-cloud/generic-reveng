@@ -11,24 +11,20 @@ memory_descriptor::memory_descriptor(x86_op_mem const& cs_memory_descriptor)
     displacement = cs_memory_descriptor.disp;
 }
 
-instruction::operand::operand(cs_x86_op const& cs_operand)
+operand::operand(cs_x86_op const& cs_operand)
 {
-    switch (cs_operand.type)
+    switch (type = cs_operand.type)
     {
     case X86_OP_REG:
-        type = operand_type::reg;
         value = static_cast<unsigned>(cs_operand.reg);
         break;
     case X86_OP_IMM:
-        type = operand_type::imm;
         value = cs_operand.imm;
         break;
     case X86_OP_MEM:
-        type = operand_type::mem;
         value = memory_descriptor(cs_operand.mem);
         break;
     case X86_OP_FP:
-        type = operand_type::flp;
         value = cs_operand.fp;
         break;
     default:

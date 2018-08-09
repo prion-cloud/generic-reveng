@@ -2,7 +2,7 @@
 
 value::value() = default;
 
-value::value(instruction::operand const& operand)
+value::value(operand const& operand)
 {
     throw std::runtime_error("TODO");
 }

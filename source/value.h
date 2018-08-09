@@ -1,4 +1,5 @@
 #pragma once
+
 #include "instruction.h"
 
 class value
@@ -12,7 +13,7 @@ public:
 
     value();
 
-    explicit value(instruction::operand const& operand);
+    explicit value(operand const& operand);
 
     value reference() const; // & ] [
     value indirect() const;  // * [ ]

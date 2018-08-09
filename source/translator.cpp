@@ -2,7 +2,7 @@
 
 value translator::flow::specificator::evaluate(instruction const& instruction) const
 {
-    auto const val = value(std::visit([instruction](std::variant<unsigned, instruction::operand> const& variant)
+    auto const val = value(std::visit([instruction](std::variant<unsigned, operand> const& variant)
     {
         if (variant.index() == 0)
             return instruction.operands.at(std::get<0>(variant));
