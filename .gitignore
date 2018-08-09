@@ -3,3 +3,6 @@
 *.vcxproj.user
 
 build/
+
+*.dll
+*.lib
