@@ -2,7 +2,7 @@
 
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=RELEASE -G "NMake Makefiles" ..
+cmake -D_CMAKE_BUILD_TYPE=RELEASE -G "NMake Makefiles" ..
 
 cd thirdparty\capstone\
 nmake
