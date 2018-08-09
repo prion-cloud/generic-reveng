@@ -6,7 +6,6 @@ add_definitions ( -D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING )
 
 include_directories (
   "thirdparty/capstone/include/"
-  "thirdparty/catch2/single_include/"
   "thirdparty/rapidjson/include/" )
 
 add_executable ( symbolizer
