@@ -4,7 +4,7 @@
 #include <variant>
 #include <vector>
 
-#include "capstone.h"
+#include <capstone.h>
 
 struct memory_descriptor
 {

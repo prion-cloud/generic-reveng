@@ -1,7 +1,7 @@
-#include "catch2/catch.hpp"
+#include <catch.hpp>
 #include "helper.h"
 
-#include "capstone.h"
+#include <capstone.h>
 
 #define TAG_CAPSTONE "[capstone]"
 
