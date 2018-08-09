@@ -31,5 +31,7 @@ public:
 
 class value_hash
 {
+public:
+
     size_t operator()(value const& value) const;
 };
