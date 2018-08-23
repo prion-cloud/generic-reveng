@@ -8,7 +8,7 @@
 
 class monitor
 {
-    class data_map
+    class value_map
     {
         std::unordered_map<value, value, value_hash> base_;
 
@@ -20,7 +20,7 @@ class monitor
 
     translator const& translator_;
 
-    data_map data_map_;
+    value_map value_map_;
 
 public:
 

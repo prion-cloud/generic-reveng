@@ -1,10 +1,10 @@
 #include "monitor.h"
 
-value& monitor::data_map::operator[](value const& key)
+value& monitor::value_map::operator[](value const& key)
 {
     return base_[key];
 }
-value const& monitor::data_map::operator[](value const& key) const
+value const& monitor::value_map::operator[](value const& key) const
 {
     auto const it = base_.find(key);
 
@@ -20,5 +20,5 @@ monitor::monitor(translator const& translator)
 void monitor::commit(instruction const& instruction)
 {
     for (auto const& [dest, src] : translator_[instruction])
-        data_map_[dest] = data_map_[src];
+        value_map_[dest] = value_map_[src];
 }
