@@ -43,5 +43,10 @@ class translator
 
 public:
 
+    translator() = default;
+
+    void load(std::istream& stream);
+    void store(std::ostream& stream) const;
+
     std::vector<std::pair<value, value>> operator[](instruction const& instruction) const;
 };

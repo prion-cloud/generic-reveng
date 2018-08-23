@@ -1,5 +1,9 @@
 #include "translator.h"
 
+// --- Replace
+#include <simple-serialization/include/simple-serialization/serialization.h>
+// ---
+
 value translator::flow::specificator::evaluate(instruction const& instruction) const
 {
     auto const val = value(std::visit([instruction](std::variant<unsigned, operand> const& variant)
@@ -55,6 +59,15 @@ value translator::flow::evaluate_sources(instruction const& instruction) const
     default:
         throw std::runtime_error("Unknown operation");
     }
+}
+
+void translator::load(std::istream& stream)
+{
+    bin::deserialize(stream, dictionary_);
+}
+void translator::store(std::ostream& stream) const
+{
+    bin::serialize(stream, dictionary_);
 }
 
 std::vector<std::pair<value, value>> translator::operator[](instruction const& instruction) const
