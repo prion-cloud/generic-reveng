@@ -4,6 +4,3 @@
 [submodule "Unicorn"]
 	path = Unicorn
 	url = https://github.com/unicorn-engine/unicorn.git
-[submodule "Pretty"]
-	path = Pretty
-	url = https://github.com/superbr4in/json-prettifier.git
