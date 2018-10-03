@@ -1,1 +1,1 @@
-### 🚧 This project is currently under construction. 🚧
+### :construction: This project is currently under construction. :construction:
