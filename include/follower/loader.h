@@ -15,13 +15,17 @@ protected:
 
     int instruction_pointer_register_id_;
 
-    loader(uc_arch architecture, uc_mode mode);
-
 public:
 
     virtual ~loader() = default;
 
     virtual std::shared_ptr<uc_engine> operator()(std::istream& is) const = 0;
+
+protected:
+
+    loader(uc_arch architecture, uc_mode mode);
+
+    std::shared_ptr<uc_engine> create_uc() const;
 };
 
 class loader_pe : loader

@@ -28,11 +28,10 @@ int main(int const argc, char const* const argv[])
 
     loader_pe load(UC_ARCH_X86, UC_MODE_64);
 
-    std::shared_ptr<uc_engine> context;
-
+    std::shared_ptr<uc_engine> uc;
     try
     {
-        context = load(file_stream);
+        uc = load(file_stream);
     }
     catch (std::runtime_error const& error)
     {
@@ -40,8 +39,12 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
+    uint64_t address;
+    uc_reg_read(uc.get(), UC_X86_REG_RIP, &address);
+
+    std::cout << "0x" << std::hex << std::uppercase << address << std::endl;
+
     // TODO
 
-    std::cout << "Success!" << std::endl;
     return 0;
 }

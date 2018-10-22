@@ -72,8 +72,7 @@ std::shared_ptr<uc_engine> loader_pe::operator()(std::istream& is) const
     for (unsigned i = 0; i < file_header.number_of_sections; ++i)
         section_headers.push_back(extract<image_section_header>(is));
 
-    uc_engine* uc;
-    uc_open(machine_.first, machine_.second, &uc);
+    auto const uc = create_uc();
 
     for (auto const& section_header : section_headers)
     {
@@ -85,14 +84,13 @@ std::shared_ptr<uc_engine> loader_pe::operator()(std::istream& is) const
         is.seekg(section_header.pointer_to_raw_data);
         auto const bytes = extract(is, section_header.size_of_raw_data);
 
-        uc_mem_map(uc, address, size, UC_PROT_ALL);
-        uc_mem_write(uc, address, &bytes.front(), bytes.size());
+        uc_mem_map(uc.get(), address, size, UC_PROT_ALL);
+        uc_mem_write(uc.get(), address, &bytes.front(), bytes.size());
     }
 
     entry_point += image_base;
-    uc_reg_write(uc, instruction_pointer_register_id_, &entry_point);
+    uc_reg_write(uc.get(), instruction_pointer_register_id_, &entry_point);
 
-    is.seekg(0);
-
-    return std::shared_ptr<uc_engine>(uc, uc_close);
+    is.seekg(0, std::ios_base::end);
+    return uc;
 }

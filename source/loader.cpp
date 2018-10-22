@@ -27,3 +27,11 @@ loader::loader(uc_arch const architecture, uc_mode const mode)
 
     throw std::invalid_argument("Unsupported machine specification");
 }
+
+std::shared_ptr<uc_engine> loader::create_uc() const
+{
+    uc_engine* uc;
+    uc_open(machine_.first, machine_.second, &uc);
+
+    return std::shared_ptr<uc_engine>(uc, uc_close);
+}
