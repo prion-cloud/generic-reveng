@@ -1,3 +1,34 @@
 cmake_minimum_required ( VERSION 3.8 )
 
 set ( CMAKE_CXX_STANDARD 17 )
+
+set ( CAPSTONE_BUILD_STATIC  OFF CACHE BOOL "Capstone: Build static library" )
+set ( CAPSTONE_BUILD_TESTS   OFF CACHE BOOL "Capstone: Build tests"          )
+set ( CAPSTONE_BUILD_CSTOOL  OFF CACHE BOOL "Capstone: Build cstool"         )
+
+set ( CAPSTONE_ARM_SUPPORT   OFF CACHE BOOL "Capstone: ARM support"          )
+set ( CAPSTONE_ARM64_SUPPORT OFF CACHE BOOL "Capstone: ARM64 support"        )
+set ( CAPSTONE_MIPS_SUPPORT  OFF CACHE BOOL "Capstone: MIPS support"         )
+set ( CAPSTONE_PPC_SUPPORT   OFF CACHE BOOL "Capstone: PowerPC support"      )
+set ( CAPSTONE_SPARC_SUPPORT OFF CACHE BOOL "Capstone: Sparc support"        )
+set ( CAPSTONE_SYSZ_SUPPORT  OFF CACHE BOOL "Capstone: SystemZ support"      )
+set ( CAPSTONE_XCORE_SUPPORT OFF CACHE BOOL "Capstone: XCore support"        )
+
+add_subdirectory ( "submodules/capstone/" )
+
+# The "submodules/unicorn/make.sh" script has to be executed first
+link_directories ( "submodules/unicorn/" )
+
+find_package ( Threads REQUIRED )
+
+add_executable ( follower
+    "source/follower.cpp"
+    "source/loader.cpp"
+    "source/loader_pe.cpp" )
+
+target_include_directories ( follower PRIVATE
+    "include/" )
+target_link_libraries ( follower
+    capstone-shared
+    "libunicorn.so"
+    ${CMAKE_THREAD_LIBS_INIT} )
