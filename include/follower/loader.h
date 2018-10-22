@@ -2,6 +2,8 @@
 
 #include <istream>
 #include <memory>
+#include <unordered_map>
+#include <utility>
 
 #include "../../submodules/unicorn/include/unicorn/unicorn.h"
 
@@ -9,8 +11,9 @@ class loader
 {
 protected:
 
-    uc_arch architecture_;
-    uc_mode mode_;
+    std::pair<uc_arch, uc_mode> machine_;
+
+    int instruction_pointer_register_id_;
 
     loader(uc_arch architecture, uc_mode mode);
 
@@ -18,7 +21,7 @@ public:
 
     virtual ~loader() = default;
 
-    virtual std::shared_ptr<uc_engine> operator()(std::istream& stream) const = 0;
+    virtual std::shared_ptr<uc_engine> operator()(std::istream& is) const = 0;
 };
 
 class loader_pe : loader
@@ -27,7 +30,7 @@ public:
 
     loader_pe(uc_arch architecture, uc_mode mode);
 
-    std::shared_ptr<uc_engine> operator()(std::istream& stream) const override;
+    std::shared_ptr<uc_engine> operator()(std::istream& is) const override;
 };
 
 class loader_elf : loader
