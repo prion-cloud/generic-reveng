@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "../include/follower/loader.h"
+//#include "../include/follower/control_flow_graph.h"
+#include "../include/follower/debugger.h"
 
 int main(int const argc, char const* const argv[])
 {
@@ -26,23 +27,16 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    loader_pe load(UC_ARCH_X86, UC_MODE_64);
+    debugger const debugger(architecture::x86, mode::bit64);
+    file_stream >> debugger;
 
-    std::shared_ptr<uc_engine> uc;
-    try
+    if (file_stream.fail())
     {
-        uc = load(file_stream);
-    }
-    catch (std::runtime_error const& error)
-    {
-        std::cerr << error.what() << std::endl;
+        std::cerr << "Invalid file" << std::endl;
         return 1;
     }
 
-    uint64_t address;
-    uc_reg_read(uc.get(), UC_X86_REG_RIP, &address);
-
-    std::cout << "0x" << std::hex << std::uppercase << address << std::endl;
+    std::cout << "0x" << std::hex << std::uppercase << debugger.position() << std::endl;
 
     // TODO
 
