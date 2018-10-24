@@ -9,11 +9,20 @@ instruction::instruction(cs_insn const cs_instruction)
     address = cs_instruction.address;
 
     code = std::vector<uint8_t>(
-        cs_instruction.bytes,
-        cs_instruction.bytes + cs_instruction.size);
+        std::cbegin(cs_instruction.bytes),
+        std::cend(cs_instruction.bytes));
 
-    mnemonic = cs_instruction.mnemonic;
-    operand_string = cs_instruction.op_str;
+    mnemonic = std::string(
+        std::cbegin(cs_instruction.mnemonic),
+        std::cend(cs_instruction.mnemonic));
+    operand_string = std::string(
+        std::cbegin(cs_instruction.op_str),
+        std::cend(cs_instruction.op_str));
+
+    code.resize(cs_instruction.size);
+
+    mnemonic.erase(mnemonic.find_first_of('\0'));
+    operand_string.erase(operand_string.find_first_of('\0'));
 }
 
 cs_arch to_cs(architecture const architecture)
@@ -40,11 +49,11 @@ cs_mode to_cs(mode const mode)
 {
     switch (mode)
     {
-    case mode::bit16:
+    case mode::width16:
         return CS_MODE_16;
-    case mode::bit32:
+    case mode::width32:
         return CS_MODE_32;
-    case mode::bit64:
+    case mode::width64:
         return CS_MODE_64;
     default:
         throw std::invalid_argument("Invalid mode");
@@ -75,11 +84,11 @@ uc_mode to_uc(mode const mode)
 {
     switch (mode)
     {
-    case mode::bit16:
+    case mode::width16:
         return UC_MODE_16;
-    case mode::bit32:
+    case mode::width32:
         return UC_MODE_32;
-    case mode::bit64:
+    case mode::width64:
         return UC_MODE_64;
     default:
         throw std::invalid_argument("Invalid mode");

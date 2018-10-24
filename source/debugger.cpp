@@ -37,6 +37,8 @@ std::vector<uint8_t> extract(std::istream& is, size_t size)
 
 std::istream& operator>>(std::istream& is, debugger const& debugger)
 {
+    // TODO: Specify file format (not only PE)
+
     auto const dos_header = extract<image_dos_header>(is);
 
     if (dos_header.e_magic != 0x5a4d)

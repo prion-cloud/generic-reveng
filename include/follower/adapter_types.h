@@ -18,9 +18,9 @@ enum class architecture
 
 enum class mode
 {
-    bit16,
-    bit32,
-    bit64
+    width16,
+    width32,
+    width64
 };
 
 struct instruction

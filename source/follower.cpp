@@ -23,16 +23,16 @@ int main(int const argc, char const* const argv[])
 
     if (!file_stream.good())
     {
-        std::cerr << "Invalid file" << std::endl;
+        std::cerr << "File could not be opened." << std::endl;
         return 1;
     }
 
-    debugger const debugger(architecture::x86, mode::bit64);
+    debugger const debugger(architecture::x86, mode::width64);
     file_stream >> debugger;
 
     if (file_stream.fail())
     {
-        std::cerr << "Invalid file" << std::endl;
+        std::cerr << "File has invalid format." << std::endl;
         return 1;
     }
 
