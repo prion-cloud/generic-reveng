@@ -2,6 +2,7 @@
 
 #include <istream>
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "adapter_types.h"
@@ -11,15 +12,70 @@
 
 class debugger
 {
+    csh cs_ { };
+
     std::shared_ptr<uc_engine> uc_;
 
 public:
 
     debugger(architecture architecture, mode mode);
+    ~debugger();
 
+    /**
+     * Reads the instruction pointer value.
+     * \returns The current emulated memory address.
+     */
     uint64_t position() const;
 
-    void jump(uint64_t address) const;
+    /**
+     * Indicates whether the instruction pointer references mapped.
+     * \return True if the pointed address is mapped in emulated memory, otherwise false.
+     */
+    bool is_mapped() const;
+    /**
+     * Indicates whether a memory address points to mapped memory.
+     * \param [in] address The emulated memory address to be evaluated.
+     * \returns True if the specified address is mapped in emulated memory, otherwise false.
+     */
+    bool is_mapped(uint64_t address) const;
+
+    /**
+     * Edits the instruction pointer value.
+     * \param [in] address The desired emulated memory address.
+     * \returns True if the new address is mapped in emulated memory, otherwise false.
+     */
+    bool jump(uint64_t address) const;
+
+    /**
+     * Sets the instruction pointer to the next instruction without emulating the current one.
+     * \returns True if the new address is mapped in emulated memory, otherwise false.
+     */
+    bool skip() const;
+    /**
+     * Advances the instruction pointer.
+     * \param [in] count The number of bytes to be skipped.
+     * \returns True if the new address is mapped in emulated memory, otherwise false.
+     */
+    bool skip(uint64_t count) const;
+
+    /**
+     * Emulate the next instruction.
+     * \remarks Moves the instruction pointer accordingly.
+     * \returns True if the emulation was successful, otherwise false.
+     */
+    bool step_into() const;
+    /**
+     * Emulate the next instruction and the whole method call.
+     * \remarks Moves the instruction pointer accordingly.
+     * \returns True if the emulation was successful, otherwise false.
+     */
+    bool step_over() const;
+
+    instruction disassemble() const;
+    instruction disassemble(uint64_t address) const;
+
+    std::vector<instruction> disassemble_range(size_t count) const;
+    std::vector<instruction> disassemble_range(uint64_t address, size_t count) const;
 
     friend std::istream& operator>>(std::istream& is, debugger const& debugger);
 
@@ -33,4 +89,6 @@ private:
 
     void read_memory(uint64_t address, std::vector<uint8_t>& data) const;
     void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
+
+    std::set<uc_mem_region> get_memory_regions() const;
 };

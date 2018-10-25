@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "../../submodules/capstone/include/capstone.h"
@@ -26,6 +27,8 @@ enum class mode
 struct instruction
 {
     unsigned id { };
+
+    std::unordered_set<unsigned> groups;
 
     uint64_t address { };
 

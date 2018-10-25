@@ -1,24 +1,6 @@
 #include "../include/follower/debugger.h"
 #include "../include/follower/win_structs.h"
 
-debugger::debugger(architecture const architecture, mode const mode)
-{
-    uc_engine* uc;
-    uc_open(to_uc(architecture), to_uc(mode), &uc);
-
-    uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
-}
-
-uint64_t debugger::position() const
-{
-    return read_register(UC_X86_REG_RIP);
-}
-
-void debugger::jump(uint64_t const address) const
-{
-    write_register(UC_X86_REG_RIP, address);
-}
-
 template <typename T>
 T extract(std::istream& is)
 {
@@ -33,6 +15,97 @@ std::vector<uint8_t> extract(std::istream& is, size_t size)
     is.read(reinterpret_cast<char*>(&result.front()), size);
 
     return result;
+}
+
+bool operator<(const uc_mem_region a, const uc_mem_region b)
+{
+    return a.end <= b.begin;
+}
+
+debugger::debugger(architecture const architecture, mode const mode)
+{
+    cs_open(to_cs(architecture), to_cs(mode), &cs_);
+    cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
+
+    uc_engine* uc;
+    uc_open(to_uc(architecture), to_uc(mode), &uc);
+
+    uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
+}
+debugger::~debugger()
+{
+    cs_close(&cs_);
+}
+
+uint64_t debugger::position() const
+{
+    return read_register(UC_X86_REG_RIP);
+}
+
+bool debugger::is_mapped() const
+{
+    return is_mapped(position());
+}
+bool debugger::is_mapped(uint64_t const address) const
+{
+    auto const memory_regions = get_memory_regions();
+
+    uc_mem_region const comparison_memory_region = { address, address, UC_PROT_NONE };
+
+    return
+        memory_regions.lower_bound(comparison_memory_region) !=
+        memory_regions.upper_bound(comparison_memory_region);
+}
+
+bool debugger::jump(uint64_t const address) const
+{
+    write_register(/*TODO--->*/UC_X86_REG_RIP/*<---*/, address);
+
+    return is_mapped();
+}
+
+bool debugger::skip() const
+{
+    return skip(disassemble().code.size());
+}
+bool debugger::skip(uint64_t const count) const
+{
+    return jump(position() + count);
+}
+
+bool debugger::step_into() const
+{
+    return uc_emu_start(uc_.get(), position(), 0, 0, 1) == UC_ERR_OK;
+}
+
+instruction debugger::disassemble() const
+{
+    return disassemble_range(1).front();
+}
+instruction debugger::disassemble(uint64_t const address) const
+{
+    return disassemble_range(address, 1).front();
+}
+
+std::vector<instruction> debugger::disassemble_range(size_t const count) const
+{
+    return disassemble_range(position(), count);
+}
+std::vector<instruction> debugger::disassemble_range(uint64_t const address, size_t const count) const
+{
+    std::vector<uint8_t> data_buffer(0x10);
+    read_memory(address, data_buffer);
+
+    cs_insn* cs_instructions;
+    cs_disasm(cs_, &data_buffer.front(), data_buffer.size(), address, count, &cs_instructions);
+
+    std::vector<instruction> const instructions(
+        cs_instructions,
+        cs_instructions + count); // NOLINT
+
+    cs_free(cs_instructions, count);
+
+    return instructions;
 }
 
 std::istream& operator>>(std::istream& is, debugger const& debugger)
@@ -129,4 +202,19 @@ void debugger::read_memory(uint64_t const address, std::vector<uint8_t>& data) c
 void debugger::write_memory(uint64_t const address, std::vector<uint8_t> const& data) const
 {
     uc_mem_write(uc_.get(), address, &data.front(), data.size());
+}
+
+std::set<uc_mem_region> debugger::get_memory_regions() const
+{
+    uc_mem_region* uc_memory_regions;
+    uint32_t count;
+    uc_mem_regions(uc_.get(), &uc_memory_regions, &count);
+
+    std::set<uc_mem_region> const memory_regions(
+        uc_memory_regions,
+        uc_memory_regions + count); // NOLINT
+
+    uc_free(uc_memory_regions);
+
+    return memory_regions;
 }
