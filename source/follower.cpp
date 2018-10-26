@@ -27,7 +27,7 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    debugger const debugger(architecture::x86, mode::width64);
+    debugger debugger;
     file_stream >> debugger;
 
     if (file_stream.fail())

@@ -5,7 +5,7 @@
 #include <set>
 #include <vector>
 
-#include "adapter_types.h"
+#include "instruction.h"
 
 #include "../../submodules/capstone/include/capstone.h"
 #include "../../submodules/unicorn/include/unicorn/unicorn.h"
@@ -16,9 +16,11 @@ class debugger
 
     std::shared_ptr<uc_engine> uc_;
 
+    int instruction_pointer_id_;
+
 public:
 
-    debugger(architecture architecture, mode mode);
+    debugger() = default;
     ~debugger();
 
     /**
@@ -77,7 +79,7 @@ public:
     std::vector<instruction> disassemble_range(size_t count) const;
     std::vector<instruction> disassemble_range(uint64_t address, size_t count) const;
 
-    friend std::istream& operator>>(std::istream& is, debugger const& debugger);
+    friend std::istream& operator>>(std::istream& is, debugger& debugger);
 
 private:
 
@@ -91,4 +93,7 @@ private:
     void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
 
     std::set<uc_mem_region> get_memory_regions() const;
+
+    void load_pe(std::istream& is);
+    void load_elf(std::istream& is);
 };

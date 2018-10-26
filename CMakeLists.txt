@@ -22,7 +22,7 @@ link_directories ( "submodules/unicorn/" )
 find_package ( Threads REQUIRED )
 
 add_executable ( follower
-    "source/adapter_types.cpp"
+    "source/instruction.cpp"
     "source/debugger.cpp"
     "source/follower.cpp" )
 
