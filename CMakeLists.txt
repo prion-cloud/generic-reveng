@@ -24,7 +24,8 @@ find_package ( Threads REQUIRED )
 add_executable ( follower
     "source/instruction.cpp"
     "source/debugger.cpp"
-    "source/follower.cpp" )
+    "source/follower.cpp"
+    "source/loader.cpp" )
 
 target_include_directories ( follower PRIVATE
     "include/" )

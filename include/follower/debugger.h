@@ -93,7 +93,4 @@ private:
     void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
 
     std::set<uc_mem_region> get_memory_regions() const;
-
-    void load_pe(std::istream& is);
-    void load_elf(std::istream& is);
 };

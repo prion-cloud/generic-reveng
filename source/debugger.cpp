@@ -1,20 +1,5 @@
 #include "../include/follower/debugger.h"
-
-template <typename T>
-T extract(std::istream& is)
-{
-    T result { };
-    is.read(reinterpret_cast<char*>(&result), sizeof(T));
-
-    return result;
-}
-std::vector<uint8_t> extract(std::istream& is, size_t size)
-{
-    std::vector<uint8_t> result(size);
-    is.read(reinterpret_cast<char*>(&result.front()), size);
-
-    return result;
-}
+#include "../include/follower/loader.h"
 
 bool operator<(const uc_mem_region a, const uc_mem_region b)
 {
@@ -99,13 +84,66 @@ std::vector<instruction> debugger::disassemble_range(uint64_t const address, siz
 
 std::istream& operator>>(std::istream& is, debugger& debugger)
 {
-    auto const magic_number = extract<uint32_t>(is);
+    auto const load_data = load(is);
 
-    if ((magic_number & 0xFFFFu) == 0x5A4D)
-        debugger.load_pe(is);
-    else if (magic_number == 0x7F454C46)
-        debugger.load_elf(is);
-    else is.setstate(std::ios::failbit);
+    if (is.fail())
+        return is;
+
+    cs_open(
+        load_data.machine_architecture.first,
+        load_data.machine_mode.first, &debugger.cs_);
+    cs_option(debugger.cs_, CS_OPT_DETAIL, CS_OPT_ON);
+
+    uc_engine* uc;
+    uc_open(
+        load_data.machine_architecture.second,
+        load_data.machine_mode.second,
+        &uc);
+
+    debugger.uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
+
+    int stack_pointer_id;
+    int base_pointer_id;
+
+    switch (load_data.machine_architecture.second)
+    {
+    case UC_ARCH_X86:
+        switch (load_data.machine_mode.second)
+        {
+        case UC_MODE_16:
+            debugger.instruction_pointer_id_ = UC_X86_REG_IP;
+            stack_pointer_id = UC_X86_REG_SP;
+            base_pointer_id = UC_X86_REG_BP;
+            break;
+        case UC_MODE_32:
+            debugger.instruction_pointer_id_ = UC_X86_REG_EIP;
+            stack_pointer_id = UC_X86_REG_ESP;
+            base_pointer_id = UC_X86_REG_EBP;
+            break;
+        case UC_MODE_64:
+            debugger.instruction_pointer_id_ = UC_X86_REG_RIP;
+            stack_pointer_id = UC_X86_REG_RSP;
+            base_pointer_id = UC_X86_REG_RBP;
+            break;
+        default:
+            throw std::invalid_argument("Unsupported machine mode");
+        }
+        break;
+    default:
+        throw std::invalid_argument("Unsupported machine architecture");
+    }
+
+    for (auto const& [address, data] : load_data.memory_regions)
+        debugger.allocate_memory(address, data);
+
+    debugger.jump(load_data.entry_point);
+
+    auto const stack_bottom = UINT32_MAX;
+    auto const stack_size = 0x1000;
+    debugger.allocate_memory(stack_bottom - stack_size + 1, stack_size);
+
+    debugger.write_register(stack_pointer_id, stack_bottom);
+    debugger.write_register(base_pointer_id, stack_bottom);
 
     return is;
 }
@@ -156,161 +194,4 @@ std::set<uc_mem_region> debugger::get_memory_regions() const
     uc_free(uc_memory_regions);
 
     return memory_regions;
-}
-
-void debugger::load_pe(std::istream& is)
-{
-    is.seekg(0x3C);
-    is.seekg(extract<uint32_t>(is));
-
-    if (extract<uint32_t>(is) != 0x4550)
-    {
-        is.setstate(std::ios::failbit);
-        return;
-    }
-
-    auto const machine = extract<uint16_t>(is);
-
-    std::pair<cs_arch, uc_arch> architecture;
-    std::pair<cs_mode, uc_mode> mode;
-
-    switch (machine)
-    {
-    case 0x1C0:
-        architecture = std::make_pair(CS_ARCH_ARM, UC_ARCH_ARM);
-        break;
-    case 0xAA64:
-        architecture = std::make_pair(CS_ARCH_ARM64, UC_ARCH_ARM64);
-        break;
-    case 0x162:
-    case 0x266:
-    case 0x366:
-    case 0x466:
-        architecture = std::make_pair(CS_ARCH_MIPS, UC_ARCH_MIPS);
-        break;
-    case 0x14C:
-    case 0x8664:
-        architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
-        break;
-    default:
-        is.setstate(std::ios::failbit);
-        return;
-    }
-
-    switch (machine)
-    {
-    case 0x266:
-    case 0x466:
-        mode = std::make_pair(CS_MODE_16, UC_MODE_16);
-        break;
-    case 0x14C:
-    case 0x162:
-    case 0x1C0:
-    case 0x366:
-        mode = std::make_pair(CS_MODE_32, UC_MODE_32);
-        break;
-    case 0x8664:
-    case 0xAA64:
-        mode = std::make_pair(CS_MODE_64, UC_MODE_64);
-        break;
-    default:
-        is.setstate(std::ios::failbit);
-        return;
-    }
-
-    auto const n_sections = extract<uint16_t>(is);
-
-    is.seekg(0xC, std::ios::cur);
-
-    auto const optional_header_size = extract<uint16_t>(is);
-
-    is.seekg(0x12, std::ios::cur);
-
-    auto const entry_point = extract<uint32_t>(is);
-
-    is.seekg(0x4, std::ios::cur);
-
-    auto image_base = extract<uint64_t>(is);
-
-    switch (optional_header_size)
-    {
-    case 0xE0:
-        image_base &= 0xFFFF;
-        is.seekg(0xC0, std::ios::cur);
-        break;
-    case 0xF0:
-        is.seekg(0xD0, std::ios::cur);
-        break;
-    default:
-        is.setstate(std::ios::failbit);
-        return;
-    }
-
-    cs_open(architecture.first, mode.first, &cs_);
-    cs_option(cs_, CS_OPT_DETAIL, CS_OPT_ON);
-
-    uc_engine* uc;
-    uc_open(architecture.second, mode.second, &uc);
-
-    uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
-
-    int stack_pointer_id;
-    int base_pointer_id;
-
-    switch (architecture.second)
-    {
-    case UC_ARCH_X86:
-        switch (mode.second)
-        {
-        case UC_MODE_16:
-            instruction_pointer_id_ = UC_X86_REG_IP;
-            stack_pointer_id = UC_X86_REG_SP;
-            base_pointer_id = UC_X86_REG_BP;
-            break;
-        case UC_MODE_32:
-            instruction_pointer_id_ = UC_X86_REG_EIP;
-            stack_pointer_id = UC_X86_REG_ESP;
-            base_pointer_id = UC_X86_REG_EBP;
-            break;
-        case UC_MODE_64:
-            instruction_pointer_id_ = UC_X86_REG_RIP;
-            stack_pointer_id = UC_X86_REG_RSP;
-            base_pointer_id = UC_X86_REG_RBP;
-            break;
-        default:
-            throw std::invalid_argument("Unsupported machine mode");
-        }
-        break;
-    default:
-        throw std::invalid_argument("Unsupported machine architecture");
-    }
-
-    size_t const position = is.tellg();
-    for (uint16_t section_index = 0; section_index < n_sections; ++section_index)
-    {
-        is.seekg(position + section_index * 0x28 + 0xC);
-
-        auto const virtual_address = extract<uint32_t>(is);
-        auto const raw_size = extract<uint32_t>(is);
-        auto const raw_position = extract<uint32_t>(is);
-
-        is.seekg(raw_position);
-
-        allocate_memory(image_base + virtual_address, extract(is, raw_size));
-    }
-
-    jump(image_base + entry_point);
-
-    auto const stack_bottom = UINT32_MAX;
-    auto const stack_size = 0x1000;
-    allocate_memory(stack_bottom - stack_size + 1, stack_size);
-
-    write_register(stack_pointer_id, stack_bottom);
-    write_register(base_pointer_id, stack_bottom);
-}
-
-void debugger::load_elf(std::istream& is)
-{
-    // TODO: ELF support
-    is.setstate(std::ios::failbit);
 }
