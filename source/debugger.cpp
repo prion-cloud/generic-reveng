@@ -1,7 +1,7 @@
 #include <sstream>
 
-#include "../include/follower/debugger.h"
-#include "../include/follower/loader.h"
+#include "../include/scout/debugger.h"
+#include "../include/scout/loader.h"
 
 #define CS_FATAL(cs_method_call)                            \
 {                                                           \

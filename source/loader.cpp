@@ -1,4 +1,4 @@
-#include "../include/follower/loader.h"
+#include "../include/scout/loader.h"
 
 template <typename T>
 T extract(std::istream& is)

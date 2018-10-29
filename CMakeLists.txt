@@ -21,15 +21,15 @@ link_directories ( "submodules/unicorn/" )
 
 find_package ( Threads REQUIRED )
 
-add_executable ( follower
-    "source/instruction.cpp"
+add_executable ( scout
     "source/debugger.cpp"
-    "source/follower.cpp"
-    "source/loader.cpp" )
+    "source/instruction.cpp"
+    "source/loader.cpp"
+    "source/scout.cpp" )
 
-target_include_directories ( follower PRIVATE
+target_include_directories ( scout PRIVATE
     "include/" )
-target_link_libraries ( follower
+target_link_libraries ( scout
     capstone-shared
     "libunicorn.so"
     ${CMAKE_THREAD_LIBS_INIT} )

@@ -3,8 +3,7 @@
 #include <string>
 #include <vector>
 
-//#include "../include/follower/control_flow_graph.h"
-#include "../include/follower/debugger.h"
+#include "../include/scout/debugger.h"
 
 int main(int const argc, char const* const argv[])
 {

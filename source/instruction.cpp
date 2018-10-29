@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "../include/follower/instruction.h"
+#include "../include/scout/instruction.h"
 
 instruction::instruction(cs_insn const cs_instruction)
 {
