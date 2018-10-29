@@ -12,8 +12,7 @@
 
 class debugger
 {
-    csh cs_ { };
-
+    std::shared_ptr<csh> cs_;
     std::shared_ptr<uc_engine> uc_;
 
     int ip_register_;
@@ -21,8 +20,6 @@ class debugger
 public:
 
     debugger() = default;
-
-    ~debugger();
 
     /**
      * Reads the instruction pointer value.

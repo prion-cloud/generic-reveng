@@ -41,11 +41,6 @@ bool operator<(const uc_mem_region a, const uc_mem_region b)
     return a.end <= b.begin;
 }
 
-debugger::~debugger()
-{
-    cs_close(&cs_);
-}
-
 uint64_t debugger::position() const
 {
     return read_register(ip_register_);
@@ -107,7 +102,7 @@ instruction debugger::disassemble(uint64_t const address) const
     read_memory(address, code_buffer);
 
     cs_insn* cs_instructions;
-    cs_disasm(cs_, &code_buffer.front(), code_buffer.size(), address, 1, &cs_instructions);
+    cs_disasm(*cs_, &code_buffer.front(), code_buffer.size(), address, 1, &cs_instructions);
 
     CS_FATAL(get_cs_error());
 
@@ -159,17 +154,18 @@ std::istream& operator>>(std::istream& is, debugger& debugger)
         return is;
     }
 
+    auto const cs = std::shared_ptr<csh>(new csh, cs_close);
     CS_FATAL(cs_open(
         spec.machine_architecture.first,
-        spec.machine_mode.first, &debugger.cs_));
-    CS_FATAL(cs_option(debugger.cs_, CS_OPT_DETAIL, CS_OPT_ON));
+        spec.machine_mode.first, cs.get()));
+    CS_FATAL(cs_option(*cs, CS_OPT_DETAIL, CS_OPT_ON));
+    debugger.cs_ = cs;
 
     uc_engine* uc;
     UC_FATAL(uc_open(
         spec.machine_architecture.second,
         spec.machine_mode.second,
         &uc));
-
     debugger.uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
 
     debugger.ip_register_ = ip_register;
@@ -245,7 +241,7 @@ std::set<uc_mem_region> debugger::get_memory_regions() const
 
 cs_err debugger::get_cs_error() const
 {
-    return cs_errno(cs_);
+    return cs_errno(*cs_);
 }
 uc_err debugger::get_uc_error() const
 {
