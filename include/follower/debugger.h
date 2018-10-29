@@ -16,11 +16,12 @@ class debugger
 
     std::shared_ptr<uc_engine> uc_;
 
-    int instruction_pointer_id_;
+    int ip_register_;
 
 public:
 
     debugger() = default;
+
     ~debugger();
 
     /**
@@ -28,9 +29,15 @@ public:
      * \returns The current emulated memory address.
      */
     uint64_t position() const;
+    /**
+     * Edits the instruction pointer value.
+     * \param [in] address The desired emulated memory address.
+     * \returns True if the new address is mapped in emulated memory, otherwise false.
+     */
+    bool position(uint64_t address) const;
 
     /**
-     * Indicates whether the instruction pointer references mapped.
+     * Indicates whether the instruction pointer references mapped memory.
      * \return True if the pointed address is mapped in emulated memory, otherwise false.
      */
     bool is_mapped() const;
@@ -40,13 +47,6 @@ public:
      * \returns True if the specified address is mapped in emulated memory, otherwise false.
      */
     bool is_mapped(uint64_t address) const;
-
-    /**
-     * Edits the instruction pointer value.
-     * \param [in] address The desired emulated memory address.
-     * \returns True if the new address is mapped in emulated memory, otherwise false.
-     */
-    bool jump(uint64_t address) const;
 
     /**
      * Sets the instruction pointer to the next instruction without emulating the current one.
@@ -61,23 +61,29 @@ public:
     bool skip(uint64_t count) const;
 
     /**
-     * Emulate the next instruction.
+     * Emulates the next instruction.
      * \remarks Moves the instruction pointer accordingly.
      * \returns True if the emulation was successful, otherwise false.
      */
     bool step_into() const;
     /**
-     * Emulate the next instruction and the whole method call.
+     * Emulates the next instruction and the whole method call.
      * \remarks Moves the instruction pointer accordingly.
      * \returns True if the emulation was successful, otherwise false.
      */
     bool step_over() const;
 
+    /**
+     * Disassembles the next instruction.
+     * \returns A specification for the disassembled instruction.
+     */
     instruction disassemble() const;
+    /**
+     * Disassembles an instruction at a specified address.
+     * \param [in] address The emulated memory address of the instruction to be disassembled.
+     * \returns A specification for the disassebmled instruction.
+     */
     instruction disassemble(uint64_t address) const;
-
-    std::vector<instruction> disassemble_range(size_t count) const;
-    std::vector<instruction> disassemble_range(uint64_t address, size_t count) const;
 
     friend std::istream& operator>>(std::istream& is, debugger& debugger);
 
@@ -93,4 +99,7 @@ private:
     void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
 
     std::set<uc_mem_region> get_memory_regions() const;
+
+    cs_err get_cs_error() const;
+    uc_err get_uc_error() const;
 };

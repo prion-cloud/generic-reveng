@@ -1,5 +1,40 @@
+#include <sstream>
+
 #include "../include/follower/debugger.h"
 #include "../include/follower/loader.h"
+
+#define CS_FATAL(cs_method_call)                            \
+{                                                           \
+    cs_err const error_code = cs_method_call;               \
+                                                            \
+    if (error_code != CS_ERR_OK)                            \
+    {                                                       \
+        std::ostringstream oss_error;                       \
+        oss_error                                           \
+            << cs_strerror(error_code)                      \
+            << " @ \"" << #cs_method_call << "\""           \
+            << " @ " << __FILE__                            \
+            << " @ " << __LINE__;                           \
+                                                            \
+        throw std::runtime_error(oss_error.str());          \
+    }                                                       \
+}
+#define UC_FATAL(uc_method_call)                            \
+{                                                           \
+    uc_err const error_code = uc_method_call;               \
+                                                            \
+    if (error_code != UC_ERR_OK)                            \
+    {                                                       \
+        std::ostringstream oss_error;                       \
+        oss_error                                           \
+            << uc_strerror(error_code)                      \
+            << " @ \"" << #uc_method_call << "\""           \
+            << " @ " << __FILE__                            \
+            << " @ " << __LINE__;                           \
+                                                            \
+        throw std::runtime_error(oss_error.str());          \
+    }                                                       \
+}
 
 bool operator<(const uc_mem_region a, const uc_mem_region b)
 {
@@ -13,7 +48,13 @@ debugger::~debugger()
 
 uint64_t debugger::position() const
 {
-    return read_register(instruction_pointer_id_);
+    return read_register(ip_register_);
+}
+bool debugger::position(uint64_t const address) const
+{
+    write_register(ip_register_, address);
+
+    return is_mapped();
 }
 
 bool debugger::is_mapped() const
@@ -31,119 +72,119 @@ bool debugger::is_mapped(uint64_t const address) const
         memory_regions.upper_bound(comparison_memory_region);
 }
 
-bool debugger::jump(uint64_t const address) const
-{
-    write_register(instruction_pointer_id_, address);
-
-    return is_mapped();
-}
-
 bool debugger::skip() const
 {
     return skip(disassemble().code.size());
 }
 bool debugger::skip(uint64_t const count) const
 {
-    return jump(position() + count);
+    return position(position() + count);
 }
 
 bool debugger::step_into() const
 {
     return uc_emu_start(uc_.get(), position(), 0, 0, 1) == UC_ERR_OK;
 }
+bool debugger::step_over() const
+{
+    auto const instruction = disassemble();
+
+    if (instruction.groups.count(CS_GRP_CALL) == 0)
+        return step_into();
+
+    return uc_emu_start(uc_.get(),
+        instruction.address,
+        instruction.address + instruction.code.size(), 0, 0) == UC_ERR_OK;
+}
 
 instruction debugger::disassemble() const
 {
-    return disassemble_range(1).front();
+    return disassemble(position());
 }
 instruction debugger::disassemble(uint64_t const address) const
 {
-    return disassemble_range(address, 1).front();
-}
-
-std::vector<instruction> debugger::disassemble_range(size_t const count) const
-{
-    return disassemble_range(position(), count);
-}
-std::vector<instruction> debugger::disassemble_range(uint64_t const address, size_t const count) const
-{
-    std::vector<uint8_t> data_buffer(0x10);
-    read_memory(address, data_buffer);
+    std::vector<uint8_t> code_buffer(0x10);
+    read_memory(address, code_buffer);
 
     cs_insn* cs_instructions;
-    cs_disasm(cs_, &data_buffer.front(), data_buffer.size(), address, count, &cs_instructions);
+    cs_disasm(cs_, &code_buffer.front(), code_buffer.size(), address, 1, &cs_instructions);
 
-    std::vector<instruction> const instructions(
-        cs_instructions,
-        cs_instructions + count); // NOLINT
+    CS_FATAL(get_cs_error());
 
-    cs_free(cs_instructions, count);
+    instruction instruction(cs_instructions[0]); // NOLINT
 
-    return instructions;
+    cs_free(cs_instructions, 1);
+
+    return instruction;
 }
 
 std::istream& operator>>(std::istream& is, debugger& debugger)
 {
-    auto const load_data = load(is);
+    auto const spec = load(is);
 
     if (is.fail())
         return is;
 
-    cs_open(
-        load_data.machine_architecture.first,
-        load_data.machine_mode.first, &debugger.cs_);
-    cs_option(debugger.cs_, CS_OPT_DETAIL, CS_OPT_ON);
+    int ip_register;
+    int sp_register;
+    int bp_register;
 
-    uc_engine* uc;
-    uc_open(
-        load_data.machine_architecture.second,
-        load_data.machine_mode.second,
-        &uc);
-
-    debugger.uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
-
-    int stack_pointer_id;
-    int base_pointer_id;
-
-    switch (load_data.machine_architecture.second)
+    switch (spec.machine_architecture.second)
     {
     case UC_ARCH_X86:
-        switch (load_data.machine_mode.second)
+        switch (spec.machine_mode.second)
         {
         case UC_MODE_16:
-            debugger.instruction_pointer_id_ = UC_X86_REG_IP;
-            stack_pointer_id = UC_X86_REG_SP;
-            base_pointer_id = UC_X86_REG_BP;
+            ip_register = UC_X86_REG_IP;
+            sp_register = UC_X86_REG_SP;
+            bp_register = UC_X86_REG_BP;
             break;
         case UC_MODE_32:
-            debugger.instruction_pointer_id_ = UC_X86_REG_EIP;
-            stack_pointer_id = UC_X86_REG_ESP;
-            base_pointer_id = UC_X86_REG_EBP;
+            ip_register = UC_X86_REG_EIP;
+            sp_register = UC_X86_REG_ESP;
+            bp_register = UC_X86_REG_EBP;
             break;
         case UC_MODE_64:
-            debugger.instruction_pointer_id_ = UC_X86_REG_RIP;
-            stack_pointer_id = UC_X86_REG_RSP;
-            base_pointer_id = UC_X86_REG_RBP;
+            ip_register = UC_X86_REG_RIP;
+            sp_register = UC_X86_REG_RSP;
+            bp_register = UC_X86_REG_RBP;
             break;
         default:
-            throw std::invalid_argument("Unsupported machine mode");
+            is.setstate(std::ios::failbit);
+            return is;
         }
         break;
     default:
-        throw std::invalid_argument("Unsupported machine architecture");
+        is.setstate(std::ios::failbit);
+        return is;
     }
 
-    for (auto const& [address, data] : load_data.memory_regions)
+    CS_FATAL(cs_open(
+        spec.machine_architecture.first,
+        spec.machine_mode.first, &debugger.cs_));
+    CS_FATAL(cs_option(debugger.cs_, CS_OPT_DETAIL, CS_OPT_ON));
+
+    uc_engine* uc;
+    UC_FATAL(uc_open(
+        spec.machine_architecture.second,
+        spec.machine_mode.second,
+        &uc));
+
+    debugger.uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
+
+    debugger.ip_register_ = ip_register;
+
+    for (auto const& [address, data] : spec.memory_regions)
         debugger.allocate_memory(address, data);
 
-    debugger.jump(load_data.entry_point);
+    debugger.position(spec.entry_point);
 
     auto const stack_bottom = UINT32_MAX;
     auto const stack_size = 0x1000;
     debugger.allocate_memory(stack_bottom - stack_size + 1, stack_size);
 
-    debugger.write_register(stack_pointer_id, stack_bottom);
-    debugger.write_register(base_pointer_id, stack_bottom);
+    debugger.write_register(sp_register, stack_bottom);
+    debugger.write_register(bp_register, stack_bottom);
 
     return is;
 }
@@ -151,20 +192,23 @@ std::istream& operator>>(std::istream& is, debugger& debugger)
 uint64_t debugger::read_register(int const id) const
 {
     uint64_t value = 0;
-    uc_reg_read(uc_.get(), id, &value);
+    UC_FATAL(uc_reg_read(uc_.get(), id, &value));
 
     return value;
 }
 void debugger::write_register(int const id, uint64_t const value) const
 {
-    uc_reg_write(uc_.get(), id, &value);
+    UC_FATAL(uc_reg_write(uc_.get(), id, &value));
 }
 
 void debugger::allocate_memory(uint64_t const address, size_t const size) const
 {
+    if (size == 0)
+        return;
+
     size_t constexpr PAGE_SIZE = 0x1000;
 
-    uc_mem_map(uc_.get(), address, PAGE_SIZE * ((size - 1) / PAGE_SIZE + 1), UC_PROT_ALL);
+    UC_FATAL(uc_mem_map(uc_.get(), address, PAGE_SIZE * ((size - 1) / PAGE_SIZE + 1), UC_PROT_ALL));
 }
 void debugger::allocate_memory(uint64_t const address, std::vector<uint8_t> const& data) const
 {
@@ -174,24 +218,36 @@ void debugger::allocate_memory(uint64_t const address, std::vector<uint8_t> cons
 
 void debugger::read_memory(uint64_t const address, std::vector<uint8_t>& data) const
 {
-    uc_mem_read(uc_.get(), address, &data.front(), data.size());
+    UC_FATAL(uc_mem_read(uc_.get(), address, &data.front(), data.size()));
 }
 void debugger::write_memory(uint64_t const address, std::vector<uint8_t> const& data) const
 {
-    uc_mem_write(uc_.get(), address, &data.front(), data.size());
+    if (data.empty())
+        return;
+
+    UC_FATAL(uc_mem_write(uc_.get(), address, &data.front(), data.size()));
 }
 
 std::set<uc_mem_region> debugger::get_memory_regions() const
 {
     uc_mem_region* uc_memory_regions;
     uint32_t count;
-    uc_mem_regions(uc_.get(), &uc_memory_regions, &count);
+    UC_FATAL(uc_mem_regions(uc_.get(), &uc_memory_regions, &count));
 
     std::set<uc_mem_region> const memory_regions(
         uc_memory_regions,
         uc_memory_regions + count); // NOLINT
 
-    uc_free(uc_memory_regions);
+    UC_FATAL(uc_free(uc_memory_regions));
 
     return memory_regions;
+}
+
+cs_err debugger::get_cs_error() const
+{
+    return cs_errno(cs_);
+}
+uc_err debugger::get_uc_error() const
+{
+    return uc_errno(uc_.get());
 }

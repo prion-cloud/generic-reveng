@@ -7,7 +7,7 @@
 #include "../../submodules/capstone/include/capstone.h"
 #include "../../submodules/unicorn/include/unicorn/unicorn.h"
 
-struct load_data
+struct executable_specification
 {
     std::pair<cs_arch, uc_arch> machine_architecture;
     std::pair<cs_mode, uc_mode> machine_mode;
@@ -17,4 +17,4 @@ struct load_data
     std::unordered_map<uint64_t, std::vector<uint8_t>> memory_regions;
 };
 
-load_data load(std::istream& is);
+executable_specification load(std::istream& is);

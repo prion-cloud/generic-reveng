@@ -16,7 +16,7 @@ std::vector<uint8_t> extract(std::istream& is, size_t size)
     return result;
 }
 
-void load_pe(std::istream& is, load_data* data)
+void load_pe(std::istream& is, executable_specification* spec)
 {
     is.seekg(0x3C);
     is.seekg(extract<uint32_t>(is));
@@ -32,20 +32,20 @@ void load_pe(std::istream& is, load_data* data)
     switch (machine)
     {
     case 0x1C0:
-        data->machine_architecture = std::make_pair(CS_ARCH_ARM, UC_ARCH_ARM);
+        spec->machine_architecture = std::make_pair(CS_ARCH_ARM, UC_ARCH_ARM);
         break;
     case 0xAA64:
-        data->machine_architecture = std::make_pair(CS_ARCH_ARM64, UC_ARCH_ARM64);
+        spec->machine_architecture = std::make_pair(CS_ARCH_ARM64, UC_ARCH_ARM64);
         break;
     case 0x162:
     case 0x266:
     case 0x366:
     case 0x466:
-        data->machine_architecture = std::make_pair(CS_ARCH_MIPS, UC_ARCH_MIPS);
+        spec->machine_architecture = std::make_pair(CS_ARCH_MIPS, UC_ARCH_MIPS);
         break;
     case 0x14C:
     case 0x8664:
-        data->machine_architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
+        spec->machine_architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
         break;
     default:
         is.setstate(std::ios::failbit);
@@ -56,17 +56,17 @@ void load_pe(std::istream& is, load_data* data)
     {
     case 0x266:
     case 0x466:
-        data->machine_mode = std::make_pair(CS_MODE_16, UC_MODE_16);
+        spec->machine_mode = std::make_pair(CS_MODE_16, UC_MODE_16);
         break;
     case 0x14C:
     case 0x162:
     case 0x1C0:
     case 0x366:
-        data->machine_mode = std::make_pair(CS_MODE_32, UC_MODE_32);
+        spec->machine_mode = std::make_pair(CS_MODE_32, UC_MODE_32);
         break;
     case 0x8664:
     case 0xAA64:
-        data->machine_mode = std::make_pair(CS_MODE_64, UC_MODE_64);
+        spec->machine_mode = std::make_pair(CS_MODE_64, UC_MODE_64);
         break;
     default:
         is.setstate(std::ios::failbit);
@@ -101,7 +101,7 @@ void load_pe(std::istream& is, load_data* data)
         return;
     }
 
-    data->entry_point = image_base + entry_point;
+    spec->entry_point = image_base + entry_point;
 
     size_t const position = is.tellg();
     for (uint16_t section_index = 0; section_index < n_sections; ++section_index)
@@ -114,34 +114,34 @@ void load_pe(std::istream& is, load_data* data)
 
         is.seekg(raw_position);
 
-        data->memory_regions.emplace(image_base + virtual_address, extract(is, raw_size));
+        spec->memory_regions.emplace(image_base + virtual_address, extract(is, raw_size));
     }
 }
 
-void load_elf(std::istream& is, load_data* data)
+void load_elf(std::istream& is, executable_specification* spec)
 {
     // TODO: ELF support
     is.setstate(std::ios::failbit);
 }
 
-load_data load(std::istream& is)
+executable_specification load(std::istream& is)
 {
-    load_data data;
+    executable_specification spec;
 
     auto const magic_number = extract<uint32_t>(is);
 
     if ((magic_number & 0xFFFFu) == 0x5A4D)
     {
-        load_pe(is, &data);
-        return data;
+        load_pe(is, &spec);
+        return spec;
     }
 
     if (magic_number == 0x7F454C46)
     {
-        load_elf(is, &data);
-        return data;
+        load_elf(is, &spec);
+        return spec;
     }
 
     is.setstate(std::ios::failbit);
-    return data;
+    return spec;
 }
