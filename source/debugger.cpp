@@ -45,7 +45,7 @@ uint64_t debugger::position() const
 {
     return read_register(ip_register_);
 }
-bool debugger::position(uint64_t const address) const
+bool debugger::position(uint64_t const address)
 {
     write_register(ip_register_, address);
 
@@ -79,16 +79,16 @@ bool debugger::is_mapped(uint64_t const address) const
         memory_regions.upper_bound(comparison_memory_region);
 }
 
-bool debugger::skip() const
+bool debugger::skip()
 {
     return skip(current_instruction()->disassemble()->size);
 }
-bool debugger::skip(uint64_t const count) const
+bool debugger::skip(uint64_t const count)
 {
     return position(position() + count);
 }
 
-bool debugger::step_into() const
+bool debugger::step_into()
 {
     return uc_emu_start(uc_.get(), position(), 0, 0, 1) == UC_ERR_OK;
 }
@@ -172,12 +172,12 @@ uint64_t debugger::read_register(int const id) const
 
     return value;
 }
-void debugger::write_register(int const id, uint64_t const value) const
+void debugger::write_register(int const id, uint64_t const value)
 {
     UC_FATAL(uc_reg_write(uc_.get(), id, &value));
 }
 
-void debugger::allocate_memory(uint64_t const address, size_t const size) const
+void debugger::allocate_memory(uint64_t const address, size_t const size)
 {
     if (size == 0)
         return;
@@ -186,7 +186,7 @@ void debugger::allocate_memory(uint64_t const address, size_t const size) const
 
     UC_FATAL(uc_mem_map(uc_.get(), address, PAGE_SIZE * ((size - 1) / PAGE_SIZE + 1), UC_PROT_ALL));
 }
-void debugger::allocate_memory(uint64_t const address, std::vector<uint8_t> const& data) const
+void debugger::allocate_memory(uint64_t const address, std::vector<uint8_t> const& data)
 {
     allocate_memory(address, data.size());
     write_memory(address, data);
@@ -199,7 +199,7 @@ std::vector<uint8_t> debugger::read_memory(uint64_t const address, size_t const 
 
     return data;
 }
-void debugger::write_memory(uint64_t const address, std::vector<uint8_t> const& data) const
+void debugger::write_memory(uint64_t const address, std::vector<uint8_t> const& data)
 {
     if (data.empty())
         return;

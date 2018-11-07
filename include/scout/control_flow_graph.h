@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "debugger.h"
+#include "instruction.h"
 
 template <typename Provider>
 class control_flow_graph
@@ -40,14 +40,14 @@ class control_flow_graph
 
 public:
 
-    explicit control_flow_graph(Provider const& provider)
+    explicit control_flow_graph(Provider& provider)
     {
         root_ = build(provider, block_map_);
     }
 
 private:
 
-    static block_ptr build(Provider const& provider,
+    static block_ptr build(Provider& provider,
         std::map<block_ptr, std::vector<block_ptr>, block_ptr_comparator>& block_map)
     {
         // Create new basic block and successor container

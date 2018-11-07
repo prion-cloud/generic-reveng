@@ -21,6 +21,9 @@ public:
 
     debugger() = default;
 
+    debugger(debugger const&) = delete;
+    debugger& operator=(debugger const&) = delete;
+
     /**
      * Reads the instruction pointer value.
      * \returns The current emulated memory address.
@@ -31,7 +34,7 @@ public:
      * \param [in] address The desired emulated memory address.
      * \returns True if the new address is mapped in emulated memory, otherwise false.
      */
-    bool position(uint64_t address) const;
+    bool position(uint64_t address);
 
     /**
      * Inquires the current instruction.
@@ -55,33 +58,33 @@ public:
      * Sets the instruction pointer to the next instruction without emulating the current one.
      * \returns True if the new address is mapped in emulated memory, otherwise false.
      */
-    bool skip() const;
+    bool skip();
     /**
      * Advances the instruction pointer.
      * \param [in] count The number of bytes to be skipped.
      * \returns True if the new address is mapped in emulated memory, otherwise false.
      */
-    bool skip(uint64_t count) const;
+    bool skip(uint64_t count);
 
     /**
      * Emulates the current instruction.
      * \remarks Updates emulated registers and memory.
      * \returns True if the emulation was successful, otherwise false.
      */
-    bool step_into() const;
+    bool step_into();
 
     friend std::istream& operator>>(std::istream& is, debugger& debugger);
 
 private:
 
     uint64_t read_register(int id) const;
-    void write_register(int id, uint64_t value) const;
+    void write_register(int id, uint64_t value);
 
-    void allocate_memory(uint64_t address, size_t size) const;
-    void allocate_memory(uint64_t address, std::vector<uint8_t> const& data) const;
+    void allocate_memory(uint64_t address, size_t size);
+    void allocate_memory(uint64_t address, std::vector<uint8_t> const& data);
 
     std::vector<uint8_t> read_memory(uint64_t address, size_t size) const;
-    void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
+    void write_memory(uint64_t address, std::vector<uint8_t> const& data);
 
     std::set<uc_mem_region> get_memory_regions() const;
 
