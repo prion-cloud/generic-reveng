@@ -34,6 +34,12 @@ public:
     bool position(uint64_t address) const;
 
     /**
+     * Inquires the current instruction.
+     * \returns The machine instruction the instruction pointer currently points to.
+     */
+    std::unique_ptr<machine_instruction> current_instruction() const;
+
+    /**
      * Indicates whether the instruction pointer references mapped memory.
      * \return True if the pointed address is mapped in emulated memory, otherwise false.
      */
@@ -58,29 +64,11 @@ public:
     bool skip(uint64_t count) const;
 
     /**
-     * Emulates the next instruction.
-     * \remarks Moves the instruction pointer accordingly.
+     * Emulates the current instruction.
+     * \remarks Updates emulated registers and memory.
      * \returns True if the emulation was successful, otherwise false.
      */
     bool step_into() const;
-    /**
-     * Emulates the next instruction and the whole method call.
-     * \remarks Moves the instruction pointer accordingly.
-     * \returns True if the emulation was successful, otherwise false.
-     */
-    bool step_over() const;
-
-    /**
-     * Disassembles the next instruction.
-     * \returns A specification for the disassembled instruction.
-     */
-    instruction disassemble() const;
-    /**
-     * Disassembles an instruction at a specified address.
-     * \param [in] address The emulated memory address of the instruction to be disassembled.
-     * \returns A specification for the disassebmled instruction.
-     */
-    instruction disassemble(uint64_t address) const;
 
     friend std::istream& operator>>(std::istream& is, debugger& debugger);
 
@@ -92,7 +80,7 @@ private:
     void allocate_memory(uint64_t address, size_t size) const;
     void allocate_memory(uint64_t address, std::vector<uint8_t> const& data) const;
 
-    void read_memory(uint64_t address, std::vector<uint8_t>& data) const;
+    std::vector<uint8_t> read_memory(uint64_t address, size_t size) const;
     void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
 
     std::set<uc_mem_region> get_memory_regions() const;

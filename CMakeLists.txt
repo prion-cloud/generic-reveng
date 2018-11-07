@@ -22,6 +22,7 @@ link_directories ( "submodules/unicorn/" )
 find_package ( Threads REQUIRED )
 
 add_executable ( scout
+    "source/control_flow_graph.cpp"
     "source/debugger.cpp"
     "source/instruction.cpp"
     "source/loader.cpp"

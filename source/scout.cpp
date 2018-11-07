@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "../include/scout/control_flow_graph.h"
 #include "../include/scout/debugger.h"
 
 int main(int const argc, char const* const argv[])
@@ -35,7 +36,23 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    std::cout << "0x" << std::hex << std::uppercase << debugger.position() << std::endl;
+    auto const cfg = control_flow_graph(debugger);
+
+    auto const blocks = cfg.get_blocks();
+    for (auto const* block : blocks)
+    {
+        for (auto const& instruction : *block)
+        {
+            auto const dis = instruction.disassemble();
+
+            std::cout
+                << std::hex << std::uppercase << dis->address << " "
+                << dis->mnemonic << " "
+                << dis->op_str << std::endl;
+        }
+
+        std::cout << "-----//-----" << std::endl;
+    }
 
     // TODO
 

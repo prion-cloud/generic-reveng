@@ -52,6 +52,18 @@ bool debugger::position(uint64_t const address) const
     return is_mapped();
 }
 
+std::unique_ptr<machine_instruction> debugger::current_instruction() const
+{
+    auto const address = position();
+
+    std::vector<uint8_t> code_vector = read_memory(address, machine_instruction::SIZE);
+
+    std::array<uint8_t, machine_instruction::SIZE> code_array { };
+    std::move(code_vector.begin(), code_vector.end(), code_array.begin());
+
+    return std::make_unique<machine_instruction>(cs_, address, code_array);
+}
+
 bool debugger::is_mapped() const
 {
     return is_mapped(position());
@@ -69,7 +81,7 @@ bool debugger::is_mapped(uint64_t const address) const
 
 bool debugger::skip() const
 {
-    return skip(disassemble().code.size());
+    return skip(current_instruction()->disassemble()->size);
 }
 bool debugger::skip(uint64_t const count) const
 {
@@ -79,38 +91,6 @@ bool debugger::skip(uint64_t const count) const
 bool debugger::step_into() const
 {
     return uc_emu_start(uc_.get(), position(), 0, 0, 1) == UC_ERR_OK;
-}
-bool debugger::step_over() const
-{
-    auto const instruction = disassemble();
-
-    if (instruction.groups.count(CS_GRP_CALL) == 0)
-        return step_into();
-
-    return uc_emu_start(uc_.get(),
-        instruction.address,
-        instruction.address + instruction.code.size(), 0, 0) == UC_ERR_OK;
-}
-
-instruction debugger::disassemble() const
-{
-    return disassemble(position());
-}
-instruction debugger::disassemble(uint64_t const address) const
-{
-    std::vector<uint8_t> code_buffer(0x10);
-    read_memory(address, code_buffer);
-
-    cs_insn* cs_instructions;
-    cs_disasm(*cs_, &code_buffer.front(), code_buffer.size(), address, 1, &cs_instructions);
-
-    CS_FATAL(get_cs_error());
-
-    instruction instruction(cs_instructions[0]); // NOLINT
-
-    cs_free(cs_instructions, 1);
-
-    return instruction;
 }
 
 std::istream& operator>>(std::istream& is, debugger& debugger)
@@ -212,9 +192,12 @@ void debugger::allocate_memory(uint64_t const address, std::vector<uint8_t> cons
     write_memory(address, data);
 }
 
-void debugger::read_memory(uint64_t const address, std::vector<uint8_t>& data) const
+std::vector<uint8_t> debugger::read_memory(uint64_t const address, size_t const size) const
 {
+    std::vector<uint8_t> data(size);
     UC_FATAL(uc_mem_read(uc_.get(), address, &data.front(), data.size()));
+
+    return data;
 }
 void debugger::write_memory(uint64_t const address, std::vector<uint8_t> const& data) const
 {
