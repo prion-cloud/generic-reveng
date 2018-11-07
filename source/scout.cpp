@@ -27,8 +27,8 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    debugger debugger;
-    file_stream >> debugger;
+    debugger d;
+    file_stream >> d;
 
     if (file_stream.fail())
     {
@@ -36,25 +36,9 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    auto const cfg = control_flow_graph(debugger);
+    auto const cfg = control_flow_graph<debugger>(d);
 
-    auto const blocks = cfg.get_blocks();
-    for (auto const* block : blocks)
-    {
-        for (auto const& instruction : *block)
-        {
-            auto const dis = instruction.disassemble();
-
-            std::cout
-                << std::hex << std::uppercase << dis->address << " "
-                << dis->mnemonic << " "
-                << dis->op_str << std::endl;
-        }
-
-        std::cout << "-----//-----" << std::endl;
-    }
-
-    // TODO
+    /* TODO */
 
     return 0;
 }
