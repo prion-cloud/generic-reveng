@@ -1,39 +1,18 @@
-#include <sstream>
-
 #include "../include/scout/debugger.h"
-#include "../include/scout/loader.h"
 
 #define CS_FATAL(cs_method_call)                            \
 {                                                           \
     cs_err const error_code = cs_method_call;               \
                                                             \
     if (error_code != CS_ERR_OK)                            \
-    {                                                       \
-        std::ostringstream oss_error;                       \
-        oss_error                                           \
-            << cs_strerror(error_code)                      \
-            << " @ \"" << #cs_method_call << "\""           \
-            << " @ " << __FILE__                            \
-            << " @ " << __LINE__;                           \
-                                                            \
-        throw std::runtime_error(oss_error.str());          \
-    }                                                       \
+        throw std::runtime_error(cs_strerror(error_code));  \
 }
 #define UC_FATAL(uc_method_call)                            \
 {                                                           \
     uc_err const error_code = uc_method_call;               \
                                                             \
     if (error_code != UC_ERR_OK)                            \
-    {                                                       \
-        std::ostringstream oss_error;                       \
-        oss_error                                           \
-            << uc_strerror(error_code)                      \
-            << " @ \"" << #uc_method_call << "\""           \
-            << " @ " << __FILE__                            \
-            << " @ " << __LINE__;                           \
-                                                            \
-        throw std::runtime_error(oss_error.str());          \
-    }                                                       \
+        throw std::runtime_error(uc_strerror(error_code));  \
 }
 
 bool operator<(const uc_mem_region a, const uc_mem_region b)
@@ -93,76 +72,62 @@ bool debugger::step_into()
     return uc_emu_start(uc_.get(), position(), 0, 0, 1) == UC_ERR_OK;
 }
 
-std::istream& operator>>(std::istream& is, debugger& debugger)
+debugger::debugger(executable_specification const& specification)
 {
-    auto const spec = load(is);
-
-    if (is.fail())
-        return is;
-
-    int ip_register;
     int sp_register;
     int bp_register;
 
-    switch (spec.machine_architecture.second)
+    switch (specification.machine_architecture.second)
     {
     case UC_ARCH_X86:
-        switch (spec.machine_mode.second)
+        switch (specification.machine_mode.second)
         {
         case UC_MODE_16:
-            ip_register = UC_X86_REG_IP;
+            ip_register_ = UC_X86_REG_IP;
             sp_register = UC_X86_REG_SP;
             bp_register = UC_X86_REG_BP;
             break;
         case UC_MODE_32:
-            ip_register = UC_X86_REG_EIP;
+            ip_register_ = UC_X86_REG_EIP;
             sp_register = UC_X86_REG_ESP;
             bp_register = UC_X86_REG_EBP;
             break;
         case UC_MODE_64:
-            ip_register = UC_X86_REG_RIP;
+            ip_register_ = UC_X86_REG_RIP;
             sp_register = UC_X86_REG_RSP;
             bp_register = UC_X86_REG_RBP;
             break;
         default:
-            is.setstate(std::ios::failbit);
-            return is;
+            throw std::runtime_error("Unsupported architecture");
         }
         break;
     default:
-        is.setstate(std::ios::failbit);
-        return is;
+        throw std::runtime_error("Unsupported architecture");
     }
 
     auto const cs = std::shared_ptr<csh>(new csh, cs_close);
     CS_FATAL(cs_open(
-        spec.machine_architecture.first,
-        spec.machine_mode.first, cs.get()));
+        specification.machine_architecture.first,
+        specification.machine_mode.first,
+        cs.get()));
     CS_FATAL(cs_option(*cs, CS_OPT_DETAIL, CS_OPT_ON));
-    debugger.cs_ = cs;
 
     uc_engine* uc;
     UC_FATAL(uc_open(
-        spec.machine_architecture.second,
-        spec.machine_mode.second,
+        specification.machine_architecture.second,
+        specification.machine_mode.second,
         &uc));
-    debugger.uc_ = std::shared_ptr<uc_engine>(uc, uc_close);
+    for (auto const& [address, data] : specification.memory_regions)
+        allocate_memory(address, data);
 
-    debugger.ip_register_ = ip_register;
-
-    for (auto const& [address, data] : spec.memory_regions)
-        debugger.allocate_memory(address, data);
-
-    debugger.position(spec.entry_point);
+    position(specification.entry_point);
 
     auto const stack_bottom = UINT32_MAX;
     auto const stack_size = 0x1000;
-    debugger.allocate_memory(stack_bottom - stack_size + 1, stack_size);
+    allocate_memory(stack_bottom - stack_size + 1, stack_size);
 
-    debugger.write_register(sp_register, stack_bottom);
-    debugger.write_register(bp_register, stack_bottom);
-
-    return is;
+    write_register(sp_register, stack_bottom);
+    write_register(bp_register, stack_bottom);
 }
 
 uint64_t debugger::read_register(int const id) const

@@ -27,8 +27,7 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    debugger d;
-    file_stream >> d;
+    auto d = debugger::load(file_stream);
 
     if (file_stream.fail())
     {

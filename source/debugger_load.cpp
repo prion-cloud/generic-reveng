@@ -1,4 +1,4 @@
-#include "../include/scout/loader.h"
+#include "../include/scout/debugger.h"
 
 template <typename T>
 T extract(std::istream& is)
@@ -16,61 +16,71 @@ std::vector<uint8_t> extract(std::istream& is, size_t size)
     return result;
 }
 
-void load_pe(std::istream& is, executable_specification* spec)
+debugger debugger::load(std::istream& is)
 {
+    auto const magic_number = extract<uint32_t>(is);
+
+    if ((magic_number & 0xFFFFu) == 0x5A4D)
+        return load_pe(is);
+
+    if (magic_number == 0x7F454C46)
+        return load_elf(is);
+
+    throw std::runtime_error("Unknown binary format");
+}
+
+debugger debugger::load_pe(std::istream& is)
+{
+    executable_specification specification;
+
     is.seekg(0x3C);
     is.seekg(extract<uint32_t>(is));
 
     if (extract<uint32_t>(is) != 0x4550)
-    {
-        is.setstate(std::ios::failbit);
-        return;
-    }
+        throw std::runtime_error("PE loading failed.");
 
     auto const machine = extract<uint16_t>(is);
 
     switch (machine)
     {
     case 0x1C0:
-        spec->machine_architecture = std::make_pair(CS_ARCH_ARM, UC_ARCH_ARM);
+        specification.machine_architecture = std::make_pair(CS_ARCH_ARM, UC_ARCH_ARM);
         break;
     case 0xAA64:
-        spec->machine_architecture = std::make_pair(CS_ARCH_ARM64, UC_ARCH_ARM64);
+        specification.machine_architecture = std::make_pair(CS_ARCH_ARM64, UC_ARCH_ARM64);
         break;
     case 0x162:
     case 0x266:
     case 0x366:
     case 0x466:
-        spec->machine_architecture = std::make_pair(CS_ARCH_MIPS, UC_ARCH_MIPS);
+        specification.machine_architecture = std::make_pair(CS_ARCH_MIPS, UC_ARCH_MIPS);
         break;
     case 0x14C:
     case 0x8664:
-        spec->machine_architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
+        specification.machine_architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
         break;
     default:
-        is.setstate(std::ios::failbit);
-        return;
+        throw std::runtime_error("Unknown architecture");
     }
 
     switch (machine)
     {
     case 0x266:
     case 0x466:
-        spec->machine_mode = std::make_pair(CS_MODE_16, UC_MODE_16);
+        specification.machine_mode = std::make_pair(CS_MODE_16, UC_MODE_16);
         break;
     case 0x14C:
     case 0x162:
     case 0x1C0:
     case 0x366:
-        spec->machine_mode = std::make_pair(CS_MODE_32, UC_MODE_32);
+        specification.machine_mode = std::make_pair(CS_MODE_32, UC_MODE_32);
         break;
     case 0x8664:
     case 0xAA64:
-        spec->machine_mode = std::make_pair(CS_MODE_64, UC_MODE_64);
+        specification.machine_mode = std::make_pair(CS_MODE_64, UC_MODE_64);
         break;
     default:
-        is.setstate(std::ios::failbit);
-        return;
+        throw std::runtime_error("Unknown architecture");
     }
 
     auto const n_sections = extract<uint16_t>(is);
@@ -96,12 +106,9 @@ void load_pe(std::istream& is, executable_specification* spec)
     case 0xF0:
         is.seekg(0xD0, std::ios::cur);
         break;
-    default:
-        is.setstate(std::ios::failbit);
-        return;
     }
 
-    spec->entry_point = image_base + entry_point;
+    specification.entry_point = image_base + entry_point;
 
     size_t const position = is.tellg();
     for (uint16_t section_index = 0; section_index < n_sections; ++section_index)
@@ -114,34 +121,13 @@ void load_pe(std::istream& is, executable_specification* spec)
 
         is.seekg(raw_position);
 
-        spec->memory_regions.emplace(image_base + virtual_address, extract(is, raw_size));
+        specification.memory_regions.emplace(image_base + virtual_address, extract(is, raw_size));
     }
-}
 
-void load_elf(std::istream& is, executable_specification* spec)
+    return debugger(specification);
+}
+debugger debugger::load_elf(std::istream& is)
 {
     // TODO: ELF support
-    is.setstate(std::ios::failbit);
-}
-
-executable_specification load(std::istream& is)
-{
-    executable_specification spec;
-
-    auto const magic_number = extract<uint32_t>(is);
-
-    if ((magic_number & 0xFFFFu) == 0x5A4D)
-    {
-        load_pe(is, &spec);
-        return spec;
-    }
-
-    if (magic_number == 0x7F454C46)
-    {
-        load_elf(is, &spec);
-        return spec;
-    }
-
-    is.setstate(std::ios::failbit);
-    return spec;
+    throw std::runtime_error("Unknown binary format");
 }

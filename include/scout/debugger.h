@@ -3,6 +3,7 @@
 #include <istream>
 #include <memory>
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 #include "instruction.h"
@@ -12,14 +13,22 @@
 
 class debugger
 {
+    struct executable_specification
+    {
+        std::pair<cs_arch, uc_arch> machine_architecture;
+        std::pair<cs_mode, uc_mode> machine_mode;
+
+        uint64_t entry_point { };
+
+        std::unordered_map<uint64_t, std::vector<uint8_t>> memory_regions;
+    };
+
     std::shared_ptr<csh> cs_;
     std::shared_ptr<uc_engine> uc_;
 
     int ip_register_;
 
 public:
-
-    debugger() = default;
 
     debugger(debugger const&) = delete;
     debugger& operator=(debugger const&) = delete;
@@ -73,9 +82,11 @@ public:
      */
     bool step_into();
 
-    friend std::istream& operator>>(std::istream& is, debugger& debugger);
+    static debugger load(std::istream& is);
 
 private:
+
+    explicit debugger(executable_specification const& specification);
 
     uint64_t read_register(int id) const;
     void write_register(int id, uint64_t value);
@@ -90,4 +101,7 @@ private:
 
     cs_err get_cs_error() const;
     uc_err get_uc_error() const;
+
+    static debugger load_pe(std::istream& is);
+    static debugger load_elf(std::istream& is);
 };

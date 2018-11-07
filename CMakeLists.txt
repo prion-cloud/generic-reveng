@@ -23,8 +23,8 @@ find_package ( Threads REQUIRED )
 
 add_executable ( scout
     "source/debugger.cpp"
+    "source/debugger_load.cpp"
     "source/instruction.cpp"
-    "source/loader.cpp"
     "source/scout.cpp" )
 
 target_include_directories ( scout PRIVATE
