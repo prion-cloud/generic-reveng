@@ -48,7 +48,6 @@ control_flow_graph::block_ptr control_flow_graph::build(debugger const& debugger
     {
         // Inquire the found block and its successors
         auto const found_block = block_search->first;
-        next_blocks = block_search->second;
 
         // Find the instruction
         auto const instruction_search = std::find_if(found_block->begin(), found_block->end(),
@@ -65,56 +64,56 @@ control_flow_graph::block_ptr control_flow_graph::build(debugger const& debugger
         if (instruction_search == found_block->end())
             throw std::logic_error("Misaligned block(s)");
 
-        // Remove the found block's reference from the map
-        block_map.erase(block_search);
+        // Use original successors
+        next_blocks = block_search->second;
 
-        // Take the tail
+        // Use trimmed instructions
+        block_map.erase(found_block);
         new_block->assign(instruction_search, found_block->end());
-
-        // Erase the tail
         found_block->erase(instruction_search, found_block->end());
-
         block_map.emplace(found_block, std::vector<block_ptr> { new_block });
-
-        // Store the new block with its successors and exit
-        block_map.emplace(new_block, next_blocks);
-        return new_block;
     }
-
-    // Iterate through all contiguous instructions and store final successors
-    std::vector<std::optional<uint64_t>> next_addresses;
-    while (true)
+    else
     {
-        // Store current machine instruction
-        auto const cur_instruction = debugger.current_instruction();
-        new_block->push_back(*cur_instruction);
+        // Iterate through all contiguous instructions and store final successors
+        std::vector<std::optional<uint64_t>> next_addresses;
+        while (true)
+        {
+            auto const address = debugger.position();
+            if (block_map.lower_bound(address) != block_map.upper_bound(address))
+                break;
 
-        // Inquire successors
-        auto const cur_disassembly = cur_instruction->disassemble();
-        next_addresses = cur_disassembly.get_successors();
+            // Store current machine instruction
+            auto const cur_instruction = debugger.current_instruction();
+            new_block->push_back(*cur_instruction);
 
-        // Zero or multiple successors?
-        if (next_addresses.size() != 1)
-            break;
+            // Inquire successors
+            auto const cur_disassembly = cur_instruction->disassemble();
+            next_addresses = cur_disassembly.get_successors();
 
-        // Jump?
-        auto const next_address = next_addresses.front();
-        if (!next_address.has_value() ||
-            *next_address != cur_disassembly->address + cur_disassembly->size)
-            break;
+            // Zero or multiple successors?
+            if (next_addresses.size() != 1)
+                break;
 
-        // Continue with successor
-        debugger.position(*next_address);
-    }
+            // Jump?
+            auto const next_address = next_addresses.front();
+            if (!next_address.has_value() ||
+                *next_address != cur_disassembly->address + cur_disassembly->size)
+                break;
 
-    // Inspect succeeding blocks
-    for (auto const& address : next_addresses)
-    {
-        // TODO: Ambiguous jump?
+            // Continue with successor
+            debugger.position(*next_address);
+        }
 
-        // RECURSE for each successor
-        debugger.position(*address);
-        next_blocks.push_back(build(debugger, block_map));
+        // Inspect succeeding blocks
+        for (auto const& address : next_addresses)
+        {
+            // TODO: Ambiguous jump?
+
+            // RECURSE for each successor
+            debugger.position(*address);
+            next_blocks.push_back(build(debugger, block_map));
+        }
     }
 
     // Store the new block with its successors and exit
