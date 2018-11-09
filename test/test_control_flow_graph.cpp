@@ -1,17 +1,16 @@
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include <algorithm>
 #include <memory>
+#include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "../submodules/keystone/include/keystone/keystone.h"
 
 #include "../include/scout/control_flow_graph.h"
+#include "test_helper.h"
 
-class test_provider
+class test_provider_x86_32
 {
     uint64_t position_;
 
@@ -19,7 +18,7 @@ class test_provider
 
 public:
 
-    explicit test_provider(std::vector<std::string> const& instruction_strings)
+    explicit test_provider_x86_32(std::vector<std::string> const& instruction_strings)
         : position_(0x0)
     {
         ks_engine* ks;
@@ -66,75 +65,28 @@ public:
     }
 };
 
-template <typename Provider>
-std::string to_string(control_flow_graph<Provider> const& cfg)
-{
-    auto const blocks = cfg.get_blocks();
-
-    std::ostringstream cfg_stream;
-    for (size_t i = 0; i < blocks.size(); ++i)
-    {
-        if (i > 0)
-            cfg_stream << std::endl;
-
-        cfg_stream << std::dec << i << ":" << std::endl;
-
-        auto const [block, successor_indices] = blocks.at(i);
-
-        for (auto const& instruction : *block)
-        {
-            cfg_stream << std::hex << std::uppercase << instruction.address << " ";
-
-            auto const disassembly = instruction.disassemble();
-
-            cfg_stream << disassembly->mnemonic;
-
-            if (disassembly->op_str[0] != '\0')
-                cfg_stream << " " << disassembly->op_str;
-
-            cfg_stream << std::endl;
-        }
-
-        if (!successor_indices.empty())
-            cfg_stream << "-> ";
-
-        for (size_t j = 0; j < successor_indices.size(); ++j)
-        {
-            if (j > 0)
-                cfg_stream << " ";
-
-            cfg_stream << std::dec << successor_indices.at(j);
-        }
-
-        if (!successor_indices.empty())
-            cfg_stream << std::endl;
-    }
-
-    return cfg_stream.str();
-}
-
 TEST_CASE("Block transitioning: Linear")
 {
-    test_provider provider1(
+    test_provider_x86_32 provider1(
         {
             "nop",
             "ret",
             "int3"
         });
-    test_provider provider2(
+    test_provider_x86_32 provider2(
         {
             "nop",
             "int3",
             "int3"
         });
-    test_provider provider3(
+    test_provider_x86_32 provider3(
         {
             "nop",
             "jmp 3",
             "nop",
             "ret"
         });
-    test_provider provider4(
+    test_provider_x86_32 provider4(
         {
             "nop",
             "je 3",
@@ -145,37 +97,33 @@ TEST_CASE("Block transitioning: Linear")
     std::ostringstream expected1;
     expected1        << "0:"
         << std::endl << "0 nop"
-        << std::endl << "1 ret"
-        << std::endl;
+        << std::endl << "1 ret";
     std::ostringstream expected2;
     expected2        << "0:"
         << std::endl << "0 nop"
-        << std::endl << "1 int3"
-        << std::endl;
+        << std::endl << "1 int3";
     std::ostringstream expected3;
     expected3        << "0:"
         << std::endl << "0 nop"
         << std::endl << "1 jmp 3"
         << std::endl << "3 nop"
-        << std::endl << "4 ret"
-        << std::endl;
+        << std::endl << "4 ret";
     std::ostringstream expected4;
     expected4        << "0:"
         << std::endl << "0 nop"
         << std::endl << "1 je 3"
         << std::endl << "3 nop"
-        << std::endl << "4 ret"
-        << std::endl;
+        << std::endl << "4 ret";
 
-    CHECK(to_string(control_flow_graph<test_provider>(provider1)) == expected1.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider2)) == expected2.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider3)) == expected3.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider4)) == expected4.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider1)) == expected1.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider2)) == expected2.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider3)) == expected3.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider4)) == expected4.str());
 }
 
 TEST_CASE("Block transitioning: Relocation")
 {
-    test_provider provider(
+    test_provider_x86_32 provider(
         {
             "nop",
             "jmp 4",
@@ -192,15 +140,14 @@ TEST_CASE("Block transitioning: Relocation")
         << std::endl
         << std::endl << "1:"
         << std::endl << "4 nop"
-        << std::endl << "5 ret"
-        << std::endl;
+        << std::endl << "5 ret";
 
-    CHECK(to_string(control_flow_graph<test_provider>(provider)) == expected.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider)) == expected.str());
 }
 
 TEST_CASE("Block transitioning: IF-THEN-ELSE")
 { 
-    test_provider provider(
+    test_provider_x86_32 provider(
         {
             "nop",
             "je 6",
@@ -223,15 +170,14 @@ TEST_CASE("Block transitioning: IF-THEN-ELSE")
         << std::endl
         << std::endl << "2:"
         << std::endl << "6 nop"
-        << std::endl << "7 ret"
-        << std::endl;
+        << std::endl << "7 ret";
 
-    CHECK(to_string(control_flow_graph<test_provider>(provider)) == expected.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider)) == expected.str());
 }
 
 TEST_CASE("Block transitioning: IF-THEN")
 { 
-    test_provider provider(
+    test_provider_x86_32 provider(
         {
             "nop",
             "jne 4",
@@ -252,15 +198,14 @@ TEST_CASE("Block transitioning: IF-THEN")
         << std::endl
         << std::endl << "2:"
         << std::endl << "4 nop"
-        << std::endl << "5 ret"
-        << std::endl;
+        << std::endl << "5 ret";
 
-    CHECK(to_string(control_flow_graph<test_provider>(provider)) == expected.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider)) == expected.str());
 }
 
 TEST_CASE("Block transitioning: Diamond")
 { 
-    test_provider provider1(
+    test_provider_x86_32 provider1(
         {
             "nop",
             "je 7",
@@ -271,7 +216,7 @@ TEST_CASE("Block transitioning: Diamond")
             "nop",
             "ret"
         });
-    test_provider provider2(
+    test_provider_x86_32 provider2(
         {
             "nop",
             "je 7",
@@ -300,8 +245,7 @@ TEST_CASE("Block transitioning: Diamond")
         << std::endl
         << std::endl << "3:"
         << std::endl << "8 nop"
-        << std::endl << "9 ret"
-        << std::endl;
+        << std::endl << "9 ret";
     std::ostringstream expected2;
     expected2        << "0:"
         << std::endl << "0 nop"
@@ -319,34 +263,33 @@ TEST_CASE("Block transitioning: Diamond")
         << std::endl << "3:"
         << std::endl << "7 nop"
         << std::endl << "8 jmp 4"
-        << std::endl << "-> 2"
-        << std::endl;
+        << std::endl << "-> 2";
 
-    CHECK(to_string(control_flow_graph<test_provider>(provider1)) == expected1.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider2)) == expected2.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider1)) == expected1.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider2)) == expected2.str());
 }
 
 TEST_CASE("Block transitioning: Loop")
 { 
-    test_provider provider1(
+    test_provider_x86_32 provider1(
         {
             "nop",
             "jmp 0"
         });
-    test_provider provider2(
+    test_provider_x86_32 provider2(
         {
             "nop",
             "je 0",
             "nop",
             "ret"
         });
-    test_provider provider3(
+    test_provider_x86_32 provider3(
         {
             "nop",
             "nop",
             "jmp 1"
         });
-    test_provider provider4(
+    test_provider_x86_32 provider4(
         {
             "nop",
             "nop",
@@ -359,8 +302,7 @@ TEST_CASE("Block transitioning: Loop")
     expected1        << "0:"
         << std::endl << "0 nop"
         << std::endl << "1 jmp 0"
-        << std::endl << "-> 0"
-        << std::endl;
+        << std::endl << "-> 0";
     std::ostringstream expected2;
     expected2        << "0:"
         << std::endl << "0 nop"
@@ -369,8 +311,7 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl
         << std::endl << "1:"
         << std::endl << "3 nop"
-        << std::endl << "4 ret"
-        << std::endl;
+        << std::endl << "4 ret";
     std::ostringstream expected3;
     expected3        << "0:"
         << std::endl << "0 nop"
@@ -379,8 +320,7 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl << "1:"
         << std::endl << "1 nop"
         << std::endl << "2 jmp 1"
-        << std::endl << "-> 1"
-        << std::endl;
+        << std::endl << "-> 1";
     std::ostringstream expected4;
     expected4        << "0:"
         << std::endl << "0 nop"
@@ -393,11 +333,10 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl
         << std::endl << "2:"
         << std::endl << "4 nop"
-        << std::endl << "5 ret"
-        << std::endl;
+        << std::endl << "5 ret";
 
-    CHECK(to_string(control_flow_graph<test_provider>(provider1)) == expected1.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider2)) == expected2.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider3)) == expected3.str());
-    CHECK(to_string(control_flow_graph<test_provider>(provider4)) == expected4.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider1)) == expected1.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider2)) == expected2.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider3)) == expected3.str());
+    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider4)) == expected4.str());
 }

@@ -42,8 +42,12 @@ target_link_libraries ( scout
     ${CMAKE_THREAD_LIBS_INIT} )
 
 add_executable ( scout-test
+    "source/debugger.cpp"
+    "source/debugger_load.cpp"
     "source/instruction.cpp"
-    "test/test_control_flow_graph.cpp" )
+    "test/test_control_flow_graph.cpp"
+    "test/test_debugger.cpp"
+    "test/test_main" )
 
 target_include_directories ( scout-test PRIVATE
     "include/" )
