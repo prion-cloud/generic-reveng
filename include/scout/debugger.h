@@ -82,6 +82,7 @@ public:
      */
     bool step_into();
 
+    static debugger load(std::string const& file_name);
     static debugger load(std::istream& is);
 
 private:

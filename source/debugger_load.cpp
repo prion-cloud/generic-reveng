@@ -1,3 +1,6 @@
+#include <climits>
+#include <fstream>
+
 #include "../include/scout/debugger.h"
 
 template <typename T>
@@ -16,9 +19,19 @@ std::vector<uint8_t> extract(std::istream& is, size_t size)
     return result;
 }
 
+debugger debugger::load(std::string const& file_name)
+{
+    std::ifstream file_stream(file_name, std::ios::binary);
+
+    if (!file_stream)
+        throw std::runtime_error("Invalid file");
+
+    return load(file_stream);
+}
 debugger debugger::load(std::istream& is)
 {
     auto const magic_number = extract<uint32_t>(is);
+    is.seekg(-sizeof(uint32_t), std::ios::cur);
 
     if ((magic_number & 0xFFFFu) == 0x5A4D)
         return load_pe(is);
@@ -33,28 +46,15 @@ debugger debugger::load_pe(std::istream& is)
 {
     executable_specification specification;
 
-    is.seekg(0x3C);
+    is.seekg(0x3C, std::ios::cur);
     is.seekg(extract<uint32_t>(is));
 
-    if (extract<uint32_t>(is) != 0x4550)
-        throw std::runtime_error("PE loading failed.");
+    is.seekg(0x4, std::ios::cur);
 
     auto const machine = extract<uint16_t>(is);
 
     switch (machine)
     {
-    case 0x1C0:
-        specification.machine_architecture = std::make_pair(CS_ARCH_ARM, UC_ARCH_ARM);
-        break;
-    case 0xAA64:
-        specification.machine_architecture = std::make_pair(CS_ARCH_ARM64, UC_ARCH_ARM64);
-        break;
-    case 0x162:
-    case 0x266:
-    case 0x366:
-    case 0x466:
-        specification.machine_architecture = std::make_pair(CS_ARCH_MIPS, UC_ARCH_MIPS);
-        break;
     case 0x14C:
     case 0x8664:
         specification.machine_architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
@@ -65,18 +65,10 @@ debugger debugger::load_pe(std::istream& is)
 
     switch (machine)
     {
-    case 0x266:
-    case 0x466:
-        specification.machine_mode = std::make_pair(CS_MODE_16, UC_MODE_16);
-        break;
     case 0x14C:
-    case 0x162:
-    case 0x1C0:
-    case 0x366:
         specification.machine_mode = std::make_pair(CS_MODE_32, UC_MODE_32);
         break;
     case 0x8664:
-    case 0xAA64:
         specification.machine_mode = std::make_pair(CS_MODE_64, UC_MODE_64);
         break;
     default:
@@ -91,7 +83,7 @@ debugger debugger::load_pe(std::istream& is)
 
     is.seekg(0x12, std::ios::cur);
 
-    auto const entry_point = extract<uint32_t>(is);
+    auto const relative_entry_point = extract<uint32_t>(is);
 
     is.seekg(0x4, std::ios::cur);
 
@@ -100,7 +92,7 @@ debugger debugger::load_pe(std::istream& is)
     switch (optional_header_size)
     {
     case 0xE0:
-        image_base &= 0xFFFF;
+        image_base >>= sizeof(uint32_t) * CHAR_BIT;
         is.seekg(0xC0, std::ios::cur);
         break;
     case 0xF0:
@@ -108,7 +100,7 @@ debugger debugger::load_pe(std::istream& is)
         break;
     }
 
-    specification.entry_point = image_base + entry_point;
+    specification.entry_point = image_base + relative_entry_point;
 
     size_t const position = is.tellg();
     for (uint16_t section_index = 0; section_index < n_sections; ++section_index)
