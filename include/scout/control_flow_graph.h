@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <set>
+#include <unordered_map>
 #include <vector>
 
 #include "instruction.h"
@@ -10,7 +12,28 @@
 template <typename Provider>
 class control_flow_graph
 {
-    using block = std::vector<machine_instruction>;
+    class machine_instruction_comparator
+    {
+    public:
+
+        using is_transparent = void;
+
+        bool operator()(machine_instruction const& instruction1, machine_instruction const& instruction2) const
+        {
+            return instruction1.address < instruction2.address;
+        }
+
+        bool operator()(machine_instruction const& instruction, uint64_t const address) const
+        {
+            return instruction.address < address;
+        }
+        bool operator()(uint64_t const address, machine_instruction const& instruction) const
+        {
+            return address < instruction.address;
+        }
+    };
+
+    using block = std::set<machine_instruction, machine_instruction_comparator>;
     using block_ptr = std::shared_ptr<block>;
 
     class block_ptr_comparator
@@ -21,116 +44,152 @@ class control_flow_graph
 
         bool operator()(block_ptr const& block1, block_ptr const& block2) const
         {
-            return block1->back().address < block2->front().address;
+            return block1->crbegin()->address < block2->cbegin()->address;
         }
 
-        bool operator()(block_ptr const& block, uint64_t address) const
+        bool operator()(block_ptr const& block, uint64_t const address) const
         {
-            return block->back().address < address;
+            return block->crbegin()->address < address;
         }
-        bool operator()(uint64_t address, block_ptr const& block) const
+        bool operator()(uint64_t const address, block_ptr const& block) const
         {
-            return address < block->front().address;
+            return address < block->cbegin()->address;
         }
     };
 
-    block_ptr root_;
+    using block_directory = std::map<block_ptr, std::vector<block_ptr>, block_ptr_comparator>;
 
-    std::map<block_ptr, std::vector<block_ptr>, block_ptr_comparator> block_map_;
+    block_ptr entry_block_;
+
+    block_directory block_dir_;
 
 public:
 
     explicit control_flow_graph(Provider& provider)
+        : entry_block_(std::make_shared<block>())
     {
-        root_ = build(provider, block_map_);
+        construct(provider, entry_block_);
+    }
+
+    std::vector<std::pair<block_ptr, std::vector<size_t>>> get_blocks() const
+    {
+        std::vector<std::pair<block_ptr, std::vector<size_t>>> blocks;
+
+        std::unordered_map<block_ptr, size_t> block_indices;
+        for (auto const& [block, _] : block_dir_)
+        {
+            block_indices.emplace(block, blocks.size());
+            blocks.emplace_back(block, std::vector<size_t> { });
+        }
+
+        for (auto& [block, successor_indices] : blocks)
+        {
+            for (auto const& successor : block_dir_.at(block))
+                successor_indices.push_back(block_indices.at(successor));
+        }
+
+        return blocks;
     }
 
 private:
 
-    static block_ptr build(Provider& provider,
-        std::map<block_ptr, std::vector<block_ptr>, block_ptr_comparator>& block_map)
+    void construct(Provider& provider, block_ptr const& cur_block)
     {
-        // Create new basic block and successor container
-        auto const new_block = std::make_shared<std::vector<machine_instruction>>();
-        std::vector<block_ptr> next_blocks;
-
-        // Current address already covered by block?
-        auto const new_address = provider.position();
-        auto const block_search = block_map.lower_bound(new_address);
-        if (block_search != block_map.upper_bound(new_address))
+        // Create the block through iterating over all contiguous instructions
+        std::vector<std::optional<uint64_t>> next_addresses;
+        while (true)
         {
-            // Inquire the found block and its successors
-            auto const found_block = block_search->first;
+            // Store current machine instruction
+            auto const cur_instruction = provider.current_instruction();
+            cur_block->insert(cur_block->cend(), *cur_instruction);
 
-            // Find the instruction
-            auto const instruction_search = std::find_if(found_block->begin(), found_block->end(),
-                [new_address](auto const& instruction)
-                {
-                    return instruction.address == new_address;
-                });
+            // Inquire successors
+            auto const cur_disassembly = cur_instruction->disassemble();
+            next_addresses = cur_disassembly.get_successors();
 
-            // No cut needed?
-            if (instruction_search == found_block->begin())
-                return found_block;
+                                                                    // Do not continue the block creation if
+            if (next_addresses.empty() ||                           // - there are no successors or
+                !std::all_of(                                       // - some (actual) jumps or
+                    next_addresses.cbegin(), next_addresses.cend(),
+                    [&cur_disassembly](auto const& address)
+                    {
+                        return address.has_value() &&
+                            *address == cur_disassembly->address + cur_disassembly->size;
+                    }) ||
+                block_dir_.lower_bound(*next_addresses.front()) !=  // - the next instruction is known
+                    block_dir_.upper_bound(*next_addresses.front()))
+                break;
 
-            // Instruction not found?
-            if (instruction_search == found_block->end())
-                throw std::logic_error("Misaligned block(s)");
-
-            // Use original successors
-            next_blocks = block_search->second;
-
-            // Use trimmed instructions
-            block_map.erase(found_block);
-            new_block->assign(instruction_search, found_block->end());
-            found_block->erase(instruction_search, found_block->end());
-            block_map.emplace(found_block, std::vector<block_ptr> { new_block });
+            // Continue the block creation
+            provider.position(*next_addresses.front());
         }
-        else
+
+        // Record the current block with an (so far) empty successor list
+        auto const [cur_block_ref, cur_block_insertion_successful] =
+            block_dir_.emplace(cur_block, std::vector<block_ptr> { });
+
+        // ASSERT directory integrity
+        if (!cur_block_insertion_successful)
+            throw std::logic_error("Misaligned block(s) #" + std::to_string(__LINE__));
+
+        auto& next_blocks = cur_block_ref->second;
+
+        // Iterate over successor addresses
+        for (auto const& next_address : next_addresses)
         {
-            // Iterate through all contiguous instructions and store final successors
-            std::vector<std::optional<uint64_t>> next_addresses;
-            while (true)
+            // TODO: Ambiguous jump?
+
+            // Search for an existing block already covering the next address
+            auto const existing_block_search = block_dir_.lower_bound(*next_address);
+
+            // No block found?
+            if (existing_block_search == block_dir_.upper_bound(*next_address))
             {
-                auto const address = provider.position();
-                if (block_map.lower_bound(address) != block_map.upper_bound(address))
-                    break;
+                // Create a new empty successor
+                auto const next_block = std::make_shared<block>();
+                next_blocks.push_back(next_block);
 
-                // Store current machine instruction
-                auto const cur_instruction = provider.current_instruction();
-                new_block->push_back(*cur_instruction);
-
-                // Inquire successors
-                auto const cur_disassembly = cur_instruction->disassemble();
-                next_addresses = cur_disassembly.get_successors();
-
-                // Zero or multiple successors?
-                if (next_addresses.size() != 1)
-                    break;
-
-                // Jump?
-                auto const next_address = next_addresses.front();
-                if (!next_address.has_value() ||
-                    *next_address != cur_disassembly->address + cur_disassembly->size)
-                    break;
-
-                // Continue with successor
+                // RECURSE with this block
                 provider.position(*next_address);
+                construct(provider, next_block);
+
+                continue;
             }
 
-            // Inspect succeeding blocks
-            for (auto const& address : next_addresses)
+            // Inquire the search result
+            auto& [existing_block, existing_block_successors] = *existing_block_search;
+
+            // Search for the respective instruction in the found block
+            auto const instruction_search = existing_block->find(*next_address);
+
+            // ASSERT a found instruction
+            if (instruction_search == existing_block->end())
+                throw std::logic_error("Misaligned block(s) #" + std::to_string(__LINE__));
+
+            // Is it the first instruction?
+            if (instruction_search == existing_block->begin())
             {
-                // TODO: Ambiguous jump?
+                // Use it as a successor
+                next_blocks.push_back(existing_block);
 
-                // RECURSE for each successor
-                provider.position(*address);
-                next_blocks.push_back(build(provider, block_map));
+                continue;
             }
-        }
 
-        // Store the new block with its successors and exit
-        block_map.emplace(new_block, next_blocks);
-        return new_block;
+            // Create a new successor by cutting off the found block's tail
+            auto const next_block = std::make_shared<block>(instruction_search, existing_block->end());
+            existing_block->erase(instruction_search, existing_block->end());
+            next_blocks.push_back(next_block);
+
+            // Record the successor
+            auto const next_block_insertion_successful =
+                block_dir_.emplace(next_block, existing_block_successors).second;
+
+            // ASSERT directory integrity
+            if (!next_block_insertion_successful)
+                throw std::logic_error("Misaligned block(s) #" + std::to_string(__LINE__));
+
+            // Update the found block's successors
+            existing_block_successors = std::vector<block_ptr> { next_block };
+        }
     }
 };
