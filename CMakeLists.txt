@@ -16,6 +16,13 @@ set ( CAPSTONE_XCORE_SUPPORT OFF CACHE BOOL "Capstone: XCore support"        )
 
 add_subdirectory ( "submodules/capstone/" )
 
+set ( BUILD_SHARED_LIBS     ON    CACHE BOOL   "Keystone: Build shared library" )
+set ( BUILD_LIBS_ONLY       ON    CACHE BOOL   "Keystone: Skip kstool"          )
+
+set ( LLVM_TARGETS_TO_BUILD "X86" CACHE STRING "Keystone: Support only X86"     )
+
+add_subdirectory ( "submodules/keystone/" )
+
 # The "submodules/unicorn/make.sh" script has to be executed first
 link_directories ( "submodules/unicorn/" )
 
@@ -31,5 +38,17 @@ target_include_directories ( scout PRIVATE
     "include/" )
 target_link_libraries ( scout
     capstone-shared
+    "libunicorn.so"
+    ${CMAKE_THREAD_LIBS_INIT} )
+
+add_executable ( scout-test
+    "source/instruction.cpp"
+    "test/test_control_flow_graph.cpp" )
+
+target_include_directories ( scout-test PRIVATE
+    "include/" )
+target_link_libraries ( scout-test
+    capstone-shared
+    keystone
     "libunicorn.so"
     ${CMAKE_THREAD_LIBS_INIT} )
