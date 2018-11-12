@@ -251,20 +251,20 @@ TEST_CASE("Block transitioning: Diamond")
     expected2        << "0:"
         << std::endl << "0 nop"
         << std::endl << "1 je 7"
-        << std::endl << "-> 1 3"
+        << std::endl << "-> 1 2"
         << std::endl
         << std::endl << "1:"
         << std::endl << "3 nop"
-        << std::endl << "-> 2"
+        << std::endl << "-> 3"
         << std::endl
         << std::endl << "2:"
-        << std::endl << "4 nop"
-        << std::endl << "5 ret"
-        << std::endl
-        << std::endl << "3:"
         << std::endl << "7 nop"
         << std::endl << "8 jmp 4"
-        << std::endl << "-> 2";
+        << std::endl << "-> 3"
+        << std::endl
+        << std::endl << "3:"
+        << std::endl << "4 nop"
+        << std::endl << "5 ret";
 
     CHECK(to_cfg_string(control_flow_graph(provider1)) == expected1.str());
     CHECK(to_cfg_string(control_flow_graph(provider2)) == expected2.str());

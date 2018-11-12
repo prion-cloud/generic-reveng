@@ -1,54 +1,65 @@
 #include <sstream>
+#include <unordered_map>
 
 #include "test_helper.h"
 
 std::string to_cfg_string(control_flow_graph const& cfg)
 {
-    auto const blocks = cfg.get_blocks();
-
-    std::ostringstream cfg_stream;
-    for (size_t i = 0; i < blocks.size(); ++i)
+    std::vector<control_flow_graph::block const*> blocks;
+    std::unordered_map<control_flow_graph::block const*, size_t> block_indices;
+    for (auto const* block : cfg)
     {
-        if (i > 0)
+        block_indices.emplace(block, blocks.size());
+        blocks.push_back(block);
+    }
+
+    std::ostringstream cfg_ss;
+
+    for (size_t cur_block_index = 0; cur_block_index < blocks.size(); ++cur_block_index)
+    {
+        if (cur_block_index > 0)
         {
-            cfg_stream
+            cfg_ss
                 << std::endl
                 << std::endl;
         }
 
-        cfg_stream << std::dec << i << ":";
+        cfg_ss << std::dec << cur_block_index << ':';
 
-        auto const [block, successor_indices] = blocks.at(i);
+        auto const* cur_block = blocks.at(cur_block_index);
 
-        for (auto const& instruction : *block)
+        for (auto const& instruction : *cur_block)
         {
-            cfg_stream
+            cfg_ss
                 << std::endl
-                << std::hex << std::uppercase << instruction.address << " ";
+                << std::hex << std::uppercase << instruction.address << ' ';
 
             auto const disassembly = instruction.disassemble();
 
-            cfg_stream << disassembly->mnemonic;
+            cfg_ss << disassembly->mnemonic;
 
-            if (disassembly->op_str[0] != '\0')
-                cfg_stream << " " << disassembly->op_str;
+            std::string const op_str = disassembly->op_str;
+            if (!op_str.empty())
+                cfg_ss << ' ' << op_str;
         }
 
-        if (!successor_indices.empty())
+        auto const successors = cfg.get_successors(cur_block);
+
+        if (!successors.empty())
         {
-            cfg_stream
+            cfg_ss
                 << std::endl
                 << "-> ";
         }
 
-        for (size_t j = 0; j < successor_indices.size(); ++j)
+        for (size_t next_block_index = 0; next_block_index < successors.size(); ++next_block_index)
         {
-            if (j > 0)
-                cfg_stream << " ";
+            if (next_block_index > 0)
+                cfg_ss << ' ';
 
-            cfg_stream << std::dec << successor_indices.at(j);
+            cfg_ss << std::dec << block_indices.at(successors.at(next_block_index));
         }
     }
 
-    return cfg_stream.str();
+    return cfg_ss.str();
 }

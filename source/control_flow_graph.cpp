@@ -1,23 +1,122 @@
-#include <unordered_map>
-
 #include "../include/scout/control_flow_graph.h"
 
-std::vector<std::pair<control_flow_graph::block_ptr, std::vector<size_t>>> control_flow_graph::get_blocks() const
+bool control_flow_graph::machine_instruction_comparator::operator()(
+    machine_instruction const& instruction1,
+    machine_instruction const& instruction2) const
 {
-    std::vector<std::pair<block_ptr, std::vector<size_t>>> blocks;
+    return instruction1.address < instruction2.address;
+}
 
-    std::unordered_map<block_ptr, size_t> block_indices;
-    for (auto const& [block, _] : block_dir_)
+bool control_flow_graph::machine_instruction_comparator::operator()(
+    machine_instruction const& instruction,
+    uint64_t const address) const
+{
+    return instruction.address < address;
+}
+bool control_flow_graph::machine_instruction_comparator::operator()(
+    uint64_t const address,
+    machine_instruction const& instruction) const
+{
+    return address < instruction.address;
+}
+
+bool control_flow_graph::block_ptr_comparator::operator()(
+    block_ptr const& block1,
+    block_ptr const& block2) const
+{
+    return block1->crbegin()->address < block2->cbegin()->address;
+}
+
+bool control_flow_graph::block_ptr_comparator::operator()(block_ptr const& block1, block const* block2) const
+{
+    return block1->crbegin()->address < block2->crbegin()->address;
+}
+bool control_flow_graph::block_ptr_comparator::operator()(block const* block1, block_ptr const& block2) const
+{
+    return block1->crbegin()->address < block2->crbegin()->address;
+}
+
+bool control_flow_graph::block_ptr_comparator::operator()(
+    block_ptr const& block,
+    uint64_t const address) const
+{
+    return block->crbegin()->address < address;
+}
+bool control_flow_graph::block_ptr_comparator::operator()(
+    uint64_t const address,
+    block_ptr const& block) const
+{
+    return address < block->cbegin()->address;
+}
+
+control_flow_graph::bfs_iterator::bfs_iterator(control_flow_graph const* base, block const* cur_block)
+    : base_(base), cur_block_(cur_block) { }
+
+bool control_flow_graph::bfs_iterator::operator==(bfs_iterator const& other) const
+{
+    return
+        base_ == other.base_ &&
+        cur_block_ == other.cur_block_;
+}
+bool control_flow_graph::bfs_iterator::operator!=(bfs_iterator const& other) const
+{
+    return !(operator==(other));
+}
+
+control_flow_graph::bfs_iterator& control_flow_graph::bfs_iterator::operator++()
+{
+    auto const& block_successors = base_->block_map_.find(cur_block_)->second;
+    std::for_each(block_successors.cbegin(), block_successors.cend(),
+        [this](auto const& block)
+        {
+            block_queue_.push(block.get());
+        });
+
+    previous_blocks_.insert(cur_block_);
+
+    do
     {
-        block_indices.emplace(block, blocks.size());
-        blocks.emplace_back(block, std::vector<size_t> { });
-    }
+        if (block_queue_.empty())
+        {
+            cur_block_ = nullptr;
+            break;
+        }
 
-    for (auto& [block, successor_indices] : blocks)
-    {
-        for (auto const& successor : block_dir_.at(block))
-            successor_indices.push_back(block_indices.at(successor));
+        cur_block_ = block_queue_.front();
+        block_queue_.pop();
     }
+    while (previous_blocks_.count(cur_block_) > 0);
 
-    return blocks;
+    return *this;
+}
+
+control_flow_graph::bfs_iterator::reference control_flow_graph::bfs_iterator::operator*() const
+{
+    return cur_block_;
+}
+
+control_flow_graph::bfs_iterator control_flow_graph::begin() const
+{
+    return bfs_iterator(this, first_block_.get());
+}
+control_flow_graph::bfs_iterator control_flow_graph::end() const
+{
+    return bfs_iterator(this, nullptr);
+}
+
+std::vector<control_flow_graph::block const*> control_flow_graph::get_successors(block const* block) const
+{
+    auto const block_search = block_map_.find(block);
+
+    if (block_search == block_map_.end())
+        throw std::runtime_error("Invalid block");
+
+    std::vector<control_flow_graph::block const*> successors(block_search->second.size());
+    std::transform(block_search->second.cbegin(), block_search->second.cend(), successors.begin(),
+        [](auto const& block)
+        {
+            return block.get();
+        });
+
+    return successors;
 }
