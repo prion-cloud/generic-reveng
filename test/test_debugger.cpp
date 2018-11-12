@@ -7,6 +7,7 @@
 
 #include "../include/scout/control_flow_graph.h"
 #include "../include/scout/debugger.h"
+
 #include "test_helper.h"
 
 std::string get_full_name(std::string const& file_name)

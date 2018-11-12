@@ -8,6 +8,7 @@
 #include "../submodules/keystone/include/keystone/keystone.h"
 
 #include "../include/scout/control_flow_graph.h"
+
 #include "test_helper.h"
 
 class test_provider_x86_32
@@ -115,10 +116,10 @@ TEST_CASE("Block transitioning: Linear")
         << std::endl << "3 nop"
         << std::endl << "4 ret";
 
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider1)) == expected1.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider2)) == expected2.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider3)) == expected3.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider4)) == expected4.str());
+    CHECK(to_cfg_string(control_flow_graph(provider1)) == expected1.str());
+    CHECK(to_cfg_string(control_flow_graph(provider2)) == expected2.str());
+    CHECK(to_cfg_string(control_flow_graph(provider3)) == expected3.str());
+    CHECK(to_cfg_string(control_flow_graph(provider4)) == expected4.str());
 }
 
 TEST_CASE("Block transitioning: Relocation")
@@ -142,7 +143,7 @@ TEST_CASE("Block transitioning: Relocation")
         << std::endl << "4 nop"
         << std::endl << "5 ret";
 
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider)) == expected.str());
+    CHECK(to_cfg_string(control_flow_graph(provider)) == expected.str());
 }
 
 TEST_CASE("Block transitioning: IF-THEN-ELSE")
@@ -172,7 +173,7 @@ TEST_CASE("Block transitioning: IF-THEN-ELSE")
         << std::endl << "6 nop"
         << std::endl << "7 ret";
 
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider)) == expected.str());
+    CHECK(to_cfg_string(control_flow_graph(provider)) == expected.str());
 }
 
 TEST_CASE("Block transitioning: IF-THEN")
@@ -200,7 +201,7 @@ TEST_CASE("Block transitioning: IF-THEN")
         << std::endl << "4 nop"
         << std::endl << "5 ret";
 
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider)) == expected.str());
+    CHECK(to_cfg_string(control_flow_graph(provider)) == expected.str());
 }
 
 TEST_CASE("Block transitioning: Diamond")
@@ -265,8 +266,8 @@ TEST_CASE("Block transitioning: Diamond")
         << std::endl << "8 jmp 4"
         << std::endl << "-> 2";
 
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider1)) == expected1.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider2)) == expected2.str());
+    CHECK(to_cfg_string(control_flow_graph(provider1)) == expected1.str());
+    CHECK(to_cfg_string(control_flow_graph(provider2)) == expected2.str());
 }
 
 TEST_CASE("Block transitioning: Loop")
@@ -335,8 +336,8 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl << "4 nop"
         << std::endl << "5 ret";
 
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider1)) == expected1.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider2)) == expected2.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider3)) == expected3.str());
-    CHECK(to_cfg_string(control_flow_graph<test_provider_x86_32>(provider4)) == expected4.str());
+    CHECK(to_cfg_string(control_flow_graph(provider1)) == expected1.str());
+    CHECK(to_cfg_string(control_flow_graph(provider2)) == expected2.str());
+    CHECK(to_cfg_string(control_flow_graph(provider3)) == expected3.str());
+    CHECK(to_cfg_string(control_flow_graph(provider4)) == expected4.str());
 }

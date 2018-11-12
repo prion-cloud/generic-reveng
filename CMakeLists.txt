@@ -29,6 +29,7 @@ link_directories ( "submodules/unicorn/" )
 find_package ( Threads REQUIRED )
 
 add_executable ( scout
+    "source/control_flow_graph.cpp"
     "source/debugger.cpp"
     "source/debugger_load.cpp"
     "source/instruction.cpp"
@@ -42,12 +43,14 @@ target_link_libraries ( scout
     ${CMAKE_THREAD_LIBS_INIT} )
 
 add_executable ( scout-test
+    "source/control_flow_graph.cpp"
     "source/debugger.cpp"
     "source/debugger_load.cpp"
     "source/instruction.cpp"
     "source/text_canvas.cpp"
     "test/test_control_flow_graph.cpp"
     "test/test_debugger.cpp"
+    "test/test_helper.cpp"
     "test/test_main.cpp"
     "test/test_text_canvas.cpp" )
 

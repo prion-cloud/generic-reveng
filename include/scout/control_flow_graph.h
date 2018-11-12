@@ -4,12 +4,10 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <unordered_map>
 #include <vector>
 
 #include "instruction.h"
 
-template <typename Provider>
 class control_flow_graph
 {
     class machine_instruction_comparator
@@ -65,34 +63,18 @@ class control_flow_graph
 
 public:
 
+    template <typename Provider>
     explicit control_flow_graph(Provider& provider)
         : entry_block_(std::make_shared<block>())
     {
         construct(provider, entry_block_);
     }
 
-    std::vector<std::pair<block_ptr, std::vector<size_t>>> get_blocks() const
-    {
-        std::vector<std::pair<block_ptr, std::vector<size_t>>> blocks;
-
-        std::unordered_map<block_ptr, size_t> block_indices;
-        for (auto const& [block, _] : block_dir_)
-        {
-            block_indices.emplace(block, blocks.size());
-            blocks.emplace_back(block, std::vector<size_t> { });
-        }
-
-        for (auto& [block, successor_indices] : blocks)
-        {
-            for (auto const& successor : block_dir_.at(block))
-                successor_indices.push_back(block_indices.at(successor));
-        }
-
-        return blocks;
-    }
+    std::vector<std::pair<block_ptr, std::vector<size_t>>> get_blocks() const;
 
 private:
 
+    template <typename Provider>
     void construct(Provider& provider, block_ptr const& cur_block)
     {
         // Create the block through iterating over all contiguous instructions

@@ -35,7 +35,7 @@ int main(int const argc, char const* const argv[])
         return 1;
     }
 
-    auto const cfg = control_flow_graph<debugger>(d);
+    auto const cfg = control_flow_graph(d);
 
     /* TODO */
 
