@@ -1,27 +1,25 @@
 #pragma once
 
-#include <sstream>
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 /**
  * Device for printing rectangular ASCII blocks onto a text buffer.
  */
 class text_canvas
 {
-    std::ostringstream out_buffer_;
+    std::unordered_map<size_t, std::unordered_map<size_t, std::string>> base_;
 
-    size_t width_;
+    size_t width_, height_;
 
 public:
 
     explicit text_canvas(size_t width);
 
-    std::string str() const;
+    size_t width() const;
+    size_t height() const;
+
+    std::string str();
 
     void draw(std::string const& text, size_t x, size_t y);
-
-private:
-
-    void reserve(size_t position);
 };
