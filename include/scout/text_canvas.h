@@ -8,6 +8,17 @@
  */
 class text_canvas
 {
+public:
+
+    enum class alignment
+    {
+        left,
+        right,
+        center
+    };
+
+private:
+
     std::unordered_map<size_t, std::unordered_map<size_t, std::string>> base_;
 
     size_t width_, height_;
@@ -21,5 +32,6 @@ public:
 
     std::string str();
 
-    void draw(std::string const& text, size_t x, size_t y);
+    void draw_utf8(std::string const& text, ssize_t x, ssize_t y,
+        alignment text_alignment = alignment::left);
 };
