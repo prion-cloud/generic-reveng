@@ -2,32 +2,37 @@
 
 #include <sstream>
 
-#include "../include/scout/text_canvas.h"
+#include "../include/scout/utf8_canvas.h"
 
 #define TAG "[text_canvas]"
 
 TEST_CASE("UTF-8 Drawing: One line, oversize", TAG)
 {
-    text_canvas tc(10);
+    utf8_canvas c(10);
 
-    tc.print("abcdefghijklmnopqrstuvwxyz", 0, 0);
+    c.print("abcdefghijklmnopqrstuvwxyz", 0, 0);
 
-    CHECK(tc.str() == "abcdefghij");
+    CHECK(c.str() == "abcdefghij");
 }
 
 TEST_CASE("UTF-8 Drawing: Multiple lines, fitting, repositioned", TAG)
 {
-    text_canvas tc1(10), tc2(10), tc3(10), tc4(10), tc5(10), tc6(10), tc7(10);
+    utf8_canvas c1(10), c2(10), c3(10), c4(10), c5(10), c6(10), c7(10);
 
-    std::string const text = "abcdefghij\nklmnopqrst\nuvwxyz";
+    std::vector<std::string> const text
+    {
+        "abcdefghij",
+        "klmnopqrst",
+        "uvwxyz"
+    };
 
-    tc1.print(text,  0,  0);
-    tc2.print(text,  1,  0);
-    tc3.print(text,  0,  1);
-    tc4.print(text,  1,  1);
-    tc5.print(text, -1,  0);
-    tc6.print(text,  0, -1);
-    tc7.print(text, -1, -1);
+    c1.print(text,  0,  0);
+    c2.print(text,  1,  0);
+    c3.print(text,  0,  1);
+    c4.print(text,  1,  1);
+    c5.print(text, -1,  0);
+    c6.print(text,  0, -1);
+    c7.print(text, -1, -1);
 
     std::ostringstream expected1;
     expected1        << "abcdefghij"
@@ -58,40 +63,50 @@ TEST_CASE("UTF-8 Drawing: Multiple lines, fitting, repositioned", TAG)
     expected7        << "lmnopqrst "
         << std::endl << "vwxyz     ";
 
-    CHECK(tc1.str() == expected1.str());
-    CHECK(tc2.str() == expected2.str());
-    CHECK(tc3.str() == expected3.str());
-    CHECK(tc4.str() == expected4.str());
-    CHECK(tc5.str() == expected5.str());
-    CHECK(tc6.str() == expected6.str());
-    CHECK(tc7.str() == expected7.str());
+    CHECK(c1.str() == expected1.str());
+    CHECK(c2.str() == expected2.str());
+    CHECK(c3.str() == expected3.str());
+    CHECK(c4.str() == expected4.str());
+    CHECK(c5.str() == expected5.str());
+    CHECK(c6.str() == expected6.str());
+    CHECK(c7.str() == expected7.str());
 }
 
 TEST_CASE("UTF-8 Drawing: Multi-byte characters", TAG)
 {
-    text_canvas tc1(5), tc2(5);
+    utf8_canvas c1(5), c2(5);
 
-    tc1.print("\u2500 \u2500 \u2500 \u2500",  0, 0);
-    tc2.print("\u2500 \u2500 \u2500"       , -1, 0);
+    c1.print("\u2500 \u2500 \u2500 \u2500",  0, 0);
+    c2.print("\u2500 \u2500 \u2500"       , -1, 0);
 
-    CHECK(tc1.str() == "\u2500 \u2500 \u2500");
-    CHECK(tc2.str() == " \u2500 \u2500 ");
+    CHECK(c1.str() == "\u2500 \u2500 \u2500");
+    CHECK(c2.str() == " \u2500 \u2500 ");
 }
 
 TEST_CASE("UTF-8 Drawing: Centered", TAG)
 {
-    text_canvas tc1(10), tc2(10), tc3(10), tc4(10), tc5(10), tc6(10);
+    utf8_canvas c1(10), c2(10), c3(10), c4(10), c5(10), c6(10);
 
-    std::string const text_even = "abcdef\nghijkl\nmnopq";
-    std::string const text_odd = "abcde\nfghij\nklmn";
+    std::vector<std::string> const text_even
+    {
+        "abcdef",
+        "ghijkl",
+        "mnopq"
+    };
+    std::vector<std::string> const text_odd
+    {
+        "abcde",
+        "fghij",
+        "klmn"
+    };
 
-    tc1.print_centered(text_even,  0, 0);
-    tc2.print_centered(text_even,  1, 0);
-    tc3.print_centered(text_even, -1, 0);
+    c1.print_centered(text_even,  0, 0);
+    c2.print_centered(text_even,  1, 0);
+    c3.print_centered(text_even, -1, 0);
 
-    tc4.print_centered(text_odd,   0, 0);
-    tc5.print_centered(text_odd,   1, 0);
-    tc6.print_centered(text_odd,  -1, 0);
+    c4.print_centered(text_odd,   0, 0);
+    c5.print_centered(text_odd,   1, 0);
+    c6.print_centered(text_odd,  -1, 0);
 
     std::ostringstream expected1;
     expected1        << "  abcdef  "
@@ -119,10 +134,10 @@ TEST_CASE("UTF-8 Drawing: Centered", TAG)
         << std::endl << "  fghij   "
         << std::endl << "  klmn    ";
 
-    CHECK(tc1.str() == expected1.str());
-    CHECK(tc2.str() == expected2.str());
-    CHECK(tc3.str() == expected3.str());
-    CHECK(tc4.str() == expected4.str());
-    CHECK(tc5.str() == expected5.str());
-    CHECK(tc6.str() == expected6.str());
+    CHECK(c1.str() == expected1.str());
+    CHECK(c2.str() == expected2.str());
+    CHECK(c3.str() == expected3.str());
+    CHECK(c4.str() == expected4.str());
+    CHECK(c5.str() == expected5.str());
+    CHECK(c6.str() == expected6.str());
 }
