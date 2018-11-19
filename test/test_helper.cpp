@@ -43,7 +43,7 @@ std::string to_cfg_string(control_flow_graph const& cfg)
                 cfg_ss << ' ' << op_str;
         }
 
-        auto const successors = cfg.get_successors(cur_block);
+        auto const successors = cur_block->successors();
 
         if (!successors.empty())
         {

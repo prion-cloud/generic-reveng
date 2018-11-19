@@ -20,33 +20,17 @@ bool control_flow_graph::machine_instruction_comparator::operator()(
     return address < instruction.address;
 }
 
-bool control_flow_graph::block_ptr_comparator::operator()(
-    block_ptr const& block1,
-    block_ptr const& block2) const
-{
-    return block1->crbegin()->address < block2->cbegin()->address;
-}
+control_flow_graph::block::block(control_flow_graph const* cfg)
+    : cfg_(cfg) { }
 
-bool control_flow_graph::block_ptr_comparator::operator()(block_ptr const& block1, block const* block2) const
+std::vector<control_flow_graph::block const*> control_flow_graph::block::successors() const
 {
-    return block1->crbegin()->address < block2->crbegin()->address;
-}
-bool control_flow_graph::block_ptr_comparator::operator()(block const* block1, block_ptr const& block2) const
-{
-    return block1->crbegin()->address < block2->crbegin()->address;
-}
+    auto const block_search = cfg_->block_map_.find(this);
 
-bool control_flow_graph::block_ptr_comparator::operator()(
-    block_ptr const& block,
-    uint64_t const address) const
-{
-    return block->crbegin()->address < address;
-}
-bool control_flow_graph::block_ptr_comparator::operator()(
-    uint64_t const address,
-    block_ptr const& block) const
-{
-    return address < block->cbegin()->address;
+    if (block_search == cfg_->block_map_.end())
+        throw std::runtime_error("Invalid block");
+
+    return block_search->second;
 }
 
 control_flow_graph::bfs_iterator::bfs_iterator(control_flow_graph const* base, block const* cur_block)
@@ -67,9 +51,9 @@ control_flow_graph::bfs_iterator& control_flow_graph::bfs_iterator::operator++()
 {
     auto const& block_successors = base_->block_map_.find(cur_block_)->second;
     std::for_each(block_successors.cbegin(), block_successors.cend(),
-        [this](auto const& block)
+        [this](auto const* block)
         {
-            block_queue_.push(block.get());
+            block_queue_.push(block);
         });
 
     previous_blocks_.insert(cur_block_);
@@ -97,26 +81,64 @@ control_flow_graph::bfs_iterator::reference control_flow_graph::bfs_iterator::op
 
 control_flow_graph::bfs_iterator control_flow_graph::begin() const
 {
-    return bfs_iterator(this, first_block_.get());
+    return bfs_iterator(this, root_);
 }
 control_flow_graph::bfs_iterator control_flow_graph::end() const
 {
     return bfs_iterator(this, nullptr);
 }
 
-std::vector<control_flow_graph::block const*> control_flow_graph::get_successors(block const* block) const
+control_flow_graph::block const* control_flow_graph::root() const
 {
-    auto const block_search = block_map_.find(block);
+    return root_;
+}
 
-    if (block_search == block_map_.end())
-        throw std::runtime_error("Invalid block");
+std::vector<std::vector<control_flow_graph::block const*>> control_flow_graph::get_layout() const
+{
+    std::vector<std::vector<block const*>> layout;
 
-    std::vector<control_flow_graph::block const*> successors(block_search->second.size());
-    std::transform(block_search->second.cbegin(), block_search->second.cend(), successors.begin(),
-        [](auto const& block)
-        {
-            return block.get();
-        });
+    for (auto const& [block, depth] : get_depths())
+    {
+        if (depth >= layout.size())
+            layout.resize(depth + 1);
 
-    return successors;
+        layout.at(depth).push_back(block);
+    }
+
+    return layout;
+}
+
+std::unordered_map<control_flow_graph::block const*, size_t> control_flow_graph::get_depths() const
+{
+    std::unordered_map<block const*, size_t> depths;
+    std::unordered_set<block const*> visited;
+
+    get_depths(root_, depths, visited);
+
+    return depths;
+}
+void control_flow_graph::get_depths(block const* root,
+    std::unordered_map<block const*, size_t>& depths,
+    std::unordered_set<block const*>& visited) const
+{
+    visited.insert(root);
+
+    auto const root_depth = depths[root];
+
+    for (auto const* next : root->successors())
+    {
+        if (visited.count(next) > 0)
+            continue;
+
+        auto& next_depth = depths[next];
+
+        if (next_depth > root_depth)
+            continue;
+
+        next_depth = root_depth + 1;
+
+        get_depths(next, depths, visited);
+    }
+
+    visited.erase(root);
 }

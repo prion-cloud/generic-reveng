@@ -5,6 +5,7 @@
 #include <memory>
 #include <queue>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -12,20 +13,16 @@
 
 class control_flow_graph
 {
-    class machine_instruction_comparator;
-
 public:
 
-    using block = std::set<machine_instruction, machine_instruction_comparator>;
+    class block;
 
 private:
 
     using block_ptr = std::shared_ptr<block>;
 
-    class machine_instruction_comparator
+    struct machine_instruction_comparator
     {
-    public:
-
         using is_transparent = void;
 
         bool operator()(machine_instruction const& instruction1, machine_instruction const& instruction2) const;
@@ -33,22 +30,36 @@ private:
         bool operator()(machine_instruction const& instruction, uint64_t address) const;
         bool operator()(uint64_t address, machine_instruction const& instruction) const;
     };
-    class block_ptr_comparator
+
+public:
+
+    class block : public std::set<machine_instruction, machine_instruction_comparator>
     {
     public:
 
-        using is_transparent = void;
+        struct comparator
+        {
+            using is_transparent = void;
 
-        bool operator()(block_ptr const& block1, block_ptr const& block2) const;
+            template <typename BlockWrapper1, typename BlockWrapper2>
+            bool operator()(BlockWrapper1 const& block1, BlockWrapper2 const& block2) const;
 
-        bool operator()(block_ptr const& block1, block const* block2) const;
-        bool operator()(block const* block1, block_ptr const& block2) const;
+            template <typename BlockWrapper>
+            bool operator()(BlockWrapper const& block, uint64_t address) const;
+            template <typename BlockWrapper>
+            bool operator()(uint64_t address, BlockWrapper const& block) const;
+        };
 
-        bool operator()(block_ptr const& block, uint64_t address) const;
-        bool operator()(uint64_t address, block_ptr const& block) const;
+    private:
+
+        control_flow_graph const* cfg_;
+
+    public:
+
+        explicit block(control_flow_graph const* cfg);
+
+        std::vector<block const*> successors() const;
     };
-
-public:
 
     class bfs_iterator
     {
@@ -84,9 +95,9 @@ public:
 
 private:
 
-    block_ptr first_block_;
+    block const* root_;
 
-    std::map<block_ptr, std::vector<block_ptr>, block_ptr_comparator> block_map_;
+    std::map<block_ptr, std::vector<block const*>, block::comparator> block_map_;
 
 public:
 
@@ -96,25 +107,51 @@ public:
     bfs_iterator begin() const;
     bfs_iterator end() const;
 
-    std::vector<block const*> get_successors(block const* block) const;
+    block const* root() const;
+
+    std::vector<std::vector<block const*>> get_layout() const;
 
 private:
 
     template <typename Provider>
-    void construct(Provider& provider, block_ptr const& cur_block);
+    block const* construct(Provider& provider);
+
+    std::unordered_map<block const*, size_t> get_depths() const;
+    void get_depths(block const* root,
+        std::unordered_map<block const*, size_t>& depths,
+        std::unordered_set<block const*>& visited) const;
 };
 
-template <typename Provider>
-control_flow_graph::control_flow_graph(Provider& provider)
-    : first_block_(std::make_shared<block>())
+template <typename BlockWrapper1, typename BlockWrapper2>
+bool control_flow_graph::block::comparator::operator()(BlockWrapper1 const& block1, BlockWrapper2 const& block2) const
 {
-    construct(provider, first_block_);
+    return block1->crbegin()->address < block2->cbegin()->address;
+}
+
+template <typename BlockWrapper>
+bool control_flow_graph::block::comparator::operator()(BlockWrapper const& block, uint64_t const address) const
+{
+    return block->crbegin()->address < address;
+}
+template <typename BlockWrapper>
+bool control_flow_graph::block::comparator::operator()(uint64_t const address, BlockWrapper const& block) const
+{
+    return address < block->cbegin()->address;
 }
 
 template <typename Provider>
-void control_flow_graph::construct(Provider& provider, block_ptr const& cur_block)
+control_flow_graph::control_flow_graph(Provider& provider)
 {
-    // Create the block through iterating over all contiguous instructions
+    root_ = construct(provider);
+}
+
+template <typename Provider>
+control_flow_graph::block const* control_flow_graph::construct(Provider& provider)
+{
+    // Create a new block
+    auto const cur_block = std::make_shared<block>(this);
+
+    // Fill the block with contiguous instructions
     std::vector<std::optional<uint64_t>> next_addresses;
     while (true)
     {
@@ -126,7 +163,7 @@ void control_flow_graph::construct(Provider& provider, block_ptr const& cur_bloc
         auto const cur_disassembly = cur_instruction->disassemble();
         next_addresses = cur_disassembly.get_successors();
 
-                                                                // Do not continue the block creation if
+        // Interrupt the block creation if
         if (next_addresses.empty() ||                           // - there are no successors or
             !std::all_of(                                       // - some (actual) jumps or
                 next_addresses.cbegin(), next_addresses.cend(),
@@ -143,15 +180,8 @@ void control_flow_graph::construct(Provider& provider, block_ptr const& cur_bloc
         provider.position(*next_addresses.front());
     }
 
-    // Record the current block with an (so far) empty successor list
-    auto const [cur_block_ref, cur_block_insertion_successful] =
-        block_map_.emplace(cur_block, std::vector<block_ptr> { });
-
-    // ASSERT directory integrity
-    if (!cur_block_insertion_successful)
-        throw std::logic_error("Misaligned block(s) #" + std::to_string(__LINE__));
-
-    auto& next_blocks = cur_block_ref->second;
+    // Record the current block
+    auto& next_blocks = block_map_[cur_block];
 
     // Iterate over successor addresses
     for (auto const& next_address : next_addresses)
@@ -164,13 +194,9 @@ void control_flow_graph::construct(Provider& provider, block_ptr const& cur_bloc
         // No block found?
         if (existing_block_search == block_map_.upper_bound(*next_address))
         {
-            // Create a new empty successor
-            auto const next_block = std::make_shared<block>();
-            next_blocks.push_back(next_block);
-
-            // RECURSE with this block
+            // RECURSE with a successor
             provider.position(*next_address);
-            construct(provider, next_block);
+            next_blocks.push_back(construct(provider));
 
             continue;
         }
@@ -188,26 +214,24 @@ void control_flow_graph::construct(Provider& provider, block_ptr const& cur_bloc
         // Is it the first instruction?
         if (instruction_search == existing_block->begin())
         {
-            // Use it as a successor
-            next_blocks.push_back(existing_block);
+            // Use the found block as a successor
+            next_blocks.push_back(existing_block.get());
 
             continue;
         }
 
         // Create a new successor by cutting off the found block's tail
-        auto const next_block = std::make_shared<block>(instruction_search, existing_block->end());
+        auto const next_block = std::make_shared<block>(this);
+        next_block->insert(instruction_search, existing_block->end());
         existing_block->erase(instruction_search, existing_block->end());
-        next_blocks.push_back(next_block);
+        next_blocks.push_back(next_block.get());
 
         // Record the successor
-        auto const next_block_recording_successful =
-            block_map_.emplace(next_block, existing_block_successors).second;
-
-        // ASSERT directory integrity
-        if (!next_block_recording_successful)
-            throw std::logic_error("Misaligned block(s) #" + std::to_string(__LINE__));
+        block_map_[next_block] = existing_block_successors;
 
         // Update the found block's successors
-        existing_block_successors = std::vector<block_ptr> { next_block };
+        existing_block_successors.assign({ next_block.get() });
     }
+
+    return cur_block.get();
 }
