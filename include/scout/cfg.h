@@ -11,7 +11,7 @@
 
 #include "instruction.h"
 
-class control_flow_graph
+class cfg
 {
 public:
 
@@ -52,11 +52,11 @@ public:
 
     private:
 
-        control_flow_graph const* cfg_;
+        cfg const* cfg_;
 
     public:
 
-        explicit block(control_flow_graph const* cfg);
+        explicit block(cfg const* cfg);
 
         std::vector<block const*> successors() const;
     };
@@ -73,7 +73,7 @@ public:
 
     private:
 
-        control_flow_graph const* base_;
+        cfg const* base_;
 
         value_type cur_block_;
 
@@ -83,7 +83,7 @@ public:
     public:
 
         bfs_iterator() = default;
-        bfs_iterator(control_flow_graph const* base, block const* cur_block);
+        bfs_iterator(cfg const* base, block const* cur_block);
 
         bool operator==(bfs_iterator const& other) const;
         bool operator!=(bfs_iterator const& other) const;
@@ -102,7 +102,7 @@ private:
 public:
 
     template <typename Provider>
-    explicit control_flow_graph(Provider& provider);
+    explicit cfg(Provider& provider);
 
     bfs_iterator begin() const;
     bfs_iterator end() const;
@@ -123,30 +123,30 @@ private:
 };
 
 template <typename BlockWrapper1, typename BlockWrapper2>
-bool control_flow_graph::block::comparator::operator()(BlockWrapper1 const& block1, BlockWrapper2 const& block2) const
+bool cfg::block::comparator::operator()(BlockWrapper1 const& block1, BlockWrapper2 const& block2) const
 {
     return block1->crbegin()->address < block2->cbegin()->address;
 }
 
 template <typename BlockWrapper>
-bool control_flow_graph::block::comparator::operator()(BlockWrapper const& block, uint64_t const address) const
+bool cfg::block::comparator::operator()(BlockWrapper const& block, uint64_t const address) const
 {
     return block->crbegin()->address < address;
 }
 template <typename BlockWrapper>
-bool control_flow_graph::block::comparator::operator()(uint64_t const address, BlockWrapper const& block) const
+bool cfg::block::comparator::operator()(uint64_t const address, BlockWrapper const& block) const
 {
     return address < block->cbegin()->address;
 }
 
 template <typename Provider>
-control_flow_graph::control_flow_graph(Provider& provider)
+cfg::cfg(Provider& provider)
 {
     root_ = construct(provider);
 }
 
 template <typename Provider>
-control_flow_graph::block const* control_flow_graph::construct(Provider& provider)
+cfg::block const* cfg::construct(Provider& provider)
 {
     // Create a new block
     auto const cur_block = std::make_shared<block>(this);

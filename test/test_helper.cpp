@@ -3,10 +3,10 @@
 
 #include "test_helper.h"
 
-std::string to_cfg_string(control_flow_graph const& cfg)
+std::string to_cfg_string(cfg const& cfg)
 {
-    std::vector<control_flow_graph::block const*> blocks;
-    std::unordered_map<control_flow_graph::block const*, size_t> block_indices;
+    std::vector<cfg::block const*> blocks;
+    std::unordered_map<cfg::block const*, size_t> block_indices;
     for (auto const* block : cfg)
     {
         block_indices.emplace(block, blocks.size());

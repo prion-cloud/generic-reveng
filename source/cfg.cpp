@@ -1,29 +1,29 @@
-#include "../include/scout/control_flow_graph.h"
+#include "../include/scout/cfg.h"
 
-bool control_flow_graph::machine_instruction_comparator::operator()(
+bool cfg::machine_instruction_comparator::operator()(
     machine_instruction const& instruction1,
     machine_instruction const& instruction2) const
 {
     return instruction1.address < instruction2.address;
 }
 
-bool control_flow_graph::machine_instruction_comparator::operator()(
+bool cfg::machine_instruction_comparator::operator()(
     machine_instruction const& instruction,
     uint64_t const address) const
 {
     return instruction.address < address;
 }
-bool control_flow_graph::machine_instruction_comparator::operator()(
+bool cfg::machine_instruction_comparator::operator()(
     uint64_t const address,
     machine_instruction const& instruction) const
 {
     return address < instruction.address;
 }
 
-control_flow_graph::block::block(control_flow_graph const* cfg)
+cfg::block::block(cfg const* cfg)
     : cfg_(cfg) { }
 
-std::vector<control_flow_graph::block const*> control_flow_graph::block::successors() const
+std::vector<cfg::block const*> cfg::block::successors() const
 {
     auto const block_search = cfg_->block_map_.find(this);
 
@@ -33,21 +33,21 @@ std::vector<control_flow_graph::block const*> control_flow_graph::block::success
     return block_search->second;
 }
 
-control_flow_graph::bfs_iterator::bfs_iterator(control_flow_graph const* base, block const* cur_block)
+cfg::bfs_iterator::bfs_iterator(cfg const* base, block const* cur_block)
     : base_(base), cur_block_(cur_block) { }
 
-bool control_flow_graph::bfs_iterator::operator==(bfs_iterator const& other) const
+bool cfg::bfs_iterator::operator==(bfs_iterator const& other) const
 {
     return
         base_ == other.base_ &&
         cur_block_ == other.cur_block_;
 }
-bool control_flow_graph::bfs_iterator::operator!=(bfs_iterator const& other) const
+bool cfg::bfs_iterator::operator!=(bfs_iterator const& other) const
 {
     return !(operator==(other));
 }
 
-control_flow_graph::bfs_iterator& control_flow_graph::bfs_iterator::operator++()
+cfg::bfs_iterator& cfg::bfs_iterator::operator++()
 {
     auto const& block_successors = base_->block_map_.find(cur_block_)->second;
     std::for_each(block_successors.cbegin(), block_successors.cend(),
@@ -74,26 +74,26 @@ control_flow_graph::bfs_iterator& control_flow_graph::bfs_iterator::operator++()
     return *this;
 }
 
-control_flow_graph::bfs_iterator::reference control_flow_graph::bfs_iterator::operator*() const
+cfg::bfs_iterator::reference cfg::bfs_iterator::operator*() const
 {
     return cur_block_;
 }
 
-control_flow_graph::bfs_iterator control_flow_graph::begin() const
+cfg::bfs_iterator cfg::begin() const
 {
     return bfs_iterator(this, root_);
 }
-control_flow_graph::bfs_iterator control_flow_graph::end() const
+cfg::bfs_iterator cfg::end() const
 {
     return bfs_iterator(this, nullptr);
 }
 
-control_flow_graph::block const* control_flow_graph::root() const
+cfg::block const* cfg::root() const
 {
     return root_;
 }
 
-std::vector<std::vector<control_flow_graph::block const*>> control_flow_graph::get_layout() const
+std::vector<std::vector<cfg::block const*>> cfg::get_layout() const
 {
     std::vector<std::vector<block const*>> layout;
 
@@ -108,7 +108,7 @@ std::vector<std::vector<control_flow_graph::block const*>> control_flow_graph::g
     return layout;
 }
 
-std::unordered_map<control_flow_graph::block const*, size_t> control_flow_graph::get_depths() const
+std::unordered_map<cfg::block const*, size_t> cfg::get_depths() const
 {
     std::unordered_map<block const*, size_t> depths;
     std::unordered_set<block const*> visited;
@@ -117,7 +117,7 @@ std::unordered_map<control_flow_graph::block const*, size_t> control_flow_graph:
 
     return depths;
 }
-void control_flow_graph::get_depths(block const* root,
+void cfg::get_depths(block const* root,
     std::unordered_map<block const*, size_t>& depths,
     std::unordered_set<block const*>& visited) const
 {

@@ -5,7 +5,7 @@
 
 #include <libgen.h>
 
-#include "../include/scout/control_flow_graph.h"
+#include "../include/scout/cfg.h"
 #include "../include/scout/debugger.h"
 
 #include "test_helper.h"
@@ -25,7 +25,7 @@ TEST_CASE("Debug x86-32")
 
     SECTION("Successful control flow graph construction")
     {
-        std::cout << to_cfg_string(control_flow_graph(d)) << std::endl;
+        std::cout << to_cfg_string(cfg(d)) << std::endl;
     }
 }
 TEST_CASE("Debug x86-64")

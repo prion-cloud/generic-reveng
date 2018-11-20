@@ -2,6 +2,6 @@
 
 #include <string>
 
-#include "../include/scout/control_flow_graph.h"
+#include "../include/scout/cfg.h"
 
-std::string to_cfg_string(control_flow_graph const& cfg);
+std::string to_cfg_string(cfg const& cfg);
