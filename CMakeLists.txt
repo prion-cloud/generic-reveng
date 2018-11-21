@@ -47,12 +47,10 @@ add_executable ( scout-test
     "source/debugger.cpp"
     "source/debugger_load.cpp"
     "source/instruction.cpp"
-    "source/utf8_canvas.cpp"
     "test/cfg_test.cpp"
     "test/debugger_test.cpp"
     "test/test_helper.cpp"
-    "test/test_main.cpp"
-    "test/utf8_canvas_test.cpp" )
+    "test/test_main.cpp" )
 
 target_include_directories ( scout-test PRIVATE
     "include/" )

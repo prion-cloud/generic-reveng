@@ -1,132 +1,53 @@
 #include <algorithm>
-#include <sstream>
 
 #include "../include/scout/utf8_canvas.h"
-
-size_t indicate_utf8_char_size(char const indicator_byte_char)
-{
-    if ((indicator_byte_char & 0x80) == 0x00)
-        return 1;
-
-    if ((indicator_byte_char & 0xE0) == 0xC0)
-        return 2;
-
-    if ((indicator_byte_char & 0xF0) == 0xE0)
-        return 3;
-
-    if ((indicator_byte_char & 0xF8) == 0xF0)
-        return 4;
-
-    return 0;
-}
-
-size_t measure_utf8_string_size(std::string const& byte_string)
-{
-    return std::count_if(byte_string.cbegin(), byte_string.cend(),
-        indicate_utf8_char_size);
-}
 
 utf8_canvas::utf8_canvas(int const width)
     : width_(std::max(0, width)), height_(0) { }
 
-int utf8_canvas::width_at(int const y) const
+int utf8_canvas::width() const
 {
-    if (y < 0)
-        return 0;
-
-    auto const line_search = find(y);
-
-    if (line_search == end())
-        return 0;
-
-    return line_search->second.crbegin()->first + 1;
+    return width_;
 }
-
 int utf8_canvas::height() const
 {
     return height_;
 }
 
-std::string utf8_canvas::str() const
+void utf8_canvas::add_shape(int const layer, utf8_shape const* const shape)
 {
-    std::ostringstream ss;
-    for (auto y = 0; y < height_; ++y)
+    operator[](layer).push_back(shape);
+
+    height_ = std::max(height_, shape->y_pos + shape->y_size);
+}
+
+utf8_illustration utf8_canvas::illustrate() const
+{
+    utf8_illustration illustration(height_);
+    for (auto const& layer : *this)
     {
-        if (y > 0)
-            ss << '\n';
-
-        auto const line_search = find(y);
-
-        if (line_search == end())
+        for (auto const* shape : layer.second)
         {
-            ss << std::string(width_, ' ');
-            continue;
-        }
+            auto const shape_illustration = shape->illustrate();
 
-        auto const& line = line_search->second;
-
-        for (auto x = 0; x < width_; ++x)
-        {
-            auto const char_search = line.find(x);
-
-            if (char_search == line.end())
+            for (auto y = std::max(0, shape->y_pos); y < shape->y_pos + shape->y_size; ++y)
             {
-                ss << ' ';
-                continue;
-            }
+                auto& composition_line = illustration.at(y);
+                if (static_cast<int>(composition_line.size()) < shape->x_pos)
+                    composition_line.resize(std::min(shape->x_pos, width_));
 
-            ss << char_search->second;
+                for (auto x = std::max(0, shape->x_pos); x < std::min(shape->x_pos + shape->x_size, width_); ++x)
+                {
+                    auto const utf8_char = shape_illustration.at(y - shape->y_pos).at(x - shape->x_pos);
+
+                    if (x < static_cast<int>(composition_line.size()))
+                        composition_line.at(x) = utf8_char;
+                    else
+                        composition_line.push_back(utf8_char);
+                }
+            }
         }
     }
 
-    return ss.str();
-}
-
-void utf8_canvas::print(std::string byte_string, int const x_pos, int const y_pos)
-{
-    if (y_pos < 0)
-        return;
-
-    auto& print_string = operator[](y_pos);
-
-    for (auto x = x_pos; x < width_; ++x)
-    {
-        if (byte_string.empty())
-            break;
-
-        auto const utf8_char_size = indicate_utf8_char_size(byte_string.front());
-        auto const utf8_char = byte_string.substr(0, utf8_char_size);
-
-        byte_string.erase(0, utf8_char_size);
-
-        if (x < 0)
-            continue;
-
-        print_string[x] = utf8_char;
-    }
-
-    height_ = std::max(height_, y_pos + 1);
-}
-void utf8_canvas::print(std::vector<std::string> const& byte_string_lines, int const x_pos, int const y_pos)
-{
-    for (auto y = std::max(0, y_pos); y < static_cast<int>(byte_string_lines.size()) + y_pos; ++y)
-        print(byte_string_lines.at(y - y_pos), x_pos, y);
-}
-
-int utf8_canvas::print_centered(std::string const& byte_string, int x_pos, int const y_pos)
-{
-    x_pos += width_ / 2 - measure_utf8_string_size(byte_string) / 2;
-
-    print(byte_string, x_pos, y_pos);
-    return x_pos;
-}
-int utf8_canvas::print_centered(std::vector<std::string> const& byte_string_lines, int x_pos, int const y_pos)
-{
-    if (byte_string_lines.empty())
-        return x_pos;
-
-    x_pos += width_ / 2 - measure_utf8_string_size(byte_string_lines.front()) / 2;
-
-    print(byte_string_lines, x_pos, y_pos);
-    return x_pos;
+    return illustration;
 }

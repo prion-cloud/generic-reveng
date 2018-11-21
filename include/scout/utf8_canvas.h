@@ -1,11 +1,10 @@
 #pragma once
 
 #include <map>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
-class utf8_canvas : std::unordered_map<int, std::map<int, std::string>>
+#include "utf8_shape.h"
+
+class utf8_canvas : std::map<int, std::vector<utf8_shape const*>>
 {
     int width_, height_;
 
@@ -13,15 +12,10 @@ public:
 
     explicit utf8_canvas(int width);
 
-    int width_at(int y) const;
-
+    int width() const;
     int height() const;
 
-    std::string str() const;
+    void add_shape(int layer, utf8_shape const* shape);
 
-    void print(std::string byte_string, int x_pos, int y_pos);
-    void print(std::vector<std::string> const& byte_string_lines, int x_pos, int y_pos);
-
-    int print_centered(std::string const& byte_string, int x_pos, int y_pos);
-    int print_centered(std::vector<std::string> const& byte_string_lines, int x_pos, int y_pos);
+    utf8_illustration illustrate() const;
 };
