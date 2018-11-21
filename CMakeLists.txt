@@ -33,7 +33,10 @@ add_executable ( scout
     "source/debugger.cpp"
     "source/debugger_load.cpp"
     "source/instruction.cpp"
-    "source/scout.cpp" )
+    "source/scout.cpp"
+    "source/utf8_base.cpp"
+    "source/utf8_canvas.cpp"
+    "source/utf8_shape.cpp" )
 
 target_include_directories ( scout PRIVATE
     "include/" )
