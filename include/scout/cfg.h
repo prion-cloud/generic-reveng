@@ -63,19 +63,9 @@ public:
 
     class bfs_iterator
     {
-    public:
-
-        using difference_type = ptrdiff_t;
-        using value_type = block const*;
-        using pointer = block const* const*;
-        using reference = block const* const&;
-        using iterator_category = std::forward_iterator_tag;
-
-    private:
-
         cfg const* base_;
 
-        value_type cur_block_;
+        block const* cur_block_;
 
         std::queue<block const*> block_queue_;
         std::unordered_set<block const*> previous_blocks_;
@@ -90,7 +80,7 @@ public:
 
         bfs_iterator& operator++();
 
-        reference operator*() const;
+        block const* const& operator*() const;
     };
 
 private:

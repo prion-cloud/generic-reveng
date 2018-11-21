@@ -74,7 +74,7 @@ cfg::bfs_iterator& cfg::bfs_iterator::operator++()
     return *this;
 }
 
-cfg::bfs_iterator::reference cfg::bfs_iterator::operator*() const
+cfg::block const* const& cfg::bfs_iterator::operator*() const
 {
     return cur_block_;
 }
