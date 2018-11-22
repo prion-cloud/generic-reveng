@@ -140,6 +140,7 @@ TEST_CASE("Block transitioning: Relocation")
         << std::endl << "-> 1"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0"
         << std::endl << "4 nop"
         << std::endl << "5 ret";
 
@@ -166,10 +167,12 @@ TEST_CASE("Block transitioning: IF-THEN-ELSE")
         << std::endl << "-> 1 2"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0"
         << std::endl << "3 nop"
         << std::endl << "4 ret"
         << std::endl
         << std::endl << "2:"
+        << std::endl << "<- 0"
         << std::endl << "6 nop"
         << std::endl << "7 ret";
 
@@ -194,10 +197,12 @@ TEST_CASE("Block transitioning: IF-THEN")
         << std::endl << "-> 1 2"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0"
         << std::endl << "3 nop"
         << std::endl << "-> 2"
         << std::endl
         << std::endl << "2:"
+        << std::endl << "<- 0 1"
         << std::endl << "4 nop"
         << std::endl << "5 ret";
 
@@ -236,35 +241,41 @@ TEST_CASE("Block transitioning: Diamond")
         << std::endl << "-> 1 2"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0"
         << std::endl << "3 nop"
         << std::endl << "4 jmp 8"
         << std::endl << "-> 3"
         << std::endl
         << std::endl << "2:"
+        << std::endl << "<- 0"
         << std::endl << "7 nop"
         << std::endl << "-> 3"
         << std::endl
         << std::endl << "3:"
+        << std::endl << "<- 1 2"
         << std::endl << "8 nop"
         << std::endl << "9 ret";
     std::ostringstream expected2;
     expected2        << "0:"
         << std::endl << "0 nop"
         << std::endl << "1 je 7"
-        << std::endl << "-> 1 2"
+        << std::endl << "-> 1 3"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0"
         << std::endl << "3 nop"
-        << std::endl << "-> 3"
+        << std::endl << "-> 2"
         << std::endl
         << std::endl << "2:"
-        << std::endl << "7 nop"
-        << std::endl << "8 jmp 4"
-        << std::endl << "-> 3"
+        << std::endl << "<- 1 3"
+        << std::endl << "4 nop"
+        << std::endl << "5 ret"
         << std::endl
         << std::endl << "3:"
-        << std::endl << "4 nop"
-        << std::endl << "5 ret";
+        << std::endl << "<- 0"
+        << std::endl << "7 nop"
+        << std::endl << "8 jmp 4"
+        << std::endl << "-> 2";
 
     CHECK(to_cfg_string(cfg(provider1)) == expected1.str());
     CHECK(to_cfg_string(cfg(provider2)) == expected2.str());
@@ -301,16 +312,19 @@ TEST_CASE("Block transitioning: Loop")
 
     std::ostringstream expected1;
     expected1        << "0:"
+        << std::endl << "<- 0"
         << std::endl << "0 nop"
         << std::endl << "1 jmp 0"
         << std::endl << "-> 0";
     std::ostringstream expected2;
     expected2        << "0:"
+        << std::endl << "<- 0"
         << std::endl << "0 nop"
         << std::endl << "1 je 0"
-        << std::endl << "-> 1 0"
+        << std::endl << "-> 0 1"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0"
         << std::endl << "3 nop"
         << std::endl << "4 ret";
     std::ostringstream expected3;
@@ -319,6 +333,7 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl << "-> 1"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0 1"
         << std::endl << "1 nop"
         << std::endl << "2 jmp 1"
         << std::endl << "-> 1";
@@ -328,11 +343,13 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl << "-> 1"
         << std::endl
         << std::endl << "1:"
+        << std::endl << "<- 0 1"
         << std::endl << "1 nop"
         << std::endl << "2 je 1"
-        << std::endl << "-> 2 1"
+        << std::endl << "-> 1 2"
         << std::endl
         << std::endl << "2:"
+        << std::endl << "<- 1"
         << std::endl << "4 nop"
         << std::endl << "5 ret";
 

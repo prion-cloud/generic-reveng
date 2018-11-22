@@ -13,14 +13,6 @@
 
 class cfg
 {
-public:
-
-    class block;
-
-private:
-
-    using block_ptr = std::shared_ptr<block>;
-
     struct machine_instruction_comparator
     {
         using is_transparent = void;
@@ -33,10 +25,8 @@ private:
 
 public:
 
-    class block : public std::set<machine_instruction, machine_instruction_comparator>
+    struct block : std::set<machine_instruction, machine_instruction_comparator>
     {
-    public:
-
         struct comparator
         {
             using is_transparent = void;
@@ -50,15 +40,8 @@ public:
             bool operator()(uint64_t address, BlockWrapper const& block) const;
         };
 
-    private:
-
-        cfg const* cfg_;
-
-    public:
-
-        explicit block(cfg const* cfg);
-
-        std::vector<block const*> successors() const;
+        std::unordered_set<block*> successors;
+        std::unordered_set<block*> predecessors;
     };
 
     class bfs_iterator
@@ -80,14 +63,14 @@ public:
 
         bfs_iterator& operator++();
 
-        block const* const& operator*() const;
+        block const* operator*() const;
     };
 
 private:
 
     block const* root_;
 
-    std::map<block_ptr, std::vector<block const*>, block::comparator> block_map_;
+    std::set<std::unique_ptr<block>, block::comparator> blocks_;
 
 public:
 
@@ -104,7 +87,7 @@ public:
 private:
 
     template <typename Provider>
-    block const* construct(Provider& provider);
+    block* construct(Provider& provider);
 
     std::unordered_map<block const*, size_t> get_depths() const;
     void get_depths(block const* root,
@@ -136,10 +119,10 @@ cfg::cfg(Provider& provider)
 }
 
 template <typename Provider>
-cfg::block const* cfg::construct(Provider& provider)
+cfg::block* cfg::construct(Provider& provider)
 {
     // Create a new block
-    auto const cur_block = std::make_shared<block>(this);
+    auto new_block = std::make_unique<block>();
 
     // Fill the block with contiguous instructions
     std::vector<std::optional<uint64_t>> next_addresses;
@@ -147,7 +130,7 @@ cfg::block const* cfg::construct(Provider& provider)
     {
         // Store current machine instruction
         auto const cur_instruction = provider.current_instruction();
-        cur_block->insert(cur_block->cend(), *cur_instruction);
+        new_block->insert(new_block->cend(), *cur_instruction);
 
         // Inquire successors
         auto const cur_disassembly = cur_instruction->disassemble();
@@ -162,66 +145,91 @@ cfg::block const* cfg::construct(Provider& provider)
                     return address.has_value() &&
                         *address == cur_disassembly->address + cur_disassembly->size;
                 }) ||
-            block_map_.lower_bound(*next_addresses.front()) !=  // - the next instruction is known
-                block_map_.upper_bound(*next_addresses.front()))
+            blocks_.lower_bound(*next_addresses.front()) !=  // - the next instruction is known
+                blocks_.upper_bound(*next_addresses.front()))
             break;
 
         // Continue the block creation
         provider.position(*next_addresses.front());
     }
 
-    // Record the current block
-    auto& next_blocks = block_map_[cur_block];
+    // Record the new block
+    auto* const current_block = blocks_.insert(std::move(new_block)).first->get();
 
     // Iterate over successor addresses
     for (auto const& next_address : next_addresses)
     {
         // TODO: Ambiguous jump?
 
+        block* next_block;
+
         // Search for an existing block already covering the next address
-        auto const existing_block_search = block_map_.lower_bound(*next_address);
+        auto const existing_block_search = blocks_.lower_bound(*next_address);
 
         // No block found?
-        if (existing_block_search == block_map_.upper_bound(*next_address))
+        if (existing_block_search == blocks_.upper_bound(*next_address))
         {
-            // RECURSE with a successor
+            // RECURSE with this successor
             provider.position(*next_address);
-            next_blocks.push_back(construct(provider));
-
-            continue;
+            next_block = construct(provider);
         }
-
-        // Inquire the search result
-        auto& [existing_block, existing_block_successors] = *existing_block_search;
-
-        // Search for the respective instruction in the found block
-        auto const instruction_search = existing_block->find(*next_address);
-
-        // ASSERT a found instruction
-        if (instruction_search == existing_block->end())
-            throw std::logic_error("Misaligned block(s) #" + std::to_string(__LINE__));
-
-        // Is it the first instruction?
-        if (instruction_search == existing_block->begin())
+        else
         {
-            // Use the found block as a successor
-            next_blocks.push_back(existing_block.get());
+            // Inquire the search result
+            auto* const existing_block = existing_block_search->get();
 
-            continue;
+            // Search for the respective instruction in the found block
+            auto const instruction_search = existing_block->find(*next_address);
+
+            // ASSERT a found instruction
+            if (instruction_search == existing_block->end())
+                throw std::logic_error("Overlapping instructions");
+
+            // Is it the first instruction?
+            if (instruction_search == existing_block->begin())
+            {
+                // Use the found block as a successor
+                next_block = existing_block;
+            }
+            else
+            {
+                // Create a new block
+                auto new_block = std::make_unique<block>();
+
+                // Dissect the found block
+                new_block->insert(instruction_search, existing_block->end());
+                existing_block->erase(instruction_search, existing_block->end());
+
+                // Record the new block
+                next_block = blocks_.insert(std::move(new_block)).first->get();
+
+                // Take the found block's successors
+                next_block->successors = existing_block->successors;
+                for (auto* const successor : next_block->successors)
+                {
+                    successor->predecessors.erase(existing_block);
+                    successor->predecessors.insert(next_block);
+                }
+
+                // Special case
+                if (existing_block == current_block)
+                {
+                    existing_block->successors.clear();
+                    next_block->successors.insert(next_block);
+                    next_block->predecessors = { next_block };
+                }
+                else
+                {
+                    existing_block->successors = { next_block };
+                    next_block->predecessors = { existing_block };
+                }
+            }
         }
 
-        // Create a new successor by cutting off the found block's tail
-        auto const next_block = std::make_shared<block>(this);
-        next_block->insert(instruction_search, existing_block->end());
-        existing_block->erase(instruction_search, existing_block->end());
-        next_blocks.push_back(next_block.get());
-
-        // Record the successor
-        block_map_[next_block] = existing_block_successors;
-
-        // Update the found block's successors
-        existing_block_successors.assign({ next_block.get() });
+        // Add successor
+        current_block->successors.insert(next_block);
+        next_block->predecessors.insert(current_block);
     }
 
-    return cur_block.get();
+    return current_block;
 }

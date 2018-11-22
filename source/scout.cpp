@@ -83,7 +83,7 @@ void print_cfg(cfg const& cfg)
 
     for (auto const& [cur_block, cur_canvas_block] : canvas_blocks)
     {
-        for (auto const* next_block : cur_block->successors())
+        for (auto const* next_block : cur_block->successors)
         {
             auto& canvas_block_transition = canvas_block_transitions.emplace_back();
 

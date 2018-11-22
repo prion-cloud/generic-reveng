@@ -20,19 +20,6 @@ bool cfg::machine_instruction_comparator::operator()(
     return address < instruction.address;
 }
 
-cfg::block::block(cfg const* cfg)
-    : cfg_(cfg) { }
-
-std::vector<cfg::block const*> cfg::block::successors() const
-{
-    auto const block_search = cfg_->block_map_.find(this);
-
-    if (block_search == cfg_->block_map_.end())
-        throw std::runtime_error("Invalid block");
-
-    return block_search->second;
-}
-
 cfg::bfs_iterator::bfs_iterator(cfg const* base, block const* cur_block)
     : base_(base), cur_block_(cur_block) { }
 
@@ -49,9 +36,9 @@ bool cfg::bfs_iterator::operator!=(bfs_iterator const& other) const
 
 cfg::bfs_iterator& cfg::bfs_iterator::operator++()
 {
-    auto const& block_successors = base_->block_map_.find(cur_block_)->second;
+    auto const& block_successors = cur_block_->successors;
     std::for_each(block_successors.cbegin(), block_successors.cend(),
-        [this](auto const* block)
+        [this](auto const* const block)
         {
             block_queue_.push(block);
         });
@@ -74,7 +61,7 @@ cfg::bfs_iterator& cfg::bfs_iterator::operator++()
     return *this;
 }
 
-cfg::block const* const& cfg::bfs_iterator::operator*() const
+cfg::block const* cfg::bfs_iterator::operator*() const
 {
     return cur_block_;
 }
@@ -125,7 +112,7 @@ void cfg::get_depths(block const* root,
 
     auto const root_depth = depths[root];
 
-    for (auto const* next : root->successors())
+    for (auto const* const next : root->successors)
     {
         if (visited.count(next) > 0)
             continue;
