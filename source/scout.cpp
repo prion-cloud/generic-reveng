@@ -35,7 +35,7 @@ std::string get_instruction_string(machine_instruction const& instruction)
     {
         oss_instruction << ' ' << std::regex_replace(
             operands_string,
-            std::regex("(0x)([\\dabcdef]*)"), "$2");
+            std::regex("0x([\\da-f]+)"), "$1");
     }
 
     return oss_instruction.str();
