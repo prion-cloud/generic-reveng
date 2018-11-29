@@ -1,36 +1,25 @@
 #include <catch2/catch.hpp>
 
-#include <fstream>
-#include <iostream>
-
 #include <libgen.h>
 
-#include "../include/scout/cfg.h"
 #include "../include/scout/debugger.h"
 
-#include "test_helper.h"
-
-std::string get_full_name(std::string const& file_name)
+std::string get_file_path(std::string const& file_name)
 {
-    return std::string(dirname(const_cast<char*>(std::string(__FILE__).c_str()))) + "/" + file_name;
+    return std::string(::dirname(const_cast<char*>(std::string(__FILE__).c_str()))) + "/" + file_name;
 }
 
 TEST_CASE("Debug x86-32")
 {
-    auto d = debugger::load(get_full_name("helloworld_32.exe"));
+    auto d = debugger::load(::get_file_path("helloworld_32.exe"));
 
     CHECK(d.position() == 0x4012A8);
 
     /* TODO */
-
-    SECTION("Successful control flow graph construction")
-    {
-        std::cout << to_cfg_string(cfg(d)) << std::endl;
-    }
 }
 TEST_CASE("Debug x86-64")
 {
-    auto d = debugger::load(get_full_name("helloworld_64.exe"));
+    auto d = debugger::load(::get_file_path("helloworld_64.exe"));
 
     CHECK(d.position() == 0x140011023);
 
