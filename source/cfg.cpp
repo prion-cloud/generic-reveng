@@ -1,78 +1,31 @@
 #include "../include/scout/cfg.h"
 
-bool cfg::machine_instruction_comparator::operator()(
-    machine_instruction const& instruction1,
-    machine_instruction const& instruction2) const
+bool cfg::machine_instruction_compare::operator()(machine_instruction const& ins1, machine_instruction const& ins2) const
 {
-    return instruction1.address < instruction2.address;
+    return ins1.address < ins2.address;
 }
 
-bool cfg::machine_instruction_comparator::operator()(
-    machine_instruction const& instruction,
-    uint64_t const address) const
+bool cfg::machine_instruction_compare::operator()(machine_instruction const& ins, uint64_t const address) const
 {
-    return instruction.address < address;
+    return ins.address < address;
 }
-bool cfg::machine_instruction_comparator::operator()(
-    uint64_t const address,
-    machine_instruction const& instruction) const
+bool cfg::machine_instruction_compare::operator()(uint64_t const address, machine_instruction const& ins) const
 {
-    return address < instruction.address;
+    return address < ins.address;
 }
 
-cfg::bfs_iterator::bfs_iterator(cfg const* base, block const* cur_block)
-    : base_(base), cur_block_(cur_block) { }
-
-bool cfg::bfs_iterator::operator==(bfs_iterator const& other) const
+bool cfg::block::operator<(block const& other) const
 {
-    return
-        base_ == other.base_ &&
-        cur_block_ == other.cur_block_;
-}
-bool cfg::bfs_iterator::operator!=(bfs_iterator const& other) const
-{
-    return !(operator==(other));
+    return crbegin()->address < other.cbegin()->address;
 }
 
-cfg::bfs_iterator& cfg::bfs_iterator::operator++()
+bool operator<(cfg::block const& block, uint64_t const address)
 {
-    auto const& block_successors = cur_block_->successors;
-    std::for_each(block_successors.cbegin(), block_successors.cend(),
-        [this](auto const* const block)
-        {
-            block_queue_.push(block);
-        });
-
-    previous_blocks_.insert(cur_block_);
-
-    do
-    {
-        if (block_queue_.empty())
-        {
-            cur_block_ = nullptr;
-            break;
-        }
-
-        cur_block_ = block_queue_.front();
-        block_queue_.pop();
-    }
-    while (previous_blocks_.count(cur_block_) > 0);
-
-    return *this;
+    return block.crbegin()->address < address;
 }
-
-cfg::block const* cfg::bfs_iterator::operator*() const
+bool operator<(uint64_t const address, cfg::block const& block)
 {
-    return cur_block_;
-}
-
-cfg::bfs_iterator cfg::begin() const
-{
-    return bfs_iterator(this, root_);
-}
-cfg::bfs_iterator cfg::end() const
-{
-    return bfs_iterator(this, nullptr);
+    return address < block.cbegin()->address;
 }
 
 cfg::block const* cfg::root() const
@@ -80,52 +33,90 @@ cfg::block const* cfg::root() const
     return root_;
 }
 
-std::vector<std::vector<cfg::block const*>> cfg::get_layout() const
+std::set<std::unique_ptr<cfg::block>>::const_iterator cfg::begin() const
 {
-    std::vector<std::vector<block const*>> layout;
+    return blocks_.begin();
+}
+std::set<std::unique_ptr<cfg::block>>::const_iterator cfg::end() const
+{
+    return blocks_.end();
+}
 
-    for (auto const& [block, depth] : get_depths())
-    {
-        if (depth >= layout.size())
-            layout.resize(depth + 1);
+std::unordered_map<size_t, std::unordered_map<size_t, cfg::block const*>> cfg::get_layout() const
+{
+    auto const columns = get_columns();
+    auto const rows = get_rows();
 
-        layout.at(depth).push_back(block);
-    }
+    std::unordered_map<size_t, std::unordered_map<size_t, block const*>> layout;
+
+    for (auto const& block : blocks_)
+        layout[columns.at(block.get())][rows.at(block.get())] = block.get();
 
     return layout;
 }
 
-std::unordered_map<cfg::block const*, size_t> cfg::get_depths() const
-{
-    std::unordered_map<block const*, size_t> depths;
-    std::unordered_set<block const*> visited;
-
-    get_depths(root_, depths, visited);
-
-    return depths;
-}
-void cfg::get_depths(block const* root,
-    std::unordered_map<block const*, size_t>& depths,
-    std::unordered_set<block const*>& visited) const
+void get_columns(
+    cfg::block const* root,
+    std::unordered_map<cfg::block const*, size_t>& columns,
+    std::unordered_set<cfg::block const*>& visited)
 {
     visited.insert(root);
 
-    auto const root_depth = depths[root];
+    auto const root_column = columns[root];
+
+    auto next_column = root_column;
+    for (auto const* const next : root->successors)
+    {
+        if (visited.count(next) > 0)
+            continue;
+
+        columns.emplace(next, next_column++);
+
+        ::get_columns(next, columns, visited);
+    }
+}
+std::unordered_map<cfg::block const*, size_t> cfg::get_columns() const
+{
+    std::unordered_map<block const*, size_t> columns;
+    std::unordered_set<block const*> visited;
+
+    ::get_columns(root_, columns, visited);
+
+    return columns;
+}
+
+void get_rows(
+    cfg::block const* root,
+    std::unordered_map<cfg::block const*, size_t>& rows,
+    std::unordered_set<cfg::block const*>& visited)
+{
+    visited.insert(root);
+
+    auto const root_row = rows[root];
 
     for (auto const* const next : root->successors)
     {
         if (visited.count(next) > 0)
             continue;
 
-        auto& next_depth = depths[next];
+        auto& next_row = rows[next];
 
-        if (next_depth > root_depth)
+        if (next_row > root_row)
             continue;
 
-        next_depth = root_depth + 1;
+        next_row = root_row + 1;
 
-        get_depths(next, depths, visited);
+        ::get_rows(next, rows, visited);
     }
 
     visited.erase(root);
+}
+std::unordered_map<cfg::block const*, size_t> cfg::get_rows() const
+{
+    std::unordered_map<block const*, size_t> rows;
+    std::unordered_set<block const*> visited;
+
+    ::get_rows(root_, rows, visited);
+
+    return rows;
 }

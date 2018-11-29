@@ -43,57 +43,107 @@ std::string get_instruction_string(machine_instruction const& instruction)
 
 void print_cfg(cfg const& cfg)
 {
-    auto constexpr width = 120;
-    auto constexpr block_margin_size = 1;
+    auto constexpr width = 200;
+
+    auto constexpr block_layer = 0;
+
+    auto constexpr straight_transition_layer = 1;
+    auto constexpr curved_transition_layer = 2;
 
     utf8_canvas canvas(width);
 
-    std::unordered_map<cfg::block const*, std::shared_ptr<utf8_text_rectangle>> canvas_blocks;
+    std::unordered_map<cfg::block const*, utf8_text_rectangle*> block_views;
 
-    auto const cfg_layout = cfg.get_layout();
-
-    auto y_pos = 0;
-    for (auto const& layer : cfg_layout)
+    for (auto const& block : cfg)
     {
-        auto x_pos = 0;
-        for (auto const* block : layer)
-        {
-            std::vector<std::string> instruction_strings;
-            instruction_strings.reserve(block->size());
-            for (auto const& instruction : *block)
-                instruction_strings.push_back(get_instruction_string(instruction));
+        std::vector<std::string> instruction_strings;
+        instruction_strings.reserve(block->size());
+        for (auto const& instruction : *block)
+            instruction_strings.push_back(get_instruction_string(instruction));
 
-            auto const canvas_block = std::make_shared<utf8_text_rectangle>(
-                x_pos, y_pos,
-                instruction_strings, block_margin_size,
-                dr, dl,
-                ur, ul,
-                h, v);
+        auto block_view = std::make_unique<utf8_text_rectangle>(
+            0, 0, instruction_strings, 1, dr, dl, ur, ul, h, v);
 
-            canvas_blocks.emplace(block, canvas_block);
-            canvas.add_shape(0, canvas_block.get());
+        block_views.emplace(block.get(), block_view.get());
 
-            x_pos += canvas_block->x_size;
-        }
-
-        y_pos = canvas.height() + 1;
+        canvas.add_shape(block_layer, std::move(block_view));
     }
 
-    std::vector<std::vector<std::shared_ptr<utf8_line>>> canvas_block_transitions;
+    auto const cfg_columns = cfg.get_layout();
 
-    for (auto const& [cur_block, cur_canvas_block] : canvas_blocks)
+    size_t n_rows = 0;
+
+    auto column_x_pos = 0;
+    for (size_t column = 0; column < cfg_columns.size(); ++column)
     {
-        for (auto const* next_block : cur_block->successors)
+        auto const& cfg_column = cfg_columns.at(column);
+
+        auto column_x_size = 0;
+        for (auto const& [row, block] : cfg_column)
         {
-            auto& canvas_block_transition = canvas_block_transitions.emplace_back();
+            column_x_size = std::max(column_x_size,
+                block_views.at(block)->x_size);
 
-            auto const& next_canvas_block = canvas_blocks.at(next_block);
+            n_rows = std::max(n_rows, row + 1);
+        }
 
-            auto const x_start = cur_canvas_block->x_pos + cur_canvas_block->x_size / 2;
-            auto const y_start = cur_canvas_block->y_pos + cur_canvas_block->y_size - 1;
+        for (auto const& column_block_entry : cfg_column)
+        {
+            auto* const block_layout = block_views.at(column_block_entry.second);
 
-            auto const x_end = next_canvas_block->x_pos + next_canvas_block->x_size / 2;
-            auto const y_end = next_canvas_block->y_pos;
+            block_layout->x_pos =
+                column_x_pos +
+                column_x_size / 2 - block_layout->x_size / 2;
+        }
+
+        column_x_pos += column_x_size;
+    }
+
+    std::unordered_map<cfg::block const*, std::pair<int, std::pair<int, int>>> nipple_map;
+
+    auto row_y_pos = 0;
+    for (size_t row = 0; row < n_rows; ++row)
+    {
+        auto row_y_size = 0;
+        for (size_t column = 0; column < cfg_columns.size(); ++column)
+        {
+            auto const& cfg_column = cfg_columns.at(column);
+
+            auto const search = cfg_column.find(row);
+            if (search == cfg_column.end())
+                continue;
+
+            auto* const block_layout = block_views.at(search->second);
+
+            block_layout->y_pos = row_y_pos;
+
+            nipple_map.emplace(
+                search->second,
+                std::make_pair(
+                    block_layout->x_pos + block_layout->x_size / 2,
+                    std::make_pair(
+                        block_layout->y_pos,
+                        block_layout->y_pos + block_layout->y_size - 1)));
+
+            row_y_size = std::max(row_y_size, block_layout->y_size);
+        }
+
+        row_y_pos += row_y_size + 1;
+    }
+
+    for (auto const& cur_block : cfg)
+    {
+        auto const& cur_block_view = block_views.at(cur_block.get());
+
+        for (auto const* const next_block : cur_block->successors)
+        {
+            auto const& next_block_view = block_views.at(next_block);
+
+            auto const x_start = cur_block_view->x_pos + cur_block_view->x_size / 2;
+            auto const y_start = cur_block_view->y_pos + cur_block_view->y_size - 1;
+
+            auto const x_end = next_block_view->x_pos + next_block_view->x_size / 2;
+            auto const y_end = next_block_view->y_pos;
 
             auto const x_diff = x_end - x_start;
             auto const y_diff = y_end - y_start;
@@ -104,49 +154,42 @@ void print_cfg(cfg const& cfg)
                 continue;
             }
 
-            auto const canvas_line_1 = std::make_shared<utf8_v_line>(
-                x_start, y_start,
-                y_diff - 1,
-                dh, v,
-                v);
+            auto transition_view_1 = std::make_unique<utf8_v_line>(
+                x_start, y_start, y_diff - 1,
+                dh, v, v);
 
-            canvas_block_transition.push_back(canvas_line_1);
-            canvas.add_shape(1, canvas_line_1.get());
-
-            utf8_char canvas_line_2_start;
-            utf8_char canvas_line_2_end;
+            utf8_char transition_view_2_start;
+            utf8_char transition_view_2_end;
             if (x_diff == 0)
             {
-                canvas_line_2_start = v;
+                transition_view_2_start = v;
             }
             else if (x_diff < 0)
             {
-                canvas_line_2_start = ul;
-                canvas_line_2_end = dr;
+                transition_view_2_start = ul;
+                transition_view_2_end = dr;
             }
             else if (x_diff > 0)
             {
-                canvas_line_2_start = ur;
-                canvas_line_2_end = dl;
+                transition_view_2_start = ur;
+                transition_view_2_end = dl;
             }
 
-            auto const canvas_line_2 = std::make_shared<utf8_h_line>(
-                x_start, y_end - 1,
-                x_diff + (x_diff >= 0 ? 1 : -1),
-                canvas_line_2_start, canvas_line_2_end,
-                h);
+            auto transition_view_2 = std::make_unique<utf8_h_line>(
+                x_start, y_end - 1, x_diff + (x_diff >= 0 ? 1 : -1),
+                transition_view_2_start, transition_view_2_end, h);
 
-            canvas_block_transition.push_back(canvas_line_2);
-            canvas.add_shape(1, canvas_line_2.get());
+            auto transition_view_3 = std::make_unique<utf8_v_line>(
+                x_end, y_end, 1,
+                uh, uh, v);
 
-            auto const canvas_line_3 = std::make_shared<utf8_v_line>(
-                x_end, y_end,
-                1,
-                uh, uh,
-                v);
+            auto const layer = x_diff == 0
+                ? straight_transition_layer
+                : curved_transition_layer;
 
-            canvas_block_transition.push_back(canvas_line_3);
-            canvas.add_shape(1, canvas_line_3.get());
+            canvas.add_shape(layer, std::move(transition_view_1));
+            canvas.add_shape(layer, std::move(transition_view_2));
+            canvas.add_shape(layer, std::move(transition_view_3));
         }
     }
 

@@ -1,116 +1,65 @@
 #pragma once
 
 #include <algorithm>
-#include <map>
 #include <memory>
-#include <queue>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
+#include "../stimpak/comparison.h"
 #include "instruction.h"
 
 class cfg
 {
-    struct machine_instruction_comparator
+    struct machine_instruction_compare
     {
         using is_transparent = void;
 
-        bool operator()(machine_instruction const& instruction1, machine_instruction const& instruction2) const;
+        bool operator()(machine_instruction const& ins1, machine_instruction const& ins2) const;
 
-        bool operator()(machine_instruction const& instruction, uint64_t address) const;
-        bool operator()(uint64_t address, machine_instruction const& instruction) const;
+        bool operator()(machine_instruction const& ins, uint64_t address) const;
+        bool operator()(uint64_t address, machine_instruction const& ins) const;
     };
 
 public:
 
-    struct block : std::set<machine_instruction, machine_instruction_comparator>
+    struct block : std::set<machine_instruction, machine_instruction_compare>
     {
-        struct comparator
-        {
-            using is_transparent = void;
-
-            template <typename BlockWrapper1, typename BlockWrapper2>
-            bool operator()(BlockWrapper1 const& block1, BlockWrapper2 const& block2) const;
-
-            template <typename BlockWrapper>
-            bool operator()(BlockWrapper const& block, uint64_t address) const;
-            template <typename BlockWrapper>
-            bool operator()(uint64_t address, BlockWrapper const& block) const;
-        };
-
         std::unordered_set<block*> successors;
         std::unordered_set<block*> predecessors;
-    };
 
-    class bfs_iterator
-    {
-        cfg const* base_;
+        bool operator<(block const& other) const;
 
-        block const* cur_block_;
-
-        std::queue<block const*> block_queue_;
-        std::unordered_set<block const*> previous_blocks_;
-
-    public:
-
-        bfs_iterator() = default;
-        bfs_iterator(cfg const* base, block const* cur_block);
-
-        bool operator==(bfs_iterator const& other) const;
-        bool operator!=(bfs_iterator const& other) const;
-
-        bfs_iterator& operator++();
-
-        block const* operator*() const;
+        friend bool operator<(block const& block, uint64_t const address);
+        friend bool operator<(uint64_t const address, block const& block);
     };
 
 private:
 
     block const* root_;
 
-    std::set<std::unique_ptr<block>, block::comparator> blocks_;
+    std::set<std::unique_ptr<block>, stim::wrap_comparator> blocks_;
 
 public:
 
     template <typename Provider>
     explicit cfg(Provider& provider);
 
-    bfs_iterator begin() const;
-    bfs_iterator end() const;
-
     block const* root() const;
 
-    std::vector<std::vector<block const*>> get_layout() const;
+    std::set<std::unique_ptr<block>>::const_iterator begin() const;
+    std::set<std::unique_ptr<block>>::const_iterator end() const;
+
+    std::unordered_map<size_t, std::unordered_map<size_t, block const*>> get_layout() const;
 
 private:
 
     template <typename Provider>
     block* construct(Provider& provider);
 
-    std::unordered_map<block const*, size_t> get_depths() const;
-    void get_depths(block const* root,
-        std::unordered_map<block const*, size_t>& depths,
-        std::unordered_set<block const*>& visited) const;
+    std::unordered_map<block const*, size_t> get_columns() const;
+    std::unordered_map<block const*, size_t> get_rows() const;
 };
-
-template <typename BlockWrapper1, typename BlockWrapper2>
-bool cfg::block::comparator::operator()(BlockWrapper1 const& block1, BlockWrapper2 const& block2) const
-{
-    return block1->crbegin()->address < block2->cbegin()->address;
-}
-
-template <typename BlockWrapper>
-bool cfg::block::comparator::operator()(BlockWrapper const& block, uint64_t const address) const
-{
-    return block->crbegin()->address < address;
-}
-template <typename BlockWrapper>
-bool cfg::block::comparator::operator()(uint64_t const address, BlockWrapper const& block) const
-{
-    return address < block->cbegin()->address;
-}
 
 template <typename Provider>
 cfg::cfg(Provider& provider)
@@ -136,16 +85,16 @@ cfg::block* cfg::construct(Provider& provider)
         auto const cur_disassembly = cur_instruction->disassemble();
         next_addresses = cur_disassembly.get_successors();
 
-        // Interrupt the block creation if
-        if (next_addresses.empty() ||                           // - there are no successors or
-            !std::all_of(                                       // - some (actual) jumps or
+        // Interrupt the block creation if...
+        if (next_addresses.empty() ||                       // - there are no successors or
+            !std::all_of(                                   // - some (actual) jumps or
                 next_addresses.cbegin(), next_addresses.cend(),
                 [&cur_disassembly](auto const& address)
                 {
                     return address.has_value() &&
                         *address == cur_disassembly->address + cur_disassembly->size;
                 }) ||
-            blocks_.lower_bound(*next_addresses.front()) !=  // - the next instruction is known
+            blocks_.lower_bound(*next_addresses.front()) != // - the next instruction is known
                 blocks_.upper_bound(*next_addresses.front()))
             break;
 
