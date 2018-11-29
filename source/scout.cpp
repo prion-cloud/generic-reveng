@@ -6,7 +6,7 @@
 
 #include "../include/scout/cfg.h"
 #include "../include/scout/debugger.h"
-#include "../include/scout/utf8_canvas.h"
+#include "../include/unimage/utf8_canvas.h"
 
 utf8_char const h("\u2500"/* │ */);
 utf8_char const v("\u2502"/* ─ */);

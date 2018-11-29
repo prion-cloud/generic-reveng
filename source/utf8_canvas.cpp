@@ -1,37 +1,29 @@
 #include <algorithm>
 
-#include "../include/scout/utf8_canvas.h"
+#include "../include/unimage/utf8_canvas.h"
 
 utf8_canvas::utf8_canvas(int const width)
-    : width_(std::max(0, width)), height_(0) { }
+    : width_(std::max(0, width)) { }
 
-int utf8_canvas::width() const
+void utf8_canvas::add_shape(int const layer, std::unique_ptr<utf8_shape const> shape)
 {
-    return width_;
-}
-int utf8_canvas::height() const
-{
-    return height_;
-}
-
-void utf8_canvas::add_shape(int const layer, utf8_shape const* const shape)
-{
-    operator[](layer).push_back(shape);
-
-    height_ = std::max(height_, shape->y_pos + shape->y_size);
+    operator[](layer).push_back(std::move(shape));
 }
 
 utf8_illustration utf8_canvas::illustrate() const
 {
-    utf8_illustration illustration(height_);
+    utf8_illustration illustration;
     for (auto const& layer : *this)
     {
-        for (auto const* shape : layer.second)
+        for (auto const& shape : layer.second)
         {
             auto const shape_illustration = shape->illustrate();
 
             for (auto y = std::max(0, shape->y_pos); y < shape->y_pos + shape->y_size; ++y)
             {
+                if (y >= static_cast<int>(illustration.size()))
+                    illustration.resize(y + 1);
+
                 auto& composition_line = illustration.at(y);
                 if (static_cast<int>(composition_line.size()) < shape->x_pos)
                     composition_line.resize(std::min(shape->x_pos, width_));

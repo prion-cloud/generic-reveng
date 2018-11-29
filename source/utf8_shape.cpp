@@ -1,4 +1,4 @@
-#include "../include/scout/utf8_shape.h"
+#include "../include/unimage/utf8_shape.h"
 
 utf8_shape::utf8_shape(
     int const x_pos, int const y_pos,
@@ -104,7 +104,7 @@ utf8_text_rectangle::utf8_text_rectangle(
     utf8_char h_line, utf8_char v_line) :
         utf8_shape(
             x_pos, y_pos,
-            get_max_utf8_string_size(text) + 2 * margin_size + 2, text.size() + 2),
+            ::get_max_utf8_string_size(text) + 2 * margin_size + 2, text.size() + 2),
         text(std::move(text)), margin_size(margin_size),
         top_left(std::move(top_left)), top_right(std::move(top_right)),
         bottom_left(std::move(bottom_left)), bottom_right(std::move(bottom_right)),
