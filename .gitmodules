@@ -7,3 +7,6 @@
 [submodule "submodules/keystone"]
 	path = submodules/keystone
 	url = https://github.com/keystone-engine/keystone.git
+[submodule "submodules/stimpak"]
+	path = submodules/stimpak
+	url = https://github.com/superbr4in/stimpak.git
