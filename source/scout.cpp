@@ -4,9 +4,10 @@
 #include <string>
 #include <vector>
 
-#include "../include/scout/cfg.h"
-#include "../include/scout/debugger.h"
-#include "../include/unimage/utf8_canvas.h"
+#include <scout/cfg.hpp>
+#include <scout/debugger.hpp>
+
+#include <unimage/utf8_canvas.hpp>
 
 utf8_char const h("\u2500"/* │ */);
 utf8_char const v("\u2502"/* ─ */);

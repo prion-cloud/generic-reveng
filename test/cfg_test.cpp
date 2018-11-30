@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include "../submodules/keystone/include/keystone/keystone.h"
+#include <keystone/keystone.h>
 
-#include "../include/scout/cfg.h"
+#include <scout/cfg.hpp>
 
 class test_provider_x86_32
 {

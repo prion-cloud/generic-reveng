@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "../include/unimage/utf8_base.h"
+#include <unimage/utf8_base.hpp>
 
 size_t get_utf8_char_size(char const indicator_byte)
 {

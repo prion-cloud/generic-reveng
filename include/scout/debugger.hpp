@@ -6,10 +6,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "instruction.h"
+#include <scout/instruction.hpp>
 
-#include "../../submodules/capstone/include/capstone.h"
-#include "../../submodules/unicorn/include/unicorn/unicorn.h"
+#include <capstone.h>
+#include <unicorn/unicorn.h>
 
 class debugger
 {

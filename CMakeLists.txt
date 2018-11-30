@@ -39,7 +39,10 @@ add_executable ( scout
     "source/utf8_shape.cpp" )
 
 target_include_directories ( scout PRIVATE
-    "include/" )
+    "include/"
+    "submodules/"
+    "submodules/capstone/include/"
+    "submodules/unicorn/include/" )
 target_link_libraries ( scout
     capstone-shared
     "libunicorn.so"
@@ -55,7 +58,11 @@ add_executable ( scout-test
     "test/test_main.cpp" )
 
 target_include_directories ( scout-test PRIVATE
-    "include/" )
+    "include/"
+    "submodules/"
+    "submodules/capstone/include/"
+    "submodules/keystone/include/"
+    "submodules/unicorn/include/" )
 target_link_libraries ( scout-test
     capstone-shared
     keystone

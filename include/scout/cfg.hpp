@@ -6,8 +6,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "../stimpak/comparison.h"
-#include "instruction.h"
+#include <scout/instruction.hpp>
+
+#include <stimpak/comparison.hpp>
 
 class cfg
 {
@@ -30,8 +31,8 @@ public:
 
         bool operator<(block const& other) const;
 
-        friend bool operator<(block const& block, uint64_t const address);
-        friend bool operator<(uint64_t const address, block const& block);
+        friend bool operator<(block const& block, uint64_t address);
+        friend bool operator<(uint64_t address, block const& block);
     };
 
 private:

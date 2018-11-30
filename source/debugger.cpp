@@ -1,6 +1,6 @@
-#include "../include/scout/debugger.h"
+#include <scout/debugger.hpp>
 
-bool operator<(const uc_mem_region a, const uc_mem_region b)
+bool operator<(uc_mem_region const& a, uc_mem_region const& b)
 {
     return a.end < b.begin;
 }

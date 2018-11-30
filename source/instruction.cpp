@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
-#include "../include/scout/instruction.h"
+#include <scout/instruction.hpp>
 
 assembly_instruction::assembly_instruction(cs_insn* const base)
     : base_(base) { }

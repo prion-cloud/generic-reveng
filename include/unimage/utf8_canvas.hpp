@@ -3,7 +3,7 @@
 #include <map>
 #include <memory>
 
-#include "utf8_shape.h"
+#include <unimage/utf8_shape.hpp>
 
 class utf8_canvas : std::map<int, std::vector<std::unique_ptr<utf8_shape const>>>
 {

@@ -1,4 +1,4 @@
-#include "../include/scout/cfg.h"
+#include <scout/cfg.hpp>
 
 bool cfg::machine_instruction_compare::operator()(machine_instruction const& ins1, machine_instruction const& ins2) const
 {

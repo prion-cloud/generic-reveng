@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "../include/unimage/utf8_canvas.h"
+#include <unimage/utf8_canvas.hpp>
 
 utf8_canvas::utf8_canvas(int const width)
     : width_(std::max(0, width)) { }

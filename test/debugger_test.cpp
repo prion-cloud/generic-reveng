@@ -2,7 +2,7 @@
 
 #include <libgen.h>
 
-#include "../include/scout/debugger.h"
+#include <scout/debugger.hpp>
 
 std::string get_file_path(std::string const& file_name)
 {
