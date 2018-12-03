@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-size_t measure_utf8_string_size(std::string const& byte_string);
+size_t measure_utf8_string_size(std::string byte_string);
 
 struct utf8_char
 {

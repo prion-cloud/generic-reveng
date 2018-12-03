@@ -12,18 +12,16 @@
 utf8_char const h("\u2500"/* │ */);
 utf8_char const v("\u2502"/* ─ */);
 
-utf8_char const dr("\u250C"/* ┌ */);
-utf8_char const dl("\u2510"/* ┐ */);
 utf8_char const ur("\u2514"/* └ */);
 utf8_char const ul("\u2518"/* ┘ */);
+utf8_char const dr("\u250C"/* ┌ */);
+utf8_char const dl("\u2510"/* ┐ */);
 
-utf8_char const dh("\u252C"/* ┬ */);
 utf8_char const uh("\u2534"/* ┴ */);
+utf8_char const dh("\u252C"/* ┬ */);
 
 std::string get_instruction_string(machine_instruction const& instruction)
 {
-    /* TODO \x1B[38;2;<r>;<g>;<b>;48;2;<r>;<g>;<b>m<text> */
-
     std::ostringstream oss_instruction;
     oss_instruction << std::hex << instruction.address << ' ';
 
