@@ -33,7 +33,11 @@ utf8_illustration utf8_canvas::illustrate() const
                     auto const utf8_char = shape_illustration.at(y - shape->y_pos).at(x - shape->x_pos);
 
                     if (x < static_cast<int>(composition_line.size()))
-                        composition_line.at(x) = utf8_char;
+                    {
+                        auto& prev = composition_line.at(x);
+                        if (prev.value == " " || prev.value.size() >= utf8_char.value.size())
+                            prev = utf8_char;
+                    }
                     else
                         composition_line.push_back(utf8_char);
                 }

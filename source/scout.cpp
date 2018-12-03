@@ -25,11 +25,25 @@ std::string get_instruction_string(machine_instruction const& instruction)
     /* TODO \x1B[38;2;<r>;<g>;<b>;48;2;<r>;<g>;<b>m<text> */
 
     std::ostringstream oss_instruction;
-    oss_instruction << std::hex << instruction.address;
+    oss_instruction << std::hex << instruction.address << ' ';
 
     auto const disassembly = instruction.disassemble();
 
-    oss_instruction << ' ' << disassembly->mnemonic;
+    std::optional<std::string> color;
+
+    if (disassembly.belongs_to(CS_GRP_CALL) || disassembly.belongs_to(CS_GRP_RET))
+        color = "\x1B[38;2;0;148;255m";
+
+    if (disassembly.belongs_to(CS_GRP_JUMP))
+        color = "\x1B[38;2;255;204;33m";
+
+    if (disassembly.belongs_to(CS_GRP_INT))
+        color = "\x1B[38;2;255;33;33m";
+
+    if (color)
+        oss_instruction << *color;
+
+    oss_instruction << disassembly->mnemonic;
 
     std::string const operands_string = disassembly->op_str;
     if (operands_string.size() > 0)
@@ -38,6 +52,9 @@ std::string get_instruction_string(machine_instruction const& instruction)
             operands_string,
             std::regex("0x([\\da-f]+)"), "$1");
     }
+
+    if (color)
+        oss_instruction << "\x1B[0m";
 
     return oss_instruction.str();
 }

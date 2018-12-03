@@ -26,7 +26,26 @@ size_t measure_utf8_string_size(std::string const& byte_string)
 
 utf8_char::utf8_char(std::string const& byte_string)
 {
-    value = byte_string.substr(0, get_utf8_char_size(byte_string.front()));
+    std::string::size_type value_pos = 0;
+
+    std::string const escape_start = "\x1B[";
+    if (byte_string.compare(0, escape_start.size(), escape_start) == 0)
+    {
+        auto const escape_end_pos = byte_string.find_first_of('m');
+        if (escape_end_pos != std::string::npos)
+        {
+            value += byte_string.substr(0, escape_end_pos + 1);
+            value_pos = escape_end_pos + 1;
+        }
+    }
+
+    if (value_pos >= byte_string.size())
+    {
+        value += ' ';
+        return;
+    }
+
+    value += byte_string.substr(value_pos, ::get_utf8_char_size(byte_string.at(value_pos)));
 }
 
 std::ostream& operator<<(std::ostream& stream, std::vector<std::vector<utf8_char>> utf8_illustration)
