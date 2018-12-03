@@ -12,6 +12,8 @@ struct utf8_shape
         int x_pos, int y_pos,
         int x_size, int y_size);
 
+    virtual ~utf8_shape() = default;
+
     virtual utf8_illustration illustrate() const = 0;
 };
 

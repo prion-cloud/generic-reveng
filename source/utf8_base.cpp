@@ -2,18 +2,18 @@
 
 #include <unimage/utf8_base.hpp>
 
-size_t get_utf8_char_size(char const indicator_byte)
+size_t get_utf8_char_size(unsigned char const indicator_byte)
 {
-    if ((indicator_byte & 0x80) == 0x00)
+    if ((indicator_byte & 0x80u) == 0x00u)
         return 1;
 
-    if ((indicator_byte & 0xE0) == 0xC0)
+    if ((indicator_byte & 0xE0u) == 0xC0u)
         return 2;
 
-    if ((indicator_byte & 0xF0) == 0xE0)
+    if ((indicator_byte & 0xF0u) == 0xE0u)
         return 3;
 
-    if ((indicator_byte & 0xF8) == 0xF0)
+    if ((indicator_byte & 0xF8u) == 0xF0u)
         return 4;
 
     return 0;
@@ -21,7 +21,7 @@ size_t get_utf8_char_size(char const indicator_byte)
 
 size_t measure_utf8_string_size(std::string const& byte_string)
 {
-    return std::count_if(byte_string.cbegin(), byte_string.cend(), get_utf8_char_size);
+    return std::count_if(byte_string.cbegin(), byte_string.cend(), ::get_utf8_char_size);
 }
 
 utf8_char::utf8_char(std::string const& byte_string)

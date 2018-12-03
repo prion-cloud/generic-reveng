@@ -33,11 +33,11 @@ cfg::block const* cfg::root() const
     return root_;
 }
 
-std::set<std::unique_ptr<cfg::block>>::const_iterator cfg::begin() const
+decltype(cfg::blocks_.begin()) cfg::begin() const
 {
     return blocks_.begin();
 }
-std::set<std::unique_ptr<cfg::block>>::const_iterator cfg::end() const
+decltype(cfg::blocks_.end()) cfg::end() const
 {
     return blocks_.end();
 }

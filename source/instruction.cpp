@@ -4,13 +4,8 @@
 
 #include <scout/instruction.hpp>
 
-assembly_instruction::assembly_instruction(cs_insn* const base)
-    : base_(base) { }
-
-assembly_instruction::~assembly_instruction()
-{
-    cs_free(base_, 1);
-}
+assembly_instruction::assembly_instruction(std::shared_ptr<cs_insn> base)
+    : base_(std::move(base)) { }
 
 bool assembly_instruction::has_detail() const
 {
@@ -86,7 +81,7 @@ std::vector<std::optional<uint64_t>> assembly_instruction::get_successors() cons
 
 cs_insn const* assembly_instruction::operator->() const
 {
-    return base_;
+    return base_.get();
 }
 
 machine_instruction::machine_instruction(std::shared_ptr<csh> cs, uint64_t const address, std::array<uint8_t, SIZE> const& code)
@@ -101,5 +96,9 @@ assembly_instruction machine_instruction::disassemble() const
     if (error_code != CS_ERR_OK)
         throw std::runtime_error(std::string("Disassembly failed: ") + cs_strerror(error_code));
 
-    return assembly_instruction(cs_instruction);
+    return assembly_instruction(std::shared_ptr<cs_insn>(cs_instruction,
+        [](cs_insn* ins)
+        {
+            cs_free(ins, 1);
+        }));
 }

@@ -10,13 +10,11 @@
 
 class assembly_instruction
 {
-    cs_insn* base_;
+    std::shared_ptr<cs_insn> base_;
 
 public:
 
-    explicit assembly_instruction(cs_insn* base);
-
-    ~assembly_instruction();
+    explicit assembly_instruction(std::shared_ptr<cs_insn> base);
 
     bool has_detail() const;
 
@@ -41,7 +39,7 @@ public:
 
     uint64_t address;
 
-    std::array<uint8_t, SIZE> code;
+    std::array<uint8_t, SIZE> code { };
 
     machine_instruction(std::shared_ptr<csh> cs, uint64_t address, std::array<uint8_t, SIZE> const& code);
 

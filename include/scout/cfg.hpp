@@ -39,7 +39,7 @@ private:
 
     block const* root_;
 
-    std::set<std::unique_ptr<block>, stim::wrap_comparator> blocks_;
+    std::set<std::unique_ptr<block>, stim::wrap_comparator> blocks_ { };
 
 public:
 
@@ -48,8 +48,8 @@ public:
 
     block const* root() const;
 
-    std::set<std::unique_ptr<block>>::const_iterator begin() const;
-    std::set<std::unique_ptr<block>>::const_iterator end() const;
+    decltype(blocks_.begin()) begin() const;
+    decltype(blocks_.end()) end() const;
 
     std::unordered_map<size_t, std::unordered_map<size_t, block const*>> get_layout() const;
 
