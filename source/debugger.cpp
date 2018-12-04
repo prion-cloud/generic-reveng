@@ -147,10 +147,10 @@ void debugger::allocate_memory(uint64_t const address, size_t const size)
     if (size == 0)
         return;
 
-    size_t constexpr PAGE_SIZE = 0x1000;
+    size_t constexpr page_size = 0x1000;
 
     handle_uc_error(
-        uc_mem_map(uc_.get(), address, PAGE_SIZE * ((size - 1) / PAGE_SIZE + 1), UC_PROT_ALL));
+        uc_mem_map(uc_.get(), address, page_size * ((size - 1) / page_size + 1), UC_PROT_ALL));
 }
 void debugger::allocate_memory(uint64_t const address, std::vector<uint8_t> const& data)
 {
