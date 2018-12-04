@@ -16,46 +16,41 @@ set ( CAPSTONE_XCORE_SUPPORT OFF CACHE BOOL "Capstone: XCore support"        )
 
 add_subdirectory ( "submodules/capstone/" )
 
+add_subdirectory ( "submodules/unimage/" )
+
 # The "submodules/unicorn/make.sh" script has to be executed first
 link_directories ( "submodules/unicorn/" )
 
 find_package ( Threads REQUIRED )
 
-add_subdirectory ( "submodules/unimage/" )
-
-add_executable ( scout
+add_library ( scout-api SHARED
     "source/cfg.cpp"
     "source/debugger.cpp"
     "source/debugger_load.cpp"
-    "source/instruction.cpp"
-    "source/scout.cpp" )
+    "source/instruction.cpp" )
 
-target_include_directories ( scout PRIVATE
+target_include_directories ( scout-api PUBLIC
     "include/"
     "submodules/capstone/include/"
     "submodules/stimpak/include/"
     "submodules/unicorn/include/" )
-target_link_libraries ( scout
+
+target_link_libraries ( scout-api
     capstone-shared
     unimage
     "libunicorn.so"
     ${CMAKE_THREAD_LIBS_INIT} )
 
+add_executable ( scout
+    "source/scout.cpp" )
+
+target_link_libraries ( scout
+    scout-api )
+
 add_executable ( scout-test
-    "source/cfg.cpp"
-    "source/debugger.cpp"
-    "source/debugger_load.cpp"
-    "source/instruction.cpp"
     "test/cfg_test.cpp"
     "test/debugger_test.cpp"
     "test/test_main.cpp" )
 
-target_include_directories ( scout-test PRIVATE
-    "include/"
-    "submodules/capstone/include/"
-    "submodules/stimpak/include/"
-    "submodules/unicorn/include/" )
 target_link_libraries ( scout-test
-    capstone-shared
-    "libunicorn.so"
-    ${CMAKE_THREAD_LIBS_INIT} )
+    scout-api )
