@@ -5,24 +5,24 @@
 #include <string>
 #include <vector>
 
-#include <keystone/keystone.h>
-
 #include <scout/cfg.hpp>
 
 class test_provider_x86_32
 {
+    std::shared_ptr<csh> cs_;
+
     uint64_t position_;
 
-    std::unordered_map<uint64_t, std::shared_ptr<machine_instruction>> instructions_;
+    std::unordered_map<uint64_t, std::vector<uint8_t>> instruction_codes_;
 
 public:
 
-    explicit test_provider_x86_32(std::vector<std::string> const& instruction_strings);
+    explicit test_provider_x86_32(std::vector<std::vector<uint8_t>> const& instruction_codes);
 
     uint64_t position() const;
-    void position(uint64_t const address);
+    void position(uint64_t address);
 
-    std::shared_ptr<machine_instruction> const& current_instruction() const;
+    machine_instruction current_instruction() const;
 };
 
 std::string to_cfg_string(cfg const& cfg);
@@ -31,29 +31,29 @@ TEST_CASE("Block transitioning: Linear")
 {
     test_provider_x86_32 provider1(
         {
-            "nop",
-            "ret",
-            "int3"
+            { 0x90 }, // nop
+            { 0xC3 }, // ret
+            { 0xCC }  // int3
         });
     test_provider_x86_32 provider2(
         {
-            "nop",
-            "int3",
-            "int3"
+            { 0x90 }, // nop
+            { 0xCC }, // int3
+            { 0xCC }  // int3
         });
     test_provider_x86_32 provider3(
         {
-            "nop",
-            "jmp 3",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0xEB, 0x00 }, // jmp +1
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
     test_provider_x86_32 provider4(
         {
-            "nop",
-            "je 3",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0x74, 0x00 }, // je +1
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
 
     std::ostringstream expected1;
@@ -87,11 +87,11 @@ TEST_CASE("Block transitioning: Relocation")
 {
     test_provider_x86_32 provider(
         {
-            "nop",
-            "jmp 4",
-            "int3",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0xEB, 0x01 }, // jmp +2
+            { 0xCC },       // int3
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
 
     std::ostringstream expected;
@@ -112,13 +112,13 @@ TEST_CASE("Block transitioning: IF-THEN-ELSE")
 { 
     test_provider_x86_32 provider(
         {
-            "nop",
-            "je 6",
-            "nop",
-            "ret",
-            "int3",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0x74, 0x03 }, // je +4
+            { 0x90 },       // nop
+            { 0xC3 },       // ret
+            { 0xCC },       // int3
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
 
     std::ostringstream expected;
@@ -144,11 +144,11 @@ TEST_CASE("Block transitioning: IF-THEN")
 { 
     test_provider_x86_32 provider(
         {
-            "nop",
-            "jne 4",
-            "nop",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0x75, 0x01 }, // jne +2
+            { 0x90 },       // nop
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
 
     std::ostringstream expected;
@@ -174,25 +174,25 @@ TEST_CASE("Block transitioning: Diamond")
 { 
     test_provider_x86_32 provider1(
         {
-            "nop",
-            "je 7",
-            "nop",
-            "jmp 8",
-            "int3",
-            "nop",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0x74, 0x04 }, // je +4
+            { 0x90 },       // nop
+            { 0xEB, 0x02 }, // jmp +3
+            { 0xCC },       // int3
+            { 0x90 },       // nop
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
     test_provider_x86_32 provider2(
         {
-            "nop",
-            "je 7",
-            "nop",
-            "nop",
-            "ret",
-            "int3",
-            "nop",
-            "jmp 4"
+            { 0x90 },       // nop
+            { 0x74, 0x04 }, // je +5
+            { 0x90 },       // nop
+            { 0x90 },       // nop
+            { 0xC3 },       // ret
+            { 0xCC },       // int3
+            { 0x90 },       // nop
+            { 0xEB, 0xFA }  // jmp -4
         });
 
     std::ostringstream expected1;
@@ -246,29 +246,29 @@ TEST_CASE("Block transitioning: Loop")
 { 
     test_provider_x86_32 provider1(
         {
-            "nop",
-            "jmp 0"
+            { 0x90 },      // nop
+            { 0xEB, 0xFD } // jmp -1
         });
     test_provider_x86_32 provider2(
         {
-            "nop",
-            "je 0",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0x74, 0xFD }, // je -1
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
     test_provider_x86_32 provider3(
         {
-            "nop",
-            "nop",
-            "jmp 1"
+            { 0x90 },      // nop
+            { 0x90 },      // nop
+            { 0xEB, 0xFD } // jmp -1
         });
     test_provider_x86_32 provider4(
         {
-            "nop",
-            "nop",
-            "je 1",
-            "nop",
-            "ret"
+            { 0x90 },       // nop
+            { 0x90 },       // nop
+            { 0x74, 0xFD }, // je -1
+            { 0x90 },       // nop
+            { 0xC3 }        // ret
         });
 
     std::ostringstream expected1;
@@ -320,36 +320,18 @@ TEST_CASE("Block transitioning: Loop")
     CHECK(::to_cfg_string(cfg(provider4)) == expected4.str());
 }
 
-test_provider_x86_32::test_provider_x86_32(std::vector<std::string> const& instruction_strings)
-    : position_(0x0)
+test_provider_x86_32::test_provider_x86_32(std::vector<std::vector<uint8_t>> const& instruction_codes)
+    : cs_(std::shared_ptr<csh>(new csh, cs_close)), position_(0)
 {
-    ks_engine* ks;
-    ks_open(KS_ARCH_X86, KS_MODE_32, &ks);
+    cs_open(CS_ARCH_X86, CS_MODE_32, cs_.get());
+    cs_option(*cs_, CS_OPT_DETAIL, CS_OPT_ON);
 
-    auto const cs = std::shared_ptr<csh>(new csh, cs_close);
-    cs_open(CS_ARCH_X86, CS_MODE_32, cs.get());
-    cs_option(*cs, CS_OPT_DETAIL, CS_OPT_ON);
-
-    uint64_t address = 0x0;
-    for (auto const& instruction_string : instruction_strings)
+    uint64_t address = 0;
+    for (auto const& code_vector : instruction_codes)
     {
-        uint8_t* code;
-        size_t code_size;
-        size_t stat_count;
-        if (ks_asm(ks, instruction_string.c_str(), address, &code, &code_size, &stat_count) != KS_ERR_OK)
-            throw std::runtime_error("Assembly failed");
-
-        std::array<uint8_t, machine_instruction::SIZE> code_array { };
-        std::move(code, code + code_size, code_array.begin());
-
-        ks_free(code);
-
-        instructions_.emplace(address, std::make_shared<machine_instruction>(cs, address, code_array));
-
-        address += code_size;
+        instruction_codes_.emplace(address, code_vector);
+        address += code_vector.size();
     }
-
-    ks_close(ks);
 }
 
 uint64_t test_provider_x86_32::position() const
@@ -361,9 +343,14 @@ void test_provider_x86_32::position(uint64_t const address)
     position_ = address;
 }
 
-std::shared_ptr<machine_instruction> const& test_provider_x86_32::current_instruction() const
+machine_instruction test_provider_x86_32::current_instruction() const
 {
-    return instructions_.at(position_);
+    auto const code_vector = instruction_codes_.at(position_);
+
+    std::array<uint8_t, machine_instruction::SIZE> code_array;
+    std::move(code_vector.cbegin(), code_vector.cend(), code_array.begin());
+
+    return machine_instruction(cs_, position_, code_array);
 }
 
 std::string to_cfg_string(cfg const& cfg)
