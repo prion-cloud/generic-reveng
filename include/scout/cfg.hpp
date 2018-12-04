@@ -80,10 +80,10 @@ cfg::block* cfg::construct(Provider& provider)
     {
         // Store current machine instruction
         auto const cur_instruction = provider.current_instruction();
-        new_block->insert(new_block->cend(), *cur_instruction);
+        new_block->insert(new_block->cend(), cur_instruction);
 
         // Inquire successors
-        auto const cur_disassembly = cur_instruction->disassemble();
+        auto const cur_disassembly = cur_instruction.disassemble();
         next_addresses = cur_disassembly.get_successors();
 
         // Interrupt the block creation if...

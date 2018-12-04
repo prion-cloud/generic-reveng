@@ -49,7 +49,7 @@ public:
      * Inquires the current instruction.
      * \returns The machine instruction the instruction pointer currently points to.
      */
-    std::unique_ptr<machine_instruction> current_instruction() const;
+    machine_instruction current_instruction() const;
 
     /**
      * Indicates whether the instruction pointer references mapped memory.

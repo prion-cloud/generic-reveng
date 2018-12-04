@@ -27,16 +27,16 @@ bool debugger::position(uint64_t const address)
     return is_mapped();
 }
 
-std::unique_ptr<machine_instruction> debugger::current_instruction() const
+machine_instruction debugger::current_instruction() const
 {
     auto const address = position();
 
-    std::vector<uint8_t> code_vector = read_memory(address, machine_instruction::SIZE);
+    auto const code_vector = read_memory(address, machine_instruction::SIZE);
 
-    std::array<uint8_t, machine_instruction::SIZE> code_array { };
-    std::move(code_vector.begin(), code_vector.end(), code_array.begin());
+    std::array<uint8_t, machine_instruction::SIZE> code_array;
+    std::move(code_vector.cbegin(), code_vector.cend(), code_array.begin());
 
-    return std::make_unique<machine_instruction>(cs_, address, code_array);
+    return machine_instruction(cs_, address, code_array);
 }
 
 bool debugger::is_mapped() const
@@ -56,7 +56,7 @@ bool debugger::is_mapped(uint64_t const address) const
 
 bool debugger::skip()
 {
-    return skip(current_instruction()->disassemble()->size);
+    return skip(current_instruction().disassemble()->size);
 }
 bool debugger::skip(uint64_t const count)
 {
