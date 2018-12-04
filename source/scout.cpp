@@ -9,16 +9,16 @@
 
 #include <unimage/utf8_canvas.hpp>
 
-utf8_char const h("\u2500"/* │ */);
-utf8_char const v("\u2502"/* ─ */);
+umg::utf8_char const h("\u2500"/* │ */);
+umg::utf8_char const v("\u2502"/* ─ */);
 
-utf8_char const ur("\u2514"/* └ */);
-utf8_char const ul("\u2518"/* ┘ */);
-utf8_char const dr("\u250C"/* ┌ */);
-utf8_char const dl("\u2510"/* ┐ */);
+umg::utf8_char const ur("\u2514"/* └ */);
+umg::utf8_char const ul("\u2518"/* ┘ */);
+umg::utf8_char const dr("\u250C"/* ┌ */);
+umg::utf8_char const dl("\u2510"/* ┐ */);
 
-utf8_char const uh("\u2534"/* ┴ */);
-utf8_char const dh("\u252C"/* ┬ */);
+umg::utf8_char const uh("\u2534"/* ┴ */);
+umg::utf8_char const dh("\u252C"/* ┬ */);
 
 std::string get_instruction_string(machine_instruction const& instruction)
 {
@@ -66,9 +66,9 @@ void print_cfg(cfg const& cfg)
     auto constexpr straight_transition_layer = 1;
     auto constexpr curved_transition_layer = 2;
 
-    utf8_canvas canvas(width);
+    umg::utf8_canvas canvas(width);
 
-    std::unordered_map<cfg::block const*, utf8_text_rectangle*> block_views;
+    std::unordered_map<cfg::block const*, umg::utf8_text_rectangle*> block_views;
 
     for (auto const& block : cfg)
     {
@@ -77,7 +77,7 @@ void print_cfg(cfg const& cfg)
         for (auto const& instruction : *block)
             instruction_strings.push_back(get_instruction_string(instruction));
 
-        auto block_view = std::make_unique<utf8_text_rectangle>(
+        auto block_view = std::make_unique<umg::utf8_text_rectangle>(
             0, 0, instruction_strings, 1, dr, dl, ur, ul, h, v);
 
         block_views.emplace(block.get(), block_view.get());
@@ -170,12 +170,12 @@ void print_cfg(cfg const& cfg)
                 continue;
             }
 
-            auto transition_view_1 = std::make_unique<utf8_v_line>(
+            auto transition_view_1 = std::make_unique<umg::utf8_v_line>(
                 x_start, y_start, y_diff - 1,
                 dh, v, v);
 
-            utf8_char transition_view_2_start;
-            utf8_char transition_view_2_end;
+            umg::utf8_char transition_view_2_start;
+            umg::utf8_char transition_view_2_end;
             if (x_diff == 0)
             {
                 transition_view_2_start = v;
@@ -191,11 +191,11 @@ void print_cfg(cfg const& cfg)
                 transition_view_2_end = dl;
             }
 
-            auto transition_view_2 = std::make_unique<utf8_h_line>(
+            auto transition_view_2 = std::make_unique<umg::utf8_h_line>(
                 x_start, y_end - 1, x_diff + (x_diff >= 0 ? 1 : -1),
                 transition_view_2_start, transition_view_2_end, h);
 
-            auto transition_view_3 = std::make_unique<utf8_v_line>(
+            auto transition_view_3 = std::make_unique<umg::utf8_v_line>(
                 x_end, y_end, 1,
                 uh, uh, v);
 

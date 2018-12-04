@@ -21,15 +21,14 @@ link_directories ( "submodules/unicorn/" )
 
 find_package ( Threads REQUIRED )
 
+add_subdirectory ( "submodules/unimage/" )
+
 add_executable ( scout
     "source/cfg.cpp"
     "source/debugger.cpp"
     "source/debugger_load.cpp"
     "source/instruction.cpp"
-    "source/scout.cpp"
-    "source/utf8_base.cpp"
-    "source/utf8_canvas.cpp"
-    "source/utf8_shape.cpp" )
+    "source/scout.cpp" )
 
 target_include_directories ( scout PRIVATE
     "include/"
@@ -38,6 +37,7 @@ target_include_directories ( scout PRIVATE
     "submodules/unicorn/include/" )
 target_link_libraries ( scout
     capstone-shared
+    unimage
     "libunicorn.so"
     ${CMAKE_THREAD_LIBS_INIT} )
 

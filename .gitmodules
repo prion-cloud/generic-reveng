@@ -7,3 +7,6 @@
 [submodule "submodules/stimpak"]
 	path = submodules/stimpak
 	url = https://github.com/superbr4in/stimpak.git
+[submodule "submodules/unimage"]
+	path = submodules/unimage
+	url = https://github.com/superbr4in/unimage.git
