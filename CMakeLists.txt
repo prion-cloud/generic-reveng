@@ -40,8 +40,8 @@ add_executable ( scout
 
 target_include_directories ( scout PRIVATE
     "include/"
-    "submodules/"
     "submodules/capstone/include/"
+    "submodules/stimpak/include/"
     "submodules/unicorn/include/" )
 target_link_libraries ( scout
     capstone-shared
@@ -59,9 +59,9 @@ add_executable ( scout-test
 
 target_include_directories ( scout-test PRIVATE
     "include/"
-    "submodules/"
     "submodules/capstone/include/"
     "submodules/keystone/include/"
+    "submodules/stimpak/include/"
     "submodules/unicorn/include/" )
 target_link_libraries ( scout-test
     capstone-shared
