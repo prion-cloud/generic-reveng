@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <scout/instruction.hpp>
+#include "instruction.hpp"
 
 #include <capstone.h>
 #include <unicorn/unicorn.h>

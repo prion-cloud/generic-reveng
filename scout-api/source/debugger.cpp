@@ -1,4 +1,4 @@
-#include <scout/debugger.hpp>
+#include "debugger.hpp"
 
 bool operator<(uc_mem_region const& a, uc_mem_region const& b)
 {

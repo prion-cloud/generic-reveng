@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include <scout/cfg.hpp>
-#include <scout/debugger.hpp>
+#include "../../scout-api/source/cfg.hpp"
+#include "../../scout-api/source/debugger.hpp"
 
 #include <unimage/utf8_canvas.hpp>
 

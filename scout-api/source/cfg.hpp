@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <scout/instruction.hpp>
+#include "instruction.hpp"
 
 #include <stimpak/comparison.hpp>
 

@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
-#include <scout/instruction.hpp>
+#include "instruction.hpp"
 
 assembly_instruction::assembly_instruction(std::shared_ptr<cs_insn> base)
     : base_(std::move(base)) { }

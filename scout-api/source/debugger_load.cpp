@@ -1,7 +1,7 @@
 #include <climits>
 #include <fstream>
 
-#include <scout/debugger.hpp>
+#include "debugger.hpp"
 
 template <typename T>
 T extract(std::istream& is)

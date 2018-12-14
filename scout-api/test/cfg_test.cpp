@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <scout/cfg.hpp>
+#include "../source/cfg.hpp"
 
 class test_provider_x86_32
 {
