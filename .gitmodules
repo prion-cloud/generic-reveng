@@ -10,3 +10,6 @@
 [submodule "submodules/unimage"]
 	path = submodules/unimage
 	url = https://github.com/superbr4in/unimage.git
+[submodule "submodules/cockpit"]
+	path = submodules/cockpit
+	url = https://github.com/superbr4in/cockpit.git
