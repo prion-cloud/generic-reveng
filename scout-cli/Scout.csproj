@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <ProjectReference Include="../submodules/cockpit/library/Cockpit.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <RootNamespace>scout_cli</RootNamespace>
+    <RootNamespace>Scout</RootNamespace>
   </PropertyGroup>
 
 </Project>
