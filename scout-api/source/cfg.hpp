@@ -39,7 +39,7 @@ private:
 
     block const* root_;
 
-    std::set<std::unique_ptr<block>, stim::wrap_comparator> blocks_ { };
+    std::set<std::unique_ptr<block>, sti::wrap_comparator> blocks_ { };
 
 public:
 

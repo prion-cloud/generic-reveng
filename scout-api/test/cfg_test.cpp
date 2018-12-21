@@ -359,7 +359,7 @@ std::string to_cfg_string(cfg const& cfg)
     for (auto const& block : cfg)
         blocks.push_back(block.get());
 
-    std::sort(blocks.begin(), blocks.end(), stim::wrap_comparator());
+    std::sort(blocks.begin(), blocks.end(), sti::wrap_comparator());
 
     std::unordered_map<cfg::block const*, size_t> block_indices;
     for (size_t block_index = 0; block_index < blocks.size(); ++block_index)
@@ -386,7 +386,7 @@ std::string to_cfg_string(cfg const& cfg)
                 cur_block->predecessors.cbegin(),
                 cur_block->predecessors.cend());
 
-            std::sort(cur_predecessors.begin(), cur_predecessors.end(), stim::wrap_comparator());
+            std::sort(cur_predecessors.begin(), cur_predecessors.end(), sti::wrap_comparator());
 
             cfg_ss
                 << std::endl
@@ -422,7 +422,7 @@ std::string to_cfg_string(cfg const& cfg)
                 cur_block->successors.cbegin(),
                 cur_block->successors.cend());
 
-            std::sort(cur_successors.begin(), cur_successors.end(), stim::wrap_comparator());
+            std::sort(cur_successors.begin(), cur_successors.end(), sti::wrap_comparator());
 
             cfg_ss
                 << std::endl
