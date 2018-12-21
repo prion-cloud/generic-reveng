@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../submodules/cockpit/library/Cockpit.csproj" />
+    <ProjectReference Include="../submodules/unimage/library/Unimage.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
