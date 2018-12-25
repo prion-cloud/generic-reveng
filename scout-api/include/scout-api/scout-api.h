@@ -4,20 +4,20 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-#define SCOUT_API extern "C"
+#define CFG_API extern "C"
 #else
-#define SCOUT_API
+#define CFG_API
 #endif
 
-SCOUT_API void const* create_control_flow(char const* file_name);
-SCOUT_API void release_control_flow_handle(void const* control_flow_handle);
+CFG_API void const* cfg_construct(char const* file_name);
+CFG_API void cfg_destruct(void const* cfg);
 
-SCOUT_API void const* get_root_block(void const* control_flow_handle);
+CFG_API void const* cfg_get_root(void const* cfg);
 
-SCOUT_API int count_block_successors(void const* block_handle);
-SCOUT_API void const* get_block_successor(void const* block_handle, int index);
+CFG_API int cfg_block_count_successors(void const* cfg_block);
+CFG_API void const* cfg_block_get_successor(void const* cfg_block, int index);
 
-SCOUT_API int count_block_instructions(void const* block_handle);
-SCOUT_API void disassemble_block_instruction(void const* block_handle, int index, cs_insn* instruction);
+CFG_API int cfg_block_count_instructions(void const* cfg_block);
+CFG_API void cfg_block_get_instruction(void const* cfg_block, int index, cs_insn* instruction);
 
-#undef SCOUT_API
+#undef CFG_API

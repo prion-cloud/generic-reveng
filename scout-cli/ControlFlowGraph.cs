@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 using Cockpit;
 
 using Unimage;
 
-public class ControlFlowGraph : IDisposable
+public partial class ControlFlowGraph : IDisposable
 {
     private const char H  = '\u2500'; // │
     private const char V  = '\u2502'; // ─
@@ -18,11 +20,15 @@ public class ControlFlowGraph : IDisposable
     private const char UH = '\u2534'; // ┴
     private const char DH = '\u252C'; // ┬
 
-    private readonly IntPtr _controlFlowHandle;
+    private readonly IntPtr _handle;
+
+    private Block _root;
 
     public ControlFlowGraph(string executableFilePath)
     {
-        _controlFlowHandle = Scout.CreateControlFlow(executableFilePath);
+        _handle = CfgConstruct(executableFilePath);
+
+        _root = new Block(CfgGetRoot(_handle));
     }
     ~ControlFlowGraph()
     {
@@ -37,17 +43,10 @@ public class ControlFlowGraph : IDisposable
 
     public void Show(ITextDisplay display)
     {
-        var rootBlockHandle = Scout.GetRootBlock(_controlFlowHandle);
-
-        var instructionCount = Scout.CountBlockInstructions(rootBlockHandle);
-        var instructionStrings = new string[instructionCount];
-        for (var i = 0; i < instructionCount; i++)
-        {
-            Scout.Instruction instruction;
-            Scout.DisassembleBlockInstruction(rootBlockHandle, i, out instruction);
-
-            instructionStrings[i] = GetInstructionString(instruction);
-        }
+        var instructionStrings =
+            _root.Instructions
+                .Select(ins => ins.ToString())
+                .ToArray();
 
         var canvas = new TextCanvas();
         canvas[0].Add(
@@ -96,13 +95,49 @@ public class ControlFlowGraph : IDisposable
 
     private void ReleaseHandle()
     {
-        Scout.ReleaseControlFlowHandle(_controlFlowHandle);
+        CfgDestruct(_handle);
+    }
+}
+
+public partial class Block
+{
+    private readonly IntPtr _handle;
+
+    public Block(IntPtr handle)
+    {
+        _handle = handle;
     }
 
-    private static string GetInstructionString(Scout.Instruction instruction)
+    public IEnumerable<Block> Successors
     {
-        return
-            $"{instruction.Address:x} {instruction.Mnemonic} " +
-            $"{Regex.Replace(instruction.OpStr, "0x([\\da-f]+)", "$1")}";
+        get
+        {
+            var nSuccessors = CfgBlockCountSuccessors(_handle);
+            for (var successorIndex = 0; successorIndex < nSuccessors; successorIndex++)
+                yield return new Block(CfgBlockGetSuccessor(_handle, successorIndex));
+        }
+    }
+
+    public IEnumerable<Instruction> Instructions
+    {
+        get
+        {
+            var nInstructions = CfgBlockCountInstructions(_handle);
+            for (var instructionIndex = 0; instructionIndex < nInstructions; instructionIndex++)
+            {
+                Instruction instruction;
+                CfgBlockGetInstruction(_handle, instructionIndex, out instruction);
+
+                yield return instruction;
+            }
+        }
+    }
+}
+
+public partial struct Instruction
+{
+    public override string ToString()
+    {
+        return $"{_address:x} {_mnemonic} {Regex.Replace(_opStr, "0x([\\da-f]+)", "$1")}";
     }
 }
