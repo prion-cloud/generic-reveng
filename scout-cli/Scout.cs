@@ -3,7 +3,7 @@ using System.IO;
 
 using Cockpit;
 
-public static class Program
+public static class Scout
 {
     private static int Main(string[] args)
     {
