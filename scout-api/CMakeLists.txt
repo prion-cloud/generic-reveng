@@ -6,7 +6,7 @@ add_executable ( scout-api-test        ${SCOUT_API_TEST_SOURCES} )
 
 target_link_libraries ( scout-api
     capstone-shared
-    ${UNICORN_LIBRARY}
+    unicorn-shared
     ${CMAKE_THREAD_LIBS_INIT} )
 target_link_libraries ( scout-api-test
     scout-api )
