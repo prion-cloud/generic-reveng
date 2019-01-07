@@ -1,6 +1,6 @@
 #pragma once
 
-#include <capstone.h>
+#include <capstone/capstone.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

@@ -8,7 +8,7 @@
 
 #include "instruction.hpp"
 
-#include <capstone.h>
+#include <capstone/capstone.h>
 #include <unicorn/unicorn.h>
 
 class debugger

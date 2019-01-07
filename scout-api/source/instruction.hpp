@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <capstone.h>
+#include <capstone/capstone.h>
 
 class assembly_instruction
 {
