@@ -9,16 +9,16 @@ using Unimage;
 
 public partial class ControlFlowGraph : IDisposable
 {
-    private const char H  = '\u2500'; // │
-    private const char V  = '\u2502'; // ─
+    private const char CH_H  = '\u2500'; // │
+    private const char CH_V  = '\u2502'; // ─
 
-    private const char UR = '\u2514'; // └
-    private const char UL = '\u2518'; // ┘
-    private const char DR = '\u250C'; // ┌
-    private const char DL = '\u2510'; // ┐
+    private const char CH_UR = '\u2514'; // └
+    private const char CH_UL = '\u2518'; // ┘
+    private const char CH_DR = '\u250C'; // ┌
+    private const char CH_DL = '\u2510'; // ┐
 
-    private const char UH = '\u2534'; // ┴
-    private const char DH = '\u252C'; // ┬
+    private const char CH_UH = '\u2534'; // ┴
+    private const char CH_DH = '\u252C'; // ┬
 
     private readonly IntPtr _handle;
 
@@ -43,75 +43,10 @@ public partial class ControlFlowGraph : IDisposable
 
     public void Show(ITextDisplay display)
     {
-        var positionedBlocks = PositionBlocks(_root);
-
-        var xSpaces = new int[positionedBlocks.Values.Max(v => v.X) + 1];
-        var ySpaces = new int[positionedBlocks.Values.Max(v => v.Y) + 1];
-
-        var visualizedBlocks =
-            positionedBlocks
-                .ToDictionary(
-                    block => block.Value,
-                    block =>
-                        (TextShape)
-                            new TextRectangle(
-                                block.Value,
-                                block.Key.Instructions
-                                    .Select(instruction => instruction.ToString())
-                                    .ToArray())
-                                {
-                                    TopLeft  = DR,
-                                    TopRight = DL,
-
-                                    BottomLeft  = UR,
-                                    BottomRight = UL,
-
-                                    HLine = H,
-                                    VLine = V
-                                });
-
-        foreach (var block in visualizedBlocks.Values)
-        {
-            if (xSpaces[block.Position.X] < block.Size.X)
-                xSpaces[block.Position.X] = block.Size.X;
-            if (ySpaces[block.Position.Y] < block.Size.Y)
-                ySpaces[block.Position.Y] = block.Size.Y;
-        }
-
-        var position = Vector.Zero;
-        for (var y = 0; y < ySpaces.Length; y++)
-        {
-            var ySpace = ySpaces[y];
-
-            for (var x = 0; x < xSpaces.Length; x++)
-            {
-                var xSpace = xSpaces[x];
-
-                TextShape block;
-                if (visualizedBlocks.TryGetValue(new Vector(x, y), out block))
-                {
-                    block.Position =
-                        position +
-                        new Vector(
-                            xSpace / 2 - block.Size.X / 2,
-                            ySpace / 2 - block.Size.Y / 2);
-                }
-
-                position.X += xSpace;
-            }
-
-            position.X = 0;
-            position.Y += ySpace;
-        }
-
-        var canvas = new TextCanvas
-        {
-            { 0, visualizedBlocks.Values }
-        };
+        var canvas = new TextCanvas();
+        Paint(canvas);
 
         display.Content = canvas.Illustrate();
-
-        /* TODO */
 
         var loop = true;
         do
@@ -143,6 +78,204 @@ public partial class ControlFlowGraph : IDisposable
     private void ReleaseHandle()
     {
         CfgDestruct(_handle);
+    }
+
+    private void Paint(TextCanvas canvas)
+    {
+        // Block -> Vector
+        var positionedBlocks = PositionBlocks(_root);
+
+        /*
+
+        +---+---+---+---+
+        | A |   |   |   |
+        +---+---+---+---+
+        |   | D |   |   |
+        +---+---+---+---+
+        | B | E |   |   |
+        +---+---+---+---+
+        |   | F | H |   |
+        +---+---+---+---+
+        | C | G | I | J |
+        +---+---+---+---+
+
+        */
+
+        // Vector -> TextRectangle
+        var visualizedBlocks =
+            positionedBlocks
+                .ToDictionary(
+                    block => block.Value,
+                    block =>
+                        (TextShape)
+                            new TextRectangle(
+                                block.Value,
+                                block.Key.Instructions
+                                    .Select(instruction => instruction.ToString())
+                                    .ToArray())
+                                {
+                                    ChTopLft = CH_DR,
+                                    ChTopRgt = CH_DL,
+
+                                    ChBotLft = CH_UR,
+                                    ChBotRgt = CH_UL,
+
+                                    ChHrz = CH_H,
+                                    ChVrt = CH_V
+                                });
+
+        canvas.Add(0, visualizedBlocks.Values);
+
+        var xSpaces = new int[visualizedBlocks.Keys.Max(v => v.X) + 1];
+        var ySpaces = new int[visualizedBlocks.Keys.Max(v => v.Y) + 1];
+        foreach (var block in visualizedBlocks.Values)
+        {
+            xSpaces[block.Position.X] = Math.Max(xSpaces[block.Position.X], block.Size.X);
+            ySpaces[block.Position.Y] = Math.Max(ySpaces[block.Position.Y], block.Size.Y);
+        }
+
+        /*
+
+        +----+---+------+-----+
+        |    |   |      |     |
+        |    |   |      |     |
+        +----+---+------+-----+
+        |    |   |      |     |
+        |    |   |      |     |
+        |    |   |      |     |
+        +----+---+------+-----+
+        |    |   |      |     |
+        +----+---+------+-----+
+        |    |   |      |     |
+        |    |   |      |     |
+        |    |   |      |     |
+        |    |   |      |     |
+        +----+---+------+-----+
+        |    |   |      |     |
+        |    |   |      |     |
+        |    |   |      |     |
+        +----+---+------+-----+
+
+        */
+
+        const int BLOCK_GAP = 1;
+
+        var position = Vector.Zero;
+        for (var y = 0; y < ySpaces.Length; y++)
+        {
+            var ySpace = ySpaces[y];
+
+            for (var x = 0; x < xSpaces.Length; x++)
+            {
+                var xSpace = xSpaces[x];
+
+                TextShape block;
+                if (visualizedBlocks.TryGetValue(new Vector(x, y), out block))
+                    block.Position = position + new Vector(xSpace / 2 - block.Size.X / 2, 0);
+
+                position.X += xSpace + BLOCK_GAP;
+            }
+
+            position.X = 0;
+            position.Y += ySpace + BLOCK_GAP;
+        }
+
+        /*
+
+        +----+---+------+-----+
+        | xx |   |      |     |
+        | xx |   |      |     |
+        +----+---+------+-----+
+        |    | x |      |     |
+        |    | x |      |     |
+        |    | x |      |     |
+        +----+---+------+-----+
+        |  x | x |      |     |
+        +----+---+------+-----+
+        |    | x | xxxx |     |
+        |    | x | xxxx |     |
+        |    |   | xxxx |     |
+        |    |   | xxxx |     |
+        +----+---+------+-----+
+        | xx | x |  xx  | xxx |
+        | xx |   |  xx  |     |
+        |    |   |  xx  |     |
+        +----+---+------+-----+
+
+        */
+
+        foreach (var parent in positionedBlocks)
+        {
+            var parentView = visualizedBlocks[parent.Value];
+
+            foreach (var child in parent.Key.Children)
+            {
+                var childView = visualizedBlocks[positionedBlocks[child]];
+
+                var start = parentView.Position +
+                    new Vector(parentView.Size.X / 2, parentView.Size.Y - 1);
+                var end = childView.Position +
+                    new Vector(childView.Size.X / 2, 0);
+
+                var diff = end - start;
+
+                if (diff.Y < 0)
+                {
+                    /* TODO */
+                    continue;
+                }
+
+                canvas[1].Add(
+                    new TextLineV(start, diff.Y)
+                    {
+                        ChTop = CH_DH,
+                        ChBot = CH_V,
+
+                        ChVrt = CH_V
+                    });
+                canvas[1].Add(
+                    new TextDot(end)
+                    {
+                        ChBdy = CH_UH
+                    });
+
+                if (diff.X == 0)
+                    continue;
+
+                canvas[2].Add(
+                    new TextLineH(new Vector(start.X, end.Y - 1), diff.X + Math.Sign(diff.X))
+                    {
+                        ChLft = diff.X > 0 ? CH_UR : CH_DR,
+                        ChRgt = diff.X > 0 ? CH_DL : CH_UL,
+
+                        ChHrz = CH_H
+                    });
+            }
+        }
+
+        /*
+
+        +----+---+------+-----+
+        | xx                  |
+        | xx                  |
+        +  . . .              +
+        |  .   x              |
+        |  .   x              |
+        |  .   x              |
+        +  . . .              +
+        |  x   x              |
+        +  .   . . . .        +
+        |  .   x   xxxx       |
+        |  .   x   xxxx       |
+        |  .   .   xxxx       |
+        |  .   .   xxxx       |
+        +  . . .     . . . .  +
+        | xx   x    xx    xxx |
+        | xx        xx        |
+        |           xx        |
+        +----+---+------+-----+
+
+        */
     }
 
     private static Dictionary<Block, Vector> PositionBlocks(Block root)
