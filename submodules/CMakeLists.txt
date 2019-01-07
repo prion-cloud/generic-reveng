@@ -11,7 +11,6 @@ set ( CAPSTONE_SYSZ_SUPPORT  OFF CACHE BOOL "Capstone: SystemZ support"      )
 set ( CAPSTONE_XCORE_SUPPORT OFF CACHE BOOL "Capstone: XCore support"        )
 
 add_subdirectory ( "capstone/" )
-add_subdirectory ( "unimage/"  )
 
 # The "submodules/unicorn/make.sh" script has to be executed first
 find_library ( UNICORN_LIBRARY unicorn PATHS "unicorn/" NO_DEFAULT_PATH )

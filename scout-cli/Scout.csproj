@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../submodules/cockpit/library/Cockpit.csproj" />
+    <ProjectReference Include="../submodules/unimage/library/Unimage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../build/scout-api/libscout-api.so" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <RootNamespace>Scout</RootNamespace>
+  </PropertyGroup>
+
+</Project>
