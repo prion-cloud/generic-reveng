@@ -4,26 +4,26 @@ using System.Runtime.InteropServices;
 
 public partial class ControlFlowGraph
 {
-    [DllImport("libscout-api.so", EntryPoint = "cfg_construct")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_construct")]
     private static extern IntPtr CfgConstruct(string fileName);
 
-    [DllImport("libscout-api.so", EntryPoint = "cfg_destruct")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_destruct")]
     private static extern void CfgDestruct(IntPtr cfg);
 
-    [DllImport("libscout-api.so", EntryPoint = "cfg_get_root")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_get_root")]
     private static extern IntPtr CfgGetRoot(IntPtr cfg);
 }
 
 public partial class Block
 {
-    [DllImport("libscout-api.so", EntryPoint = "cfg_block_count_successors")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_block_count_successors")]
     private static extern int CfgBlockCountSuccessors(IntPtr cfgBlock);
-    [DllImport("libscout-api.so", EntryPoint = "cfg_block_get_successor")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_block_get_successor")]
     private static extern IntPtr CfgBlockGetSuccessor(IntPtr cfgBlock, int index);
 
-    [DllImport("libscout-api.so", EntryPoint = "cfg_block_count_instructions")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_block_count_instructions")]
     private static extern int CfgBlockCountInstructions(IntPtr cfgBlock);
-    [DllImport("libscout-api.so", EntryPoint = "cfg_block_get_instruction")]
+    [DllImport("libstage0.so", EntryPoint = "cfg_block_get_instruction")]
     private static extern void CfgBlockGetInstruction(IntPtr cfgBlock, int index, out Instruction instruction);
 }
 
