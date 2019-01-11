@@ -1,15 +1,15 @@
 [submodule "submodules/capstone"]
 	path = submodules/capstone
 	url = https://github.com/aquynh/capstone.git
-[submodule "submodules/unicorn"]
-	path = submodules/unicorn
-	url = https://github.com/unicorn-engine/unicorn.git
 [submodule "submodules/stimpak"]
 	path = submodules/stimpak
 	url = https://github.com/superbr4in/stimpak.git
-[submodule "submodules/unimage"]
-	path = submodules/unimage
-	url = https://github.com/superbr4in/unimage.git
-[submodule "submodules/cockpit"]
-	path = submodules/cockpit
+[submodule "submodules/unicorn"]
+	path = submodules/unicorn
+	url = https://github.com/unicorn-engine/unicorn.git
+[submodule "front/submodules/cockpit"]
+	path = front/submodules/cockpit
 	url = https://github.com/superbr4in/cockpit.git
+[submodule "front/submodules/unimage"]
+	path = front/submodules/unimage
+	url = https://github.com/superbr4in/unimage.git
