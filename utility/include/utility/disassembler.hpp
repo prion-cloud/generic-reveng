@@ -9,6 +9,8 @@
 
 class disassembler : public std::shared_ptr<csh>
 {
+    std::shared_ptr<csh> cs_;
+
 public:
 
     explicit disassembler(machine_architecture const& architecture);
