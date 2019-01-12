@@ -1,7 +1,7 @@
 #pragma once
 
 #include <capstone/capstone.h>
-#include <stdint.h>
+#include <stdint.h> // NOLINT [modernize-deprecated-headers]
 
 #ifdef __cplusplus
 #define CFG_API extern "C"

@@ -88,6 +88,8 @@ debugger debugger::load_pe(std::istream& is)
     case 0xF0:
         is.seekg(0xD0, std::ios::cur);
         break;
+    default:
+        break;
     }
 
     specification.entry_point = image_base + relative_entry_point;

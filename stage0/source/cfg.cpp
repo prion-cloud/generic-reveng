@@ -78,20 +78,20 @@ std::vector<std::optional<uint64_t>> cfg::get_next_addresses(cs_insn const& inst
     case X86_INS_JO:
     case X86_INS_JP:
     case X86_INS_JS:
-        successors.push_back(instruction.address + instruction.size);
+        successors.emplace_back(instruction.address + instruction.size);
     case X86_INS_JMP:
         switch (op0.type)
         {
         case X86_OP_IMM:
-            successors.push_back(op0.imm);
+            successors.emplace_back(op0.imm);
             break;
         default:
-            successors.push_back(std::nullopt);
+            successors.emplace_back(std::nullopt);
             break;
         }
         break;
     default:
-        successors.push_back(instruction.address + instruction.size);
+        successors.emplace_back(instruction.address + instruction.size);
         break;
     }
 

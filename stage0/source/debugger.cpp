@@ -14,7 +14,7 @@ bool debugger::position(uint64_t const address)
 cs_insn debugger::current_instruction() const
 {
     auto address = position();
-    auto code = emulator_.read_memory(address, disassembler::max_instruction_size);
+    auto code = emulator_.read_memory(address, std::size(cs_insn().bytes));
 
     return disassembler_(&code, &address);
 }

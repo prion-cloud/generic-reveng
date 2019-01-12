@@ -44,7 +44,9 @@ cs_insn disassembler::operator()(std::vector<uint8_t>* const code, uint64_t* con
     handle_cs_error(
         cs_errno(cs));
 
-    *code = std::vector<uint8_t>(code_ptr, code_ptr + size);
+    *code = std::vector<uint8_t>(
+        code_ptr,
+        code_ptr + size); // NOLINT [cppcoreguidelines-pro-bounds-pointer-arithmetic]
 
     auto const cs_instruction = *cs_instruction_ptr;
     cs_free(cs_instruction_ptr, 1);
