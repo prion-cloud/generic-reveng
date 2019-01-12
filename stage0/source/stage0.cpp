@@ -39,5 +39,5 @@ void cfg_block_get_instruction(void const* const cfg_block, int const index, cs_
     auto instruction_it = static_cast<::cfg::block const*>(cfg_block)->cbegin();
     std::advance(instruction_it, index);
 
-    *instruction = *instruction_it->disassemble().operator->();
+    *instruction = *instruction_it;
 }

@@ -1,15 +1,15 @@
 #include "cfg.hpp"
 
-bool cfg::machine_instruction_compare::operator()(machine_instruction const& ins1, machine_instruction const& ins2) const
+bool cfg::machine_instruction_compare::operator()(cs_insn const& ins1, cs_insn const& ins2) const
 {
     return ins1.address < ins2.address;
 }
 
-bool cfg::machine_instruction_compare::operator()(machine_instruction const& ins, uint64_t const address) const
+bool cfg::machine_instruction_compare::operator()(cs_insn const& ins, uint64_t const address) const
 {
     return ins.address < address;
 }
-bool cfg::machine_instruction_compare::operator()(uint64_t const address, machine_instruction const& ins) const
+bool cfg::machine_instruction_compare::operator()(uint64_t const address, cs_insn const& ins) const
 {
     return address < ins.address;
 }
@@ -42,81 +42,58 @@ decltype(cfg::blocks_.end()) cfg::end() const
     return blocks_.end();
 }
 
-std::unordered_map<size_t, std::unordered_map<size_t, cfg::block const*>> cfg::get_layout() const
+std::vector<std::optional<uint64_t>> cfg::get_next_addresses(cs_insn const& instruction)
 {
-    auto const columns = get_columns();
-    auto const rows = get_rows();
+    if (instruction.detail == nullptr)
+        throw std::runtime_error("Missing instruction detail");
 
-    std::unordered_map<size_t, std::unordered_map<size_t, block const*>> layout;
+    // TODO only x86?
 
-    for (auto const& block : blocks_)
-        layout[columns.at(block.get())][rows.at(block.get())] = block.get();
+    auto const op0 = instruction.detail->x86.operands[0];
 
-    return layout;
-}
+    std::vector<std::optional<uint64_t>> successors;
 
-void get_columns(
-    cfg::block const* root,
-    std::unordered_map<cfg::block const*, size_t>& columns,
-    std::unordered_set<cfg::block const*>& visited)
-{
-    visited.insert(root);
-
-    auto const root_column = columns[root];
-
-    auto next_column = root_column;
-    for (auto const* const next : root->successors)
+    switch (instruction.id)
     {
-        if (visited.count(next) > 0)
-            continue;
-
-        columns.emplace(next, next_column++);
-
-        ::get_columns(next, columns, visited);
-    }
-}
-std::unordered_map<cfg::block const*, size_t> cfg::get_columns() const
-{
-    std::unordered_map<block const*, size_t> columns;
-    std::unordered_set<block const*> visited;
-
-    ::get_columns(root_, columns, visited);
-
-    return columns;
-}
-
-void get_rows(
-    cfg::block const* root,
-    std::unordered_map<cfg::block const*, size_t>& rows,
-    std::unordered_set<cfg::block const*>& visited)
-{
-    visited.insert(root);
-
-    auto const root_row = rows[root];
-
-    for (auto const* const next : root->successors)
-    {
-        if (visited.count(next) > 0)
-            continue;
-
-        auto& next_row = rows[next];
-
-        if (next_row > root_row)
-            continue;
-
-        next_row = root_row + 1;
-
-        ::get_rows(next, rows, visited);
+    case X86_INS_INVALID:
+    case X86_INS_INT3:
+    case X86_INS_RET:
+    case X86_INS_RETF:
+    case X86_INS_RETFQ:
+        break;
+    case X86_INS_JA:
+    case X86_INS_JAE:
+    case X86_INS_JB:
+    case X86_INS_JBE:
+    case X86_INS_JCXZ:
+    case X86_INS_JE:
+    case X86_INS_JG:
+    case X86_INS_JGE:
+    case X86_INS_JL:
+    case X86_INS_JLE:
+    case X86_INS_JNE:
+    case X86_INS_JNO:
+    case X86_INS_JNP:
+    case X86_INS_JNS:
+    case X86_INS_JO:
+    case X86_INS_JP:
+    case X86_INS_JS:
+        successors.push_back(instruction.address + instruction.size);
+    case X86_INS_JMP:
+        switch (op0.type)
+        {
+        case X86_OP_IMM:
+            successors.push_back(op0.imm);
+            break;
+        default:
+            successors.push_back(std::nullopt);
+            break;
+        }
+        break;
+    default:
+        successors.push_back(instruction.address + instruction.size);
+        break;
     }
 
-    visited.erase(root);
-}
-std::unordered_map<cfg::block const*, size_t> cfg::get_rows() const
-{
-    std::unordered_map<block const*, size_t> rows;
-    std::unordered_set<block const*> visited;
-
-    ::get_rows(root_, rows, visited);
-
-    return rows;
+    return successors;
 }

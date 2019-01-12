@@ -5,9 +5,9 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
-#include "instruction.hpp"
-
+#include <capstone/capstone.h>
 #include <stimpak/comparison.hpp>
 
 class cfg
@@ -16,15 +16,15 @@ class cfg
     {
         using is_transparent = void;
 
-        bool operator()(machine_instruction const& ins1, machine_instruction const& ins2) const;
+        bool operator()(cs_insn const& ins1, cs_insn const& ins2) const;
 
-        bool operator()(machine_instruction const& ins, uint64_t address) const;
-        bool operator()(uint64_t address, machine_instruction const& ins) const;
+        bool operator()(cs_insn const& ins, uint64_t address) const;
+        bool operator()(uint64_t address, cs_insn const& ins) const;
     };
 
 public:
 
-    struct block : std::set<machine_instruction, machine_instruction_compare>
+    struct block : std::set<cs_insn, machine_instruction_compare>
     {
         std::unordered_set<block*> successors;
         std::unordered_set<block*> predecessors;
@@ -51,15 +51,12 @@ public:
     decltype(blocks_.begin()) begin() const;
     decltype(blocks_.end()) end() const;
 
-    std::unordered_map<size_t, std::unordered_map<size_t, block const*>> get_layout() const;
-
 private:
 
     template <typename Provider>
     block* construct(Provider& provider);
 
-    std::unordered_map<block const*, size_t> get_columns() const;
-    std::unordered_map<block const*, size_t> get_rows() const;
+    std::vector<std::optional<uint64_t>> get_next_addresses(cs_insn const& instruction);
 };
 
 template <typename Provider>
@@ -83,17 +80,16 @@ cfg::block* cfg::construct(Provider& provider)
         new_block->insert(new_block->cend(), cur_instruction);
 
         // Inquire successors
-        auto const cur_disassembly = cur_instruction.disassemble();
-        next_addresses = cur_disassembly.get_successors();
+        next_addresses = get_next_addresses(cur_instruction);
 
         // Interrupt the block creation if...
         if (next_addresses.empty() ||                       // - there are no successors or
             !std::all_of(                                   // - some (actual) jumps or
                 next_addresses.cbegin(), next_addresses.cend(),
-                [&cur_disassembly](auto const& address)
+                [&cur_instruction](auto const& address)
                 {
                     return address.has_value() &&
-                        *address == cur_disassembly->address + cur_disassembly->size;
+                        *address == cur_instruction.address + cur_instruction.size;
                 }) ||
             blocks_.lower_bound(*next_addresses.front()) != // - the next instruction is known
                 blocks_.upper_bound(*next_addresses.front()))

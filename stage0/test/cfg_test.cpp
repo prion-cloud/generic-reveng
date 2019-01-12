@@ -22,7 +22,7 @@ public:
     uint64_t position() const;
     void position(uint64_t address);
 
-    machine_instruction current_instruction() const;
+    cs_insn current_instruction() const;
 };
 
 std::string to_cfg_string(cfg const& cfg);
@@ -343,14 +343,18 @@ void test_provider_x86_32::position(uint64_t const address)
     position_ = address;
 }
 
-machine_instruction test_provider_x86_32::current_instruction() const
+cs_insn test_provider_x86_32::current_instruction() const
 {
-    auto const code_vector = instruction_codes_.at(position_);
+    auto const code = instruction_codes_.at(position_);
 
-    std::array<uint8_t, machine_instruction::SIZE> code_array;
-    std::move(code_vector.cbegin(), code_vector.cend(), code_array.begin());
+    cs_insn* cs_instructions;
+    cs_disasm(*cs_, &code.front(), code.size(), position_, 1, &cs_instructions);
 
-    return machine_instruction(cs_, position_, code_array);
+    auto const cs_instruction = cs_instructions[0];
+
+    cs_free(cs_instructions, 1);
+
+    return cs_instruction;
 }
 
 std::string to_cfg_string(cfg const& cfg)
@@ -407,11 +411,9 @@ std::string to_cfg_string(cfg const& cfg)
                 << std::endl
                 << std::hex << std::uppercase << instruction.address << ' ';
 
-            auto const disassembly = instruction.disassemble();
+            cfg_ss << instruction.mnemonic;
 
-            cfg_ss << disassembly->mnemonic;
-
-            std::string const op_str = disassembly->op_str;
+            std::string const op_str = instruction.op_str;
             if (!op_str.empty())
                 cfg_ss << ' ' << op_str;
         }

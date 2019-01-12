@@ -14,14 +14,12 @@ set_target_properties ( stage0 PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
 
 target_link_libraries ( stage0 PRIVATE
-    capstone
     stimpak
-    unicorn )
+    utility )
 target_link_libraries ( stage0-test PRIVATE
-    capstone
     stage0
     stimpak
-    unicorn )
+    utility )
 
 target_include_directories ( stage0 INTERFACE
     "include" )

@@ -56,20 +56,10 @@ debugger debugger::load_pe(std::istream& is)
     switch (machine)
     {
     case 0x14C:
-    case 0x8664:
-        specification.machine_architecture = std::make_pair(CS_ARCH_X86, UC_ARCH_X86);
-        break;
-    default:
-        throw std::runtime_error("Unknown architecture");
-    }
-
-    switch (machine)
-    {
-    case 0x14C:
-        specification.machine_mode = std::make_pair(CS_MODE_32, UC_MODE_32);
+        specification.architecture = machine_architecture::x86_32;
         break;
     case 0x8664:
-        specification.machine_mode = std::make_pair(CS_MODE_64, UC_MODE_64);
+        specification.architecture = machine_architecture::x86_64;
         break;
     default:
         throw std::runtime_error("Unknown architecture");

@@ -6,32 +6,26 @@
 #include <unordered_map>
 #include <vector>
 
-#include "instruction.hpp"
-
-#include <capstone/capstone.h>
-#include <unicorn/unicorn.h>
+#include <utility/disassembler.hpp>
+#include <utility/emulator.hpp>
 
 class debugger
 {
     struct executable_specification
     {
-        std::pair<cs_arch, uc_arch> machine_architecture;
-        std::pair<cs_mode, uc_mode> machine_mode;
+        machine_architecture architecture;
 
         uint64_t entry_point { };
 
         std::unordered_map<uint64_t, std::vector<uint8_t>> memory_regions;
     };
 
-    std::shared_ptr<csh> cs_;
-    std::shared_ptr<uc_engine> uc_;
+    disassembler disassembler_;
+    emulator emulator_;
 
     int ip_register_;
 
 public:
-
-    debugger(debugger const&) = delete;
-    debugger& operator=(debugger const&) = delete;
 
     /**
      * Reads the instruction pointer value.
@@ -49,7 +43,7 @@ public:
      * Inquires the current instruction.
      * \returns The machine instruction the instruction pointer currently points to.
      */
-    machine_instruction current_instruction() const;
+    cs_insn current_instruction() const;
 
     /**
      * Indicates whether the instruction pointer references mapped memory.
@@ -88,20 +82,6 @@ public:
 private:
 
     explicit debugger(executable_specification const& specification);
-
-    uint64_t read_register(int id) const;
-    void write_register(int id, uint64_t value);
-
-    void allocate_memory(uint64_t address, size_t size);
-    void allocate_memory(uint64_t address, std::vector<uint8_t> const& data);
-
-    std::vector<uint8_t> read_memory(uint64_t address, size_t size) const;
-    void write_memory(uint64_t address, std::vector<uint8_t> const& data);
-
-    std::set<uc_mem_region> get_memory_regions() const;
-
-    cs_err get_cs_error() const;
-    uc_err get_uc_error() const;
 
     static debugger load_pe(std::istream& is);
     static debugger load_elf(std::istream& is);
