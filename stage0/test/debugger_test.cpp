@@ -8,13 +8,13 @@
 
 std::string get_file_path(std::string const& file_name);
 
-executable_specification create_executable(machine_architecture architecture, std::vector<uint8_t> code);
+executable create_executable(machine_architecture architecture, std::vector<uint8_t> code);
 
 std::string cfg_string(control_flow_graph const& cfg);
 
 TEST_CASE("Debug x86-32")
 {
-    auto d = debugger::load(::get_file_path("helloworld_32.exe"));
+    auto d = debugger::load_file(::get_file_path("helloworld_32.exe"));
 
     CHECK(d->position() == 0x4012A8);
 
@@ -22,7 +22,7 @@ TEST_CASE("Debug x86-32")
 }
 TEST_CASE("Debug x86-64")
 {
-    auto d = debugger::load(::get_file_path("helloworld_64.exe"));
+    auto d = debugger::load_file(::get_file_path("helloworld_64.exe"));
 
     CHECK(d->position() == 0x140011023);
 
@@ -323,7 +323,7 @@ std::string get_file_path(std::string const& file_name)
     return std::string(::dirname(std::string(__FILE__).data())) + "/" + file_name;
 }
 
-executable_specification create_executable(machine_architecture architecture, std::vector<uint8_t> code)
+executable create_executable(machine_architecture architecture, std::vector<uint8_t> code)
 {
     return { architecture, 0, { { 0, code } } };
 }

@@ -4,7 +4,7 @@
 
 void const* cfg_construct(char const* const file_name)
 {
-    return debugger::load(file_name).release();
+    return debugger::load_file(file_name).release();
 }
 void cfg_destruct(void const* const cfg)
 {

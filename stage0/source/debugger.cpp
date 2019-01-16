@@ -2,13 +2,13 @@
 
 #include "debugger.hpp"
 
-debugger::debugger(executable_specification const& specification)
-    : disassembler_(specification.architecture), emulator_(specification.architecture)
+debugger::debugger(executable const& executable)
+    : disassembler_(executable.architecture), emulator_(executable.architecture)
 {
     int sp_register;
     int bp_register;
 
-    switch (specification.architecture)
+    switch (executable.architecture)
     {
     case machine_architecture::x86_32:
         ip_register_ = UC_X86_REG_EIP;
@@ -24,7 +24,7 @@ debugger::debugger(executable_specification const& specification)
         throw std::runtime_error("Unsupported architecture");
     }
 
-    for (auto const& [address, data] : specification.memory_regions)
+    for (auto const& [address, data] : executable.sections)
     {
         if (data.empty())
             continue;
@@ -33,11 +33,11 @@ debugger::debugger(executable_specification const& specification)
         emulator_.write_memory(address, data);
     }
 
-    position(specification.entry_point);
+    position(executable.entry_point);
 
     cfg_root_ = construct_cfg();
 
-    position(specification.entry_point);
+    position(executable.entry_point);
 
     auto constexpr stack_bottom = UINT32_MAX;
     auto constexpr stack_size = 0x1000;
