@@ -13,7 +13,7 @@ inline void delete_cs(csh* cs)
 }
 
 disassembler::disassembler(machine_architecture const& architecture)
-    : cs_(new csh, delete_cs)
+    : cs_(new csh, ::delete_cs)
 {
     cs_arch cs_architecture;
     cs_mode cs_mode;
@@ -29,29 +29,28 @@ disassembler::disassembler(machine_architecture const& architecture)
         break;
     }
 
-    handle_cs_error(
+    ::handle_cs_error(
         cs_open(cs_architecture, cs_mode, cs_.get()));
-    handle_cs_error(
+    ::handle_cs_error(
         cs_option(*cs_, CS_OPT_DETAIL, CS_OPT_ON));
 }
 
-cs_insn disassembler::operator()(std::vector<uint8_t>* const code, uint64_t* const address) const
+std::shared_ptr<instruction> disassembler::operator()(std::vector<uint8_t>* const code, uint64_t* const address) const
 {
     auto const* code_ptr = &code->front();
     auto size = code->size();
 
-    auto* cs_instruction_ptr = cs_malloc(*cs_);
-    cs_disasm_iter(*cs_, &code_ptr, &size, address, cs_instruction_ptr);
+    std::shared_ptr<instruction> const instruction(
+        cs_malloc(*cs_),
+        [](auto* instruction) { cs_free(instruction, 1); });
+    cs_disasm_iter(*cs_, &code_ptr, &size, address, instruction.get());
 
-    handle_cs_error(
+    ::handle_cs_error(
         cs_errno(*cs_));
 
     *code = std::vector<uint8_t>(
         code_ptr,
         code_ptr + size); // NOLINT [cppcoreguidelines-pro-bounds-pointer-arithmetic]
 
-    auto const cs_instruction = *cs_instruction_ptr;
-    cs_free(cs_instruction_ptr, 1);
-
-    return cs_instruction;
+    return instruction;
 }

@@ -1,88 +1,54 @@
 #pragma once
 
-#include <istream>
-#include <memory>
-#include <set>
 #include <unordered_map>
-#include <vector>
 
 #include <utility/disassembler.hpp>
 #include <utility/emulator.hpp>
 
+#include "control_flow_graph.hpp"
+
+struct executable_specification
+{
+    machine_architecture architecture;
+
+    uint64_t entry_point { };
+
+    std::unordered_map<uint64_t, std::vector<uint8_t>> memory_regions;
+};
+
 class debugger
 {
-    struct executable_specification
-    {
-        machine_architecture architecture;
-
-        uint64_t entry_point { };
-
-        std::unordered_map<uint64_t, std::vector<uint8_t>> memory_regions;
-    };
-
     disassembler disassembler_;
     emulator emulator_;
 
     int ip_register_;
 
+    control_flow_graph cfg_;
+    control_flow_graph::const_iterator cfg_root_;
+
 public:
-
-    /**
-     * Reads the instruction pointer value.
-     * \returns The current emulated memory address.
-     */
-    uint64_t position() const;
-    /**
-     * Edits the instruction pointer value.
-     * \param [in] address The desired emulated memory address.
-     * \returns True if the new address is mapped in emulated memory, otherwise false.
-     */
-    bool position(uint64_t address);
-
-    /**
-     * Inquires the current instruction.
-     * \returns The machine instruction the instruction pointer currently points to.
-     */
-    cs_insn current_instruction() const;
-
-    /**
-     * Indicates whether the instruction pointer references mapped memory.
-     * \return True if the pointed address is mapped in emulated memory, otherwise false.
-     */
-    bool is_mapped() const;
-    /**
-     * Indicates whether a memory address points to mapped memory.
-     * \param [in] address The emulated memory address to be evaluated.
-     * \returns True if the specified address is mapped in emulated memory, otherwise false.
-     */
-    bool is_mapped(uint64_t address) const;
-
-    /**
-     * Sets the instruction pointer to the next instruction without emulating the current one.
-     * \returns True if the new address is mapped in emulated memory, otherwise false.
-     */
-    bool skip();
-    /**
-     * Advances the instruction pointer.
-     * \param [in] count The number of bytes to be skipped.
-     * \returns True if the new address is mapped in emulated memory, otherwise false.
-     */
-    bool skip(uint64_t count);
-
-    /**
-     * Emulates the current instruction.
-     * \remarks Updates emulated registers and memory.
-     * \returns True if the emulation was successful, otherwise false.
-     */
-    bool step_into();
-
-    static debugger load(std::string const& file_name);
-    static debugger load(std::istream& is);
-
-private:
 
     explicit debugger(executable_specification const& specification);
 
-    static debugger load_pe(std::istream& is);
-    static debugger load_elf(std::istream& is);
+    uint64_t position() const;
+    void position(uint64_t address);
+
+    std::shared_ptr<instruction> current_instruction() const;
+
+    control_flow_graph const& cfg() const;
+    control_flow_graph::value_type const& cfg_root() const;
+
+    static std::unique_ptr<debugger> load(std::string const& file_name);
+    static std::unique_ptr<debugger> load(std::istream& is);
+
+private:
+
+    control_flow_graph::const_iterator construct_cfg();
+
+    control_flow_block create_block(std::vector<std::optional<uint64_t>>* next_addresses);
+
+    std::vector<std::optional<uint64_t>> get_next_addresses(std::shared_ptr<instruction> const& instruction);
+
+    static std::unique_ptr<debugger> load_pe(std::istream& is);
+    static std::unique_ptr<debugger> load_elf(std::istream& is);
 };

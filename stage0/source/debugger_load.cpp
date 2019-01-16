@@ -19,7 +19,7 @@ std::vector<uint8_t> extract(std::istream& is, size_t size)
     return result;
 }
 
-debugger debugger::load(std::string const& file_name)
+std::unique_ptr<debugger> debugger::load(std::string const& file_name)
 {
     std::ifstream file_stream(file_name, std::ios::binary);
 
@@ -28,7 +28,7 @@ debugger debugger::load(std::string const& file_name)
 
     return load(file_stream);
 }
-debugger debugger::load(std::istream& is)
+std::unique_ptr<debugger> debugger::load(std::istream& is)
 {
     auto const magic_number = extract<uint32_t>(is);
     is.seekg(-sizeof(uint32_t), std::ios::cur);
@@ -42,7 +42,7 @@ debugger debugger::load(std::istream& is)
     throw std::runtime_error("Unknown binary format");
 }
 
-debugger debugger::load_pe(std::istream& is)
+std::unique_ptr<debugger> debugger::load_pe(std::istream& is)
 {
     executable_specification specification;
 
@@ -108,9 +108,9 @@ debugger debugger::load_pe(std::istream& is)
         specification.memory_regions.emplace(image_base + virtual_address, extract(is, raw_size));
     }
 
-    return debugger(specification);
+    return std::make_unique<debugger>(specification);
 }
-debugger debugger::load_elf(std::istream& is)
+std::unique_ptr<debugger> debugger::load_elf(std::istream& is)
 {
     // TODO: ELF support
     throw std::runtime_error("Unknown binary format");
