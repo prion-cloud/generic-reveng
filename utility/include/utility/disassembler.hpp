@@ -9,13 +9,21 @@
 
 using instruction = cs_insn;
 
-class disassembler : public std::shared_ptr<csh>
+class disassembler
 {
+public:
+
+    using architecture = cs_arch;
+    using mode = cs_mode;
+
+private:
+
     std::shared_ptr<csh> cs_;
 
 public:
 
-    explicit disassembler(machine_architecture const& architecture);
+    disassembler();
+    disassembler(architecture architecture, mode mode);
 
-    std::shared_ptr<cs_insn> operator()(std::vector<uint8_t>* code, uint64_t* address) const;
+    std::shared_ptr<instruction> operator()(std::vector<uint8_t>* code, uint64_t* address) const;
 };

@@ -1,67 +1,26 @@
 #include <algorithm>
+#include <fstream>
 
 #include "debugger.hpp"
+#include "loader.hpp"
 
-debugger::debugger(executable const& executable)
-    : disassembler_(executable.architecture), emulator_(executable.architecture)
+void debugger::load_executable_file(std::string const& path)
 {
-    int sp_register;
-    int bp_register;
+    std::ifstream file_stream(path);
 
-    switch (executable.architecture)
-    {
-    case machine_architecture::x86_32:
-        ip_register_ = UC_X86_REG_EIP;
-        sp_register = UC_X86_REG_ESP;
-        bp_register = UC_X86_REG_EBP;
-        break;
-    case machine_architecture::x86_64:
-        ip_register_ = UC_X86_REG_RIP;
-        sp_register = UC_X86_REG_RSP;
-        bp_register = UC_X86_REG_RBP;
-        break;
-    default:
-        throw std::runtime_error("Unsupported architecture");
-    }
+    if (!file_stream)
+        throw std::runtime_error("Invalid file");
 
-    for (auto const& [address, data] : executable.sections)
-    {
-        if (data.empty())
-            continue;
+    std::vector<char> data(
+        (std::istreambuf_iterator<char>(file_stream)),
+        std::istreambuf_iterator<char>());
 
-        emulator_.allocate_memory(address, data.size());
-        emulator_.write_memory(address, data);
-    }
-
-    position(executable.entry_point);
-
-    cfg_root_ = construct_cfg();
-
-    position(executable.entry_point);
-
-    auto constexpr stack_bottom = UINT32_MAX;
-    auto constexpr stack_size = 0x1000;
-    emulator_.allocate_memory(stack_bottom - stack_size + 1, stack_size);
-
-    emulator_.write_register(sp_register, stack_bottom);
-    emulator_.write_register(bp_register, stack_bottom);
+    loader(&disassembler_, &emulator_)(*reinterpret_cast<std::vector<uint8_t>*>(&data));
 }
 
 uint64_t debugger::position() const
 {
-    return emulator_.read_register(ip_register_);
-}
-void debugger::position(uint64_t const address)
-{
-    emulator_.write_register(ip_register_, address);
-}
-
-std::shared_ptr<instruction> debugger::current_instruction() const
-{
-    auto address = position();
-    auto code = emulator_.read_memory(address, std::size(instruction().bytes));
-
-    return disassembler_(&code, &address);
+    return emulator_.position();
 }
 
 control_flow_graph const& debugger::cfg() const
@@ -97,7 +56,7 @@ control_flow_graph::const_iterator debugger::construct_cfg()
         if (existing_block_search == cfg_.upper_bound(*next_address))
         {
             // RECURSE with this successor
-            position(*next_address);
+            emulator_.position(*next_address);
             current_successors.insert(&construct_cfg()->first);
 
             continue;
@@ -148,8 +107,11 @@ control_flow_block debugger::create_block(std::vector<std::optional<uint64_t>>* 
     // Fill the block with contiguous instructions
     while (true)
     {
+        auto address = position();
+        auto code = emulator_.read_memory(address, std::size(instruction().bytes));
+
         // Store current machine instruction
-        auto const instruction = current_instruction();
+        auto const instruction = disassembler_(&code, &address);
         block.insert(block.end(), instruction);
 
         // Inquire successors
@@ -169,7 +131,7 @@ control_flow_block debugger::create_block(std::vector<std::optional<uint64_t>>* 
             break;
 
         // Continue the block creation
-        position(*next_addresses->front());
+        emulator_.position(*next_addresses->front());
     }
 
     return block;

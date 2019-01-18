@@ -1,10 +1,15 @@
+#include <fstream>
+
 #include "../include/stage0/stage0.h"
 
 #include "debugger.hpp"
 
 void const* cfg_construct(char const* const file_name)
 {
-    return debugger::load_file(file_name).release();
+    auto* deb = new debugger; // NOLINT [cppcoreguidelines-owning-memory]
+    deb->load_executable_file(file_name);
+
+    return deb;
 }
 void cfg_destruct(void const* const cfg)
 {
