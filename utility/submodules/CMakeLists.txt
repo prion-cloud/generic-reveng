@@ -1,4 +1,4 @@
-cmake_minimum_required ( VERSION 3.8 )
+cmake_minimum_required ( VERSION 3.11 )
 
 set ( CAPSTONE_BUILD_STATIC       OFF CACHE BOOL "Capstone: Build static library" )
 set ( CAPSTONE_BUILD_TESTS        OFF CACHE BOOL "Capstone: Build tests"          )
