@@ -28,9 +28,9 @@ std::unique_ptr<executable const> executable::load_pe(std::vector<char> const& d
     auto pe_binary = std::make_unique<executable>();
 
     auto const dos_info =
-        regex_search_values(data, "MZ.{58}(.{4})");
+        regex_search_values(data, "MZ[^]{58}([^]{4})");
     auto const pe_info =
-        regex_search_values(data, "PE\\0\\0(.{2})(.{2}).{12}(.{2}).{18}(.{4}).{4}(.{8})", dos_info.at(0));
+        regex_search_values(data, "PE\\0\\0([^]{2})([^]{2})[^]{12}([^]{2})[^]{18}([^]{4})[^]{4}([^]{8})", dos_info.at(0));
 
     switch (pe_info.at(0))
     {
@@ -53,7 +53,7 @@ std::unique_ptr<executable const> executable::load_pe(std::vector<char> const& d
     for (size_t section_index = 0; section_index < pe_info.at(1); ++section_index)
     {
         auto const section_info =
-            regex_search_values(data, "(.{4})(.{4})(.{4})", section_index * 0x28 + dos_info.at(0) + pe_info.at(2) + 0x24);
+            regex_search_values(data, "([^]{4})([^]{4})([^]{4})", section_index * 0x28 + dos_info.at(0) + pe_info.at(2) + 0x24);
 
         auto const start = data.begin() + section_info.at(2);
         pe_binary->sections.emplace_back(
