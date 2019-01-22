@@ -24,3 +24,11 @@ public:
 
     std::shared_ptr<instruction const> operator()(uint64_t* address, std::basic_string_view<uint8_t>* code) const;
 };
+
+static_assert(std::is_destructible_v<disassembler>);
+
+static_assert(std::is_move_constructible_v<disassembler>);
+static_assert(std::is_move_assignable_v<disassembler>);
+
+static_assert(std::is_copy_constructible_v<disassembler>);
+static_assert(std::is_copy_assignable_v<disassembler>);

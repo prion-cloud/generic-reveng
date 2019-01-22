@@ -26,3 +26,11 @@ public:
 
     control_flow_graph const& cfg() const;
 };
+
+static_assert(std::is_destructible_v<debugger>);
+
+static_assert(std::is_move_constructible_v<debugger>);
+static_assert(std::is_move_assignable_v<debugger>);
+
+static_assert(!std::is_copy_constructible_v<debugger>);
+static_assert(!std::is_copy_assignable_v<debugger>);

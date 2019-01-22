@@ -54,3 +54,11 @@ private:
     uint64_t read_register(int id) const;
     void write_register(int id, uint64_t value) const;
 };
+
+static_assert(std::is_destructible_v<emulator>);
+
+static_assert(std::is_move_constructible_v<emulator>);
+static_assert(std::is_move_assignable_v<emulator>);
+
+static_assert(!std::is_copy_constructible_v<emulator>);
+static_assert(!std::is_copy_assignable_v<emulator>);

@@ -66,3 +66,19 @@ private:
 
     node const& construct(uint64_t address);
 };
+
+static_assert(std::is_destructible_v<control_flow_block>);
+
+static_assert(std::is_move_constructible_v<control_flow_block>);
+static_assert(std::is_move_assignable_v<control_flow_block>);
+
+static_assert(std::is_copy_constructible_v<control_flow_block>);
+static_assert(std::is_copy_assignable_v<control_flow_block>);
+
+static_assert(std::is_destructible_v<control_flow_graph>);
+
+static_assert(std::is_move_constructible_v<control_flow_graph>);
+static_assert(std::is_move_assignable_v<control_flow_graph>);
+
+static_assert(std::is_copy_constructible_v<control_flow_graph>);
+static_assert(std::is_copy_assignable_v<control_flow_graph>);
