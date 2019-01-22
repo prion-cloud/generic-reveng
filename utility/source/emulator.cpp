@@ -4,7 +4,7 @@
 
 #define HANDLE_UC_ERROR(uc_call)                            \
 {                                                           \
-    auto const error_code = uc_call;                        \
+    uc_err const error_code = uc_call;                      \
     if (error_code != UC_ERR_OK)                            \
     {                                                       \
         std::ostringstream message;                         \
@@ -22,7 +22,23 @@ void emulator::uc_deleter::operator()(uc_engine** const uc) const
     delete uc; // NOLINT [cppcoreguidelines-owning-memory]
 }
 
-emulator::emulator() = default;
+bool emulator::memory_region_exclusive_address_order::operator()(uc_mem_region const& regionA,
+    uc_mem_region const& regionB) const
+{
+    return regionA.end < regionB.begin;
+}
+
+bool emulator::memory_region_exclusive_address_order::operator()(uc_mem_region const& region, uint64_t const address) const
+{
+    return region.end < address;
+}
+bool emulator::memory_region_exclusive_address_order::operator()(uint64_t const address, uc_mem_region const& region) const
+{
+    return address < region.begin;
+}
+
+emulator::emulator()
+    : ip_register_() { }
 emulator::emulator(uc_arch const architecture, uc_mode const mode, int const ip_register)
     : uc_(new uc_engine*), ip_register_(ip_register)
 {
@@ -39,26 +55,42 @@ void emulator::position(uint64_t const address) const
     return write_register(ip_register_, address);
 }
 
-void emulator::map_memory(uint64_t const address, size_t const size) const
+std::basic_string_view<uint8_t> emulator::get_memory(uint64_t const address) const
 {
-    size_t constexpr page_size = 0x1000;
+    auto const memory_search = memory_.lower_bound(address);
 
-    HANDLE_UC_ERROR(
-        uc_mem_map(*uc_, address, page_size * ((size - 1) / page_size + 1), UC_PROT_ALL));
+    if (memory_search == memory_.upper_bound(address))
+        HANDLE_UC_ERROR(UC_ERR_ARG);
+
+    auto const& [region, data] = *memory_search;
+
+    return std::basic_string_view<uint8_t>(&data.at(address - region.begin), region.end - address + 1);
 }
-
-std::vector<uint8_t> emulator::read_memory(uint64_t const address, size_t const size) const
+void emulator::allocate_memory(uint64_t address, std::vector<uint8_t> data)
 {
-    std::vector<uint8_t> data(size);
-    HANDLE_UC_ERROR(
-        uc_mem_read(*uc_, address, data.data(), data.size()));
+    auto constexpr page_size = 0x1000;
 
-    return data;
-}
-void emulator::write_memory(uint64_t const address, std::vector<uint8_t> const& data) const
-{
+    address = page_size * (address / page_size);
+
+    auto const size = page_size * ((data.size() - 1) / page_size + 1);
+    data.resize(size);
+
+    auto const permissions = UC_PROT_ALL; // TODO
+
+    uc_mem_region const region
+    {
+        address,
+        address + size - 1,
+        permissions
+    };
+
+    auto const [memory_it, insertion_successful] = memory_.emplace(region, std::move(data));
+
+    if (!insertion_successful)
+        HANDLE_UC_ERROR(UC_ERR_ARG);
+
     HANDLE_UC_ERROR(
-        uc_mem_write(*uc_, address, data.data(), data.size()));
+        uc_mem_map_ptr(*uc_, address, size, permissions, memory_it->second.data()));
 }
 
 void emulator::operator()() const

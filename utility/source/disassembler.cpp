@@ -4,7 +4,7 @@
 
 #define HANDLE_CS_ERROR(cs_call)                            \
 {                                                           \
-    auto const error_code = cs_call;                        \
+    cs_err const error_code = cs_call;                      \
     if (error_code != CS_ERR_OK)                            \
     {                                                       \
         std::ostringstream message;                         \
@@ -37,7 +37,7 @@ disassembler::disassembler(cs_arch const architecture, cs_mode const mode)
         cs_option(*cs_, CS_OPT_DETAIL, CS_OPT_ON));
 }
 
-std::shared_ptr<cs_insn> disassembler::operator()(std::vector<uint8_t>* const code, uint64_t* const address) const
+std::shared_ptr<cs_insn const> disassembler::operator()(uint64_t* const address, std::basic_string_view<uint8_t>* const code) const
 {
     auto const* code_ptr = code->data();
     auto size = code->size();
@@ -48,9 +48,7 @@ std::shared_ptr<cs_insn> disassembler::operator()(std::vector<uint8_t>* const co
     HANDLE_CS_ERROR(
         cs_errno(*cs_));
 
-    *code = std::vector<uint8_t>(
-        code_ptr,
-        code_ptr + size); // NOLINT [cppcoreguidelines-pro-bounds-pointer-arithmetic]
+    *code = std::basic_string_view<uint8_t>(code_ptr, size);
 
     return instruction;
 }

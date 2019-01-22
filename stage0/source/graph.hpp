@@ -1,7 +1,14 @@
 #pragma once
 
 #include <map>
-#include <unordered_set>
+#include <set>
 
 template <typename T, typename Comparator>
-using graph = std::map<T, std::unordered_set<T const*>, Comparator>;
+class graph : public std::map<T, std::set<std::reference_wrapper<T const>, Comparator>, Comparator>
+{
+    using base = std::map<T, std::set<std::reference_wrapper<T const>, Comparator>, Comparator>;
+
+public:
+
+    using node = typename base::value_type;
+};

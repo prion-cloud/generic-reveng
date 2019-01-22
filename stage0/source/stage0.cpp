@@ -1,5 +1,3 @@
-#include <fstream>
-
 #include "../include/stage0/stage0.h"
 
 #include "debugger.hpp"
@@ -18,28 +16,28 @@ void cfg_destruct(void const* const cfg)
 
 void const* cfg_get_root(void const* const cfg)
 {
-    return &static_cast<debugger const*>(cfg)->cfg_root();
+    return &static_cast<debugger const*>(cfg)->cfg().root();
 }
 
 int cfg_block_count_successors(void const* const cfg_block)
 {
-    return static_cast<control_flow_graph::value_type const*>(cfg_block)->second.size();
+    return static_cast<control_flow_graph::node const*>(cfg_block)->second.size();
 }
 void const* cfg_block_get_successor(void const* const cfg_block, int const index)
 {
-    auto successor_it = static_cast<control_flow_graph::value_type const*>(cfg_block)->second.begin();
+    auto successor_it = static_cast<control_flow_graph::node const*>(cfg_block)->second.begin();
     std::advance(successor_it, index);
 
-    return *successor_it;
+    return &*successor_it;
 }
 
 int cfg_block_count_instructions(void const* const cfg_block)
 {
-    return static_cast<control_flow_graph::value_type const*>(cfg_block)->first.size();
+    return static_cast<control_flow_graph::node const*>(cfg_block)->first.size();
 }
 void cfg_block_get_instruction(void const* const cfg_block, int const index, cs_insn* const instruction)
 {
-    auto instruction_it = static_cast<control_flow_graph::value_type const*>(cfg_block)->first.begin();
+    auto instruction_it = static_cast<control_flow_graph::node const*>(cfg_block)->first.begin();
     std::advance(instruction_it, index);
 
     *instruction = **instruction_it;

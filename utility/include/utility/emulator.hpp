@@ -1,11 +1,10 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <vector>
 
 #include <unicorn/unicorn.h>
-
-#include "machine_architecture.hpp"
 
 class emulator
 {
@@ -21,9 +20,21 @@ private:
         void operator()(uc_engine** uc) const;
     };
 
+    struct memory_region_exclusive_address_order
+    {
+        using is_transparent = std::true_type;
+
+        bool operator()(uc_mem_region const& regionA, uc_mem_region const& regionB) const;
+
+        bool operator()(uc_mem_region const& region, uint64_t address) const;
+        bool operator()(uint64_t address, uc_mem_region const& region) const;
+    };
+
     std::unique_ptr<uc_engine*, uc_deleter> uc_;
 
     int ip_register_;
+
+    std::map<uc_mem_region, std::vector<uint8_t>, memory_region_exclusive_address_order> memory_;
 
 public:
 
@@ -33,10 +44,8 @@ public:
     uint64_t position() const;
     void position(uint64_t address) const;
 
-    void map_memory(uint64_t address, size_t size) const;
-
-    std::vector<uint8_t> read_memory(uint64_t address, size_t size) const;
-    void write_memory(uint64_t address, std::vector<uint8_t> const& data) const;
+    std::basic_string_view<uint8_t> get_memory(uint64_t address) const;
+    void allocate_memory(uint64_t address, std::vector<uint8_t> data);
 
     void operator()() const;
 

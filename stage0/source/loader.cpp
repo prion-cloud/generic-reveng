@@ -22,6 +22,7 @@ void loader::operator()(std::vector<uint8_t> const& data) const
 std::vector<uint64_t> regex_examine_data(std::vector<uint8_t> const& data, std::string const& regex_pattern,
     size_t data_offset = 0)
 {
+    // NOLINTNEXTLINE [cppcoreguidelines-pro-type-reinterpret-cast]
     std::string_view const data_str(reinterpret_cast<char const*>(data.data()), data.size());
 
     std::cmatch results;
@@ -34,7 +35,7 @@ std::vector<uint64_t> regex_examine_data(std::vector<uint8_t> const& data, std::
             std::vector<uint8_t> bytes(match.first, match.second);
             bytes.resize(sizeof(uint64_t));
 
-            return *reinterpret_cast<uint64_t const*>(bytes.data());
+            return *reinterpret_cast<uint64_t const*>(bytes.data()); // NOLINT [cppcoreguidelines-pro-type-reinterpret-cast]
         });
 
     return values;
@@ -85,9 +86,8 @@ void loader::load_pe(std::vector<uint8_t> const& data) const
         if (section_info.at(1) == 0)
             continue;
 
-        emulator_->map_memory(section_info.at(0), section_info.at(1));
-
         auto const data_begin = data.begin() + section_info.at(2);
-        emulator_->write_memory(section_info.at(0), std::vector<uint8_t>(data_begin, data_begin + section_info.at(1)));
+        emulator_->allocate_memory(image_base + section_info.at(0),
+            std::vector<uint8_t>(data_begin, data_begin + section_info.at(1)));
     }
 }
