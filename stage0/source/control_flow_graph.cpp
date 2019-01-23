@@ -17,43 +17,38 @@ bool instruction_address_order::operator()(uint64_t const address, std::shared_p
     return address < instruction->address;
 }
 
-control_flow_block::control_flow_block(disassembler const& disassembler, uint64_t address,
-    std::optional<uint64_t> const& max_address, std::basic_string_view<uint8_t> code)
+std::unordered_set<std::optional<uint64_t>> get_called_addresses(instruction const& instruction)
 {
-    // Fill the block with contiguous instructions
-    std::vector<std::optional<uint64_t>> next_addresses;
-    do
-    {
-        // Store current machine instruction
-        insert(end(), disassembler(&address, &code));
-
-        // Inquire successors
-        next_addresses = get_next_addresses();
-    }
-    while (
-        // Continue the block creation if
-        !next_addresses.empty() && // - there current instruction has successors
-        std::all_of(               // - that do not need jumps and
-            next_addresses.cbegin(), next_addresses.cend(),
-            [this](auto const& address)
-            {
-                auto const& instruction = *rbegin();
-                return address &&
-                    *address == instruction->address + instruction->size;
-            }) &&
-        (!max_address ||           // - the maximum block size is not yet reached
-            *next_addresses.front() < max_address));
-}
-
-std::vector<std::optional<uint64_t>> control_flow_block::get_next_addresses() const
-{
-    auto const& instruction = **rbegin();
-
     // TODO only x86?
 
     auto const op0 = instruction.detail->x86.operands[0];
 
-    std::vector<std::optional<uint64_t>> successors;
+    std::unordered_set<std::optional<uint64_t>> called_addresses;
+
+    switch (instruction.id)
+    {
+    case X86_INS_CALL:
+        switch (op0.type)
+        {
+        case X86_OP_IMM:
+            called_addresses.emplace(op0.imm);
+            break;
+        default:
+            called_addresses.emplace(std::nullopt);
+            break;
+        }
+        break;
+    }
+
+    return called_addresses;
+}
+std::unordered_set<std::optional<uint64_t>> get_jumped_addresses(instruction const& instruction)
+{
+    // TODO only x86?
+
+    auto const op0 = instruction.detail->x86.operands[0];
+
+    std::unordered_set<std::optional<uint64_t>> jumped_addresses;
 
     switch (instruction.id)
     {
@@ -80,24 +75,60 @@ std::vector<std::optional<uint64_t>> control_flow_block::get_next_addresses() co
     case X86_INS_JO:
     case X86_INS_JP:
     case X86_INS_JS:
-        successors.emplace_back(instruction.address + instruction.size);
+        jumped_addresses.emplace(instruction.address + instruction.size);
     case X86_INS_JMP:
         switch (op0.type)
         {
         case X86_OP_IMM:
-            successors.emplace_back(op0.imm);
+            jumped_addresses.emplace(op0.imm);
             break;
         default:
-            successors.emplace_back(std::nullopt);
+            jumped_addresses.emplace(std::nullopt);
             break;
         }
         break;
     default:
-        successors.emplace_back(instruction.address + instruction.size);
+        jumped_addresses.emplace(instruction.address + instruction.size);
         break;
     }
 
-    return successors;
+    return jumped_addresses;
+}
+
+control_flow_block::control_flow_block(disassembler const& disassembler, uint64_t address,
+    std::optional<uint64_t> const& max_address, std::basic_string_view<uint8_t> code)
+{
+    // Fill the block with contiguous instructions
+    do
+    {
+        // Disassemble instruction
+        auto instruction = disassembler(&address, &code);
+
+        // Inquire calls and jumps
+        called_addresses_.merge(get_called_addresses(*instruction));
+        jumped_addresses_ = get_jumped_addresses(*instruction);
+
+        // Store instruction
+        insert(end(), std::move(instruction));
+    }
+    while (
+        // Uniqueness
+        jumped_addresses_.size() == 1 &&
+        // Unambiguity
+        *jumped_addresses_.begin() &&
+        // Unintermediateness
+        *jumped_addresses_.begin() == (*crbegin())->address + (*crbegin())->size &&
+        // Size integrity
+        (!max_address || *jumped_addresses_.begin() < max_address));
+}
+
+std::unordered_set<std::optional<uint64_t>> const& control_flow_block::called_addresses() const
+{
+    return called_addresses_;
+}
+std::unordered_set<std::optional<uint64_t>> const& control_flow_block::jumped_addresses() const
+{
+    return jumped_addresses_;
 }
 
 bool control_flow_block_exclusive_address_order::operator()(control_flow_block const& blockA,
@@ -115,11 +146,10 @@ bool control_flow_block_exclusive_address_order::operator()(uint64_t const addre
     return address < (*block.begin())->address;
 }
 
-control_flow_graph::control_flow_graph(disassembler disassembler,
-    std::function<std::basic_string_view<uint8_t>(uint64_t)> GET_MEMORY, uint64_t const address)
-    : disassembler_(std::move(disassembler)), GET_MEMORY_(std::move(GET_MEMORY))
+control_flow_graph::control_flow_graph(disassembler const& disassembler,
+    std::function<std::basic_string_view<uint8_t>(uint64_t)> const& GET_MEMORY, uint64_t const address)
 {
-    root_ = &construct(address);
+    root_ = construct(disassembler, GET_MEMORY, address);
 }
 
 control_flow_graph::node const& control_flow_graph::root() const
@@ -127,7 +157,13 @@ control_flow_graph::node const& control_flow_graph::root() const
     return *root_;
 }
 
-control_flow_graph::node const& control_flow_graph::construct(uint64_t const address)
+std::unordered_set<std::optional<uint64_t>> const& control_flow_graph::called_addresses() const
+{
+    return called_addresses_;
+}
+
+control_flow_graph::iterator control_flow_graph::construct(disassembler const& disassembler,
+    std::function<std::basic_string_view<uint8_t>(uint64_t)> const& GET_MEMORY, uint64_t const address)
 {
     // Use the start address of the next higher block as a maximum
     std::optional<uint64_t> max_address;
@@ -136,11 +172,16 @@ control_flow_graph::node const& control_flow_graph::construct(uint64_t const add
         max_address = (*higher_block_search->first.begin())->address;
 
     // Create a new block
-    auto const current_it = try_emplace(control_flow_block(disassembler_, address, max_address, GET_MEMORY_(address))).first;
-    auto& [current_block, current_successors] = *current_it;
+    auto const current_it = try_emplace(control_flow_block(disassembler, address, max_address, GET_MEMORY(address))).first;
+    auto const& current_block = current_it->first;
+
+    called_addresses_.insert(
+        current_block.called_addresses().begin(),
+        current_block.called_addresses().end());
 
     // Iterate over successor addresses
-    for (auto const& next_address : current_block.get_next_addresses())
+    auto* current_successors = &current_it->second;
+    for (auto const& next_address : current_block.jumped_addresses())
     {
         // Ambiguous jump?
         if (!next_address)
@@ -157,7 +198,7 @@ control_flow_graph::node const& control_flow_graph::construct(uint64_t const add
         if (existing_block_search == upper_bound(*next_address))
         {
             // RECURSE with this successor
-            current_successors.insert(construct(*next_address).first);
+            current_successors->insert(construct(disassembler, GET_MEMORY, *next_address)->first);
 
             continue;
         }
@@ -176,13 +217,14 @@ control_flow_graph::node const& control_flow_graph::construct(uint64_t const add
         if (instruction_search == existing_block.begin())
         {
             // Use the found block as a successor
-            current_successors.insert(existing_block);
+            current_successors->insert(existing_block);
 
             continue;
         }
 
-        // Dissect the found block
         control_flow_block new_block(instruction_search, existing_block.end());
+
+        // Dissect the found block
         auto existing_node = extract(existing_block_search);
         existing_node.key().erase(instruction_search, existing_block.end());
         insert(std::move(existing_node));
@@ -191,10 +233,14 @@ control_flow_graph::node const& control_flow_graph::construct(uint64_t const add
         auto& [next_block, next_successors] = *try_emplace(std::move(new_block)).first;
 
         // Update successors
-        current_successors.insert(next_block);
+        current_successors->insert(next_block);
         next_successors = existing_successors;
         existing_successors = { next_block };
+
+        // React to self-dissection
+        if (&existing_block == &current_block)
+            current_successors = &next_successors;
     }
 
-    return *current_it;
+    return current_it;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <unordered_set>
 #include <vector>
 
 #include <utility/disassembler.hpp>
@@ -22,6 +23,9 @@ class control_flow_block : public std::set<std::shared_ptr<instruction const>, i
 {
     using base = std::set<std::shared_ptr<instruction const>, instruction_address_order>;
 
+    std::unordered_set<std::optional<uint64_t>> called_addresses_;
+    std::unordered_set<std::optional<uint64_t>> jumped_addresses_;
+
 public:
 
     using base::base;
@@ -29,7 +33,8 @@ public:
     control_flow_block(disassembler const& disassembler, uint64_t address, std::optional<uint64_t> const& max_address,
         std::basic_string_view<uint8_t> code);
 
-    std::vector<std::optional<uint64_t>> get_next_addresses() const;
+    std::unordered_set<std::optional<uint64_t>> const& called_addresses() const;
+    std::unordered_set<std::optional<uint64_t>> const& jumped_addresses() const;
 };
 
 struct control_flow_block_exclusive_address_order
@@ -46,24 +51,25 @@ class control_flow_graph : public graph<control_flow_block, control_flow_block_e
 {
     using base = graph<control_flow_block, control_flow_block_exclusive_address_order>;
 
-    disassembler disassembler_;
+    iterator root_;
 
-    std::function<std::basic_string_view<uint8_t>(uint64_t)> GET_MEMORY_; // TODO
-
-    node const* root_;
+    std::unordered_set<std::optional<uint64_t>> called_addresses_;
 
 public:
 
     using base::base;
 
-    control_flow_graph(disassembler disassembler, std::function<std::basic_string_view<uint8_t>(uint64_t)> GET_MEMORY,
-        uint64_t address);
+    control_flow_graph(disassembler const& disassembler,
+        std::function<std::basic_string_view<uint8_t>(uint64_t)> const& GET_MEMORY, uint64_t address);
 
     node const& root() const;
 
+    std::unordered_set<std::optional<uint64_t>> const& called_addresses() const;
+
 private:
 
-    node const& construct(uint64_t address);
+    iterator construct(disassembler const& disassembler,
+        std::function<std::basic_string_view<uint8_t>(uint64_t)> const& GET_MEMORY, uint64_t address);
 };
 
 static_assert(std::is_destructible_v<control_flow_block>);
