@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <set>
 #include <vector>
 
 #include <utility/disassembler.hpp>
@@ -27,7 +26,7 @@ public:
 
     using base::base;
 
-    control_flow_block(disassembler const& disassembler, uint64_t address, uint64_t max_address,
+    control_flow_block(disassembler const& disassembler, uint64_t address, std::optional<uint64_t> const& max_address,
         std::basic_string_view<uint8_t> code);
 
     std::vector<std::optional<uint64_t>> get_next_addresses() const;

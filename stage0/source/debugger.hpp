@@ -13,8 +13,6 @@ class debugger
     disassembler disassembler_;
     emulator emulator_;
 
-    control_flow_graph cfg_;
-
 public:
 
     debugger();
@@ -24,7 +22,7 @@ public:
 
     uint64_t position() const;
 
-    control_flow_graph const& cfg() const;
+    control_flow_graph cfg() const;
 };
 
 static_assert(std::is_destructible_v<debugger>);

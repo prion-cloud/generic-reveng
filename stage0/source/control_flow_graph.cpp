@@ -17,31 +17,32 @@ bool instruction_address_order::operator()(uint64_t const address, std::shared_p
     return address < instruction->address;
 }
 
-control_flow_block::control_flow_block(disassembler const& disassembler, uint64_t address, uint64_t const max_address,
-    std::basic_string_view<uint8_t> code)
+control_flow_block::control_flow_block(disassembler const& disassembler, uint64_t address,
+    std::optional<uint64_t> const& max_address, std::basic_string_view<uint8_t> code)
 {
     // Fill the block with contiguous instructions
-    while (true)
+    std::vector<std::optional<uint64_t>> next_addresses;
+    do
     {
         // Store current machine instruction
-        auto const instruction = disassembler(&address, &code);
-        insert(end(), instruction);
+        insert(end(), disassembler(&address, &code));
 
         // Inquire successors
-        auto const next_addresses = get_next_addresses();
-
-        // Interrupt the block creation if...
-        if (next_addresses.empty() ||               // - there are no successors or
-            !std::all_of(                           // - some (actual) jumps or
-                next_addresses.begin(), next_addresses.end(),
-                [&instruction](auto const& address)
-                {
-                    return address &&
-                        *address == instruction->address + instruction->size;
-                }) ||
-            *next_addresses.front() >= max_address) // - the (single) next instruction exceeds bounds
-            break;
+        next_addresses = get_next_addresses();
     }
+    while (
+        // Continue the block creation if
+        !next_addresses.empty() && // - there current instruction has successors
+        std::all_of(               // - that do not need jumps and
+            next_addresses.cbegin(), next_addresses.cend(),
+            [this](auto const& address)
+            {
+                auto const& instruction = *rbegin();
+                return address &&
+                    *address == instruction->address + instruction->size;
+            }) &&
+        (!max_address ||           // - the maximum block size is not yet reached
+            *next_addresses.front() < max_address));
 }
 
 std::vector<std::optional<uint64_t>> control_flow_block::get_next_addresses() const
@@ -126,17 +127,16 @@ control_flow_graph::node const& control_flow_graph::root() const
     return *root_;
 }
 
-control_flow_graph::node const& control_flow_graph::construct(uint64_t address)
+control_flow_graph::node const& control_flow_graph::construct(uint64_t const address)
 {
-    auto const block_search = lower_bound(address);
+    // Use the start address of the next higher block as a maximum
+    std::optional<uint64_t> max_address;
+    auto const higher_block_search = lower_bound(address);
+    if (higher_block_search != end())
+        max_address = (*higher_block_search->first.begin())->address;
 
-    uint64_t max_address;
-    if (block_search == end())
-        max_address = std::numeric_limits<uint64_t>::max();
-    else
-        max_address = (*block_search->first.begin())->address;
-
-auto const current_it = try_emplace(control_flow_block(disassembler_, address, max_address, GET_MEMORY_(address))).first;
+    // Create a new block
+    auto const current_it = try_emplace(control_flow_block(disassembler_, address, max_address, GET_MEMORY_(address))).first;
     auto& [current_block, current_successors] = *current_it;
 
     // Iterate over successor addresses

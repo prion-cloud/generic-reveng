@@ -21,9 +21,6 @@ void debugger::load_executable_file(std::string const& path)
 void debugger::load_executable(std::vector<uint8_t> const& data)
 {
     loader_(data);
-
-    cfg_ = control_flow_graph(disassembler_, [this](uint64_t const address) { return emulator_.get_memory(address); },
-        emulator_.position());
 }
 
 uint64_t debugger::position() const
@@ -31,7 +28,8 @@ uint64_t debugger::position() const
     return emulator_.position();
 }
 
-control_flow_graph const& debugger::cfg() const
+control_flow_graph debugger::cfg() const
 {
-    return cfg_;
+    return control_flow_graph(disassembler_, [this](uint64_t const address) { return emulator_.get_memory(address); },
+        emulator_.position());
 }

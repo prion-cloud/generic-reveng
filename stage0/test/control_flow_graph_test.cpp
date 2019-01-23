@@ -30,9 +30,9 @@ std::string cfg_string(control_flow_graph const& cfg)
         for (auto const& instruction : block)
         {
             cfg_str << std::endl << std::hex << std::uppercase << instruction->address << ' '
-                << std::begin(instruction->mnemonic);
+                << std::cbegin(instruction->mnemonic);
 
-            std::string const op_str = std::begin(instruction->op_str);
+            std::string const op_str = std::cbegin(instruction->op_str);
             if (!op_str.empty())
                 cfg_str << ' ' << op_str;
         }
@@ -43,7 +43,7 @@ std::string cfg_string(control_flow_graph const& cfg)
 
             std::set<size_t> successor_indices;
             for (auto const& successor : successors)
-                successor_indices.insert(std::distance(cfg.begin(), cfg.find(successor)));
+                successor_indices.insert(std::distance(cfg.cbegin(), cfg.find(successor)));
 
             for (auto const index : successor_indices)
                 cfg_str << ' ' << std::dec << index;
@@ -63,12 +63,22 @@ TEST_CASE("Block transitioning: Linear")
             0xC3, // ret
             0xCC  // int3
         });
+    std::ostringstream expected1;
+    expected1        << "0:"
+        << std::endl << "0 nop"
+        << std::endl << "1 ret";
+
     control_flow_graph cfg2 = create_cfg_x86_32(
         {
             0x90, // nop
             0xCC, // int3
             0xCC  // int3
         });
+    std::ostringstream expected2;
+    expected2        << "0:"
+        << std::endl << "0 nop"
+        << std::endl << "1 int3";
+
     control_flow_graph cfg3 = create_cfg_x86_32(
         {
             0x90,       // nop
@@ -76,6 +86,13 @@ TEST_CASE("Block transitioning: Linear")
             0x90,       // nop
             0xC3        // ret
         });
+    std::ostringstream expected3;
+    expected3        << "0:"
+        << std::endl << "0 nop"
+        << std::endl << "1 jmp 3"
+        << std::endl << "3 nop"
+        << std::endl << "4 ret";
+
     control_flow_graph cfg4 = create_cfg_x86_32(
         {
             0x90,       // nop
@@ -83,21 +100,6 @@ TEST_CASE("Block transitioning: Linear")
             0x90,       // nop
             0xC3        // ret
         });
-
-    std::ostringstream expected1;
-    expected1        << "0:"
-        << std::endl << "0 nop"
-        << std::endl << "1 ret";
-    std::ostringstream expected2;
-    expected2        << "0:"
-        << std::endl << "0 nop"
-        << std::endl << "1 int3";
-    std::ostringstream expected3;
-    expected3        << "0:"
-        << std::endl << "0 nop"
-        << std::endl << "1 jmp 3"
-        << std::endl << "3 nop"
-        << std::endl << "4 ret";
     std::ostringstream expected4;
     expected4        << "0:"
         << std::endl << "0 nop"
@@ -121,7 +123,6 @@ TEST_CASE("Block transitioning: Relocation")
             0x90,       // nop
             0xC3        // ret
         });
-
     std::ostringstream expected;
     expected         << "0:"
         << std::endl << "0 nop"
@@ -147,7 +148,6 @@ TEST_CASE("Block transitioning: IF-THEN-ELSE")
             0x90,       // nop
             0xC3        // ret
         });
-
     std::ostringstream expected;
     expected         << "0:"
         << std::endl << "0 nop"
@@ -175,7 +175,6 @@ TEST_CASE("Block transitioning: IF-THEN")
             0x90,       // nop
             0xC3        // ret
         });
-
     std::ostringstream expected;
     expected         << "0:"
         << std::endl << "0 nop"
@@ -206,18 +205,6 @@ TEST_CASE("Block transitioning: Diamond")
             0x90,       // nop
             0xC3        // ret
         });
-    control_flow_graph cfg2 = create_cfg_x86_32(
-        {
-            0x90,       // nop
-            0x74, 0x04, // je +5
-            0x90,       // nop
-            0x90,       // nop
-            0xC3,       // ret
-            0xCC,       // int3
-            0x90,       // nop
-            0xEB, 0xFA  // jmp -4
-        });
-
     std::ostringstream expected1;
     expected1        << "0:"
         << std::endl << "0 nop"
@@ -236,6 +223,18 @@ TEST_CASE("Block transitioning: Diamond")
         << std::endl << "3:"
         << std::endl << "8 nop"
         << std::endl << "9 ret";
+
+    control_flow_graph cfg2 = create_cfg_x86_32(
+        {
+            0x90,       // nop
+            0x74, 0x04, // je +5
+            0x90,       // nop
+            0x90,       // nop
+            0xC3,       // ret
+            0xCC,       // int3
+            0x90,       // nop
+            0xEB, 0xFA  // jmp -4
+        });
     std::ostringstream expected2;
     expected2        << "0:"
         << std::endl << "0 nop"
@@ -266,6 +265,12 @@ TEST_CASE("Block transitioning: Loop")
             0x90,      // nop
             0xEB, 0xFD // jmp -1
         });
+    std::ostringstream expected1;
+    expected1        << "0:"
+        << std::endl << "0 nop"
+        << std::endl << "1 jmp 0"
+        << std::endl << "-> 0";
+
     control_flow_graph cfg2 = create_cfg_x86_32(
         {
             0x90,       // nop
@@ -273,26 +278,6 @@ TEST_CASE("Block transitioning: Loop")
             0x90,       // nop
             0xC3        // ret
         });
-    control_flow_graph cfg3 = create_cfg_x86_32(
-        {
-            0x90,      // nop
-            0x90,      // nop
-            0xEB, 0xFD // jmp -1
-        });
-    control_flow_graph cfg4 = create_cfg_x86_32(
-        {
-            0x90,       // nop
-            0x90,       // nop
-            0x74, 0xFD, // je -1
-            0x90,       // nop
-            0xC3        // ret
-        });
-
-    std::ostringstream expected1;
-    expected1        << "0:"
-        << std::endl << "0 nop"
-        << std::endl << "1 jmp 0"
-        << std::endl << "-> 0";
     std::ostringstream expected2;
     expected2        << "0:"
         << std::endl << "0 nop"
@@ -302,6 +287,13 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl << "1:"
         << std::endl << "3 nop"
         << std::endl << "4 ret";
+
+    control_flow_graph cfg3 = create_cfg_x86_32(
+        {
+            0x90,      // nop
+            0x90,      // nop
+            0xEB, 0xFD // jmp -1
+        });
     std::ostringstream expected3;
     expected3        << "0:"
         << std::endl << "0 nop"
@@ -311,6 +303,15 @@ TEST_CASE("Block transitioning: Loop")
         << std::endl << "1 nop"
         << std::endl << "2 jmp 1"
         << std::endl << "-> 1";
+
+    control_flow_graph cfg4 = create_cfg_x86_32(
+        {
+            0x90,       // nop
+            0x90,       // nop
+            0x74, 0xFD, // je -1
+            0x90,       // nop
+            0xC3        // ret
+        });
     std::ostringstream expected4;
     expected4        << "0:"
         << std::endl << "0 nop"

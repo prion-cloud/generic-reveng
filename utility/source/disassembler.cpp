@@ -37,7 +37,8 @@ disassembler::disassembler(cs_arch const architecture, cs_mode const mode)
         cs_option(*cs_, CS_OPT_DETAIL, CS_OPT_ON));
 }
 
-std::shared_ptr<cs_insn const> disassembler::operator()(uint64_t* const address, std::basic_string_view<uint8_t>* const code) const
+std::shared_ptr<cs_insn const> disassembler::operator()(uint64_t* const address,
+    std::basic_string_view<uint8_t>* const code) const
 {
     auto const* code_ptr = code->data();
     auto size = code->size();
