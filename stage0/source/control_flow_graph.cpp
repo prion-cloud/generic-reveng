@@ -17,84 +17,6 @@ bool instruction_address_order::operator()(uint64_t const address, std::shared_p
     return address < instruction->address;
 }
 
-std::unordered_set<std::optional<uint64_t>> get_called_addresses(instruction const& instruction)
-{
-    // TODO only x86?
-
-    auto const op0 = instruction.detail->x86.operands[0];
-
-    std::unordered_set<std::optional<uint64_t>> called_addresses;
-
-    switch (instruction.id)
-    {
-    case X86_INS_CALL:
-        switch (op0.type)
-        {
-        case X86_OP_IMM:
-            called_addresses.emplace(op0.imm);
-            break;
-        default:
-            called_addresses.emplace(std::nullopt);
-            break;
-        }
-        break;
-    }
-
-    return called_addresses;
-}
-std::unordered_set<std::optional<uint64_t>> get_jumped_addresses(instruction const& instruction)
-{
-    // TODO only x86?
-
-    auto const op0 = instruction.detail->x86.operands[0];
-
-    std::unordered_set<std::optional<uint64_t>> jumped_addresses;
-
-    switch (instruction.id)
-    {
-    case X86_INS_INT3:
-    case X86_INS_INVALID:
-    case X86_INS_RET:
-    case X86_INS_RETF:
-    case X86_INS_RETFQ:
-        break;
-    case X86_INS_JA:
-    case X86_INS_JAE:
-    case X86_INS_JB:
-    case X86_INS_JBE:
-    case X86_INS_JCXZ:
-    case X86_INS_JE:
-    case X86_INS_JG:
-    case X86_INS_JGE:
-    case X86_INS_JL:
-    case X86_INS_JLE:
-    case X86_INS_JNE:
-    case X86_INS_JNO:
-    case X86_INS_JNP:
-    case X86_INS_JNS:
-    case X86_INS_JO:
-    case X86_INS_JP:
-    case X86_INS_JS:
-        jumped_addresses.emplace(instruction.address + instruction.size);
-    case X86_INS_JMP:
-        switch (op0.type)
-        {
-        case X86_OP_IMM:
-            jumped_addresses.emplace(op0.imm);
-            break;
-        default:
-            jumped_addresses.emplace(std::nullopt);
-            break;
-        }
-        break;
-    default:
-        jumped_addresses.emplace(instruction.address + instruction.size);
-        break;
-    }
-
-    return jumped_addresses;
-}
-
 control_flow_block::control_flow_block(disassembler const& disassembler, uint64_t address,
     std::optional<uint64_t> const& max_address, std::basic_string_view<uint8_t> code)
 {
@@ -105,8 +27,8 @@ control_flow_block::control_flow_block(disassembler const& disassembler, uint64_
         auto instruction = disassembler(&address, &code);
 
         // Inquire calls and jumps
-        called_addresses_.merge(get_called_addresses(*instruction));
-        jumped_addresses_ = get_jumped_addresses(*instruction);
+        called_addresses_.merge(instruction->get_called_addresses());
+        jumped_addresses_ = instruction->get_jumped_addresses();
 
         // Store instruction
         insert(end(), std::move(instruction));
