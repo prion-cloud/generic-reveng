@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include "../include/utility/emulator.hpp"
+#include <utility/emulator.hpp>
 
 #define HANDLE_UC_ERROR(uc_call)                            \
 {                                                           \

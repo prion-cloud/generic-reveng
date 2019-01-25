@@ -31,7 +31,7 @@ set_target_properties ( unicorn PROPERTIES
 target_link_libraries ( unicorn INTERFACE
     ${CMAKE_THREAD_LIBS_INIT} )
 
-target_include_directories ( capstone-shared INTERFACE
-    "capstone/include" )
-target_include_directories ( unicorn INTERFACE
-    "unicorn/include" )
+target_include_directories ( capstone-shared
+    INTERFACE "capstone/include" )
+target_include_directories ( unicorn
+    INTERFACE "unicorn/include" )

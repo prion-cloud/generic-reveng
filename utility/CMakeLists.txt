@@ -13,5 +13,6 @@ target_link_libraries ( utility PUBLIC
     capstone
     unicorn )
 
-target_include_directories ( utility INTERFACE
-    "include" )
+target_include_directories ( utility
+    PRIVATE "include"
+    INTERFACE "include" )

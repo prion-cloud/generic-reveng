@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include "../include/utility/disassembler.hpp"
+#include <utility/disassembler.hpp>
 
 #define HANDLE_CS_ERROR(cs_call)                            \
 {                                                           \

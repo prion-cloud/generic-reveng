@@ -21,5 +21,6 @@ target_link_libraries ( stage0-test PRIVATE
     stimpak
     utility )
 
-target_include_directories ( stage0 INTERFACE
-    "include" )
+target_include_directories ( stage0
+    PRIVATE "include"
+    INTERFACE "include" )

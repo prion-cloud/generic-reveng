@@ -1,4 +1,4 @@
-#include "../include/stage0/stage0.h"
+#include <stage0/stage0.h>
 
 #include "debugger.hpp"
 
