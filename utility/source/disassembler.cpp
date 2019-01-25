@@ -16,20 +16,19 @@
     }                                                       \
 }
 
-void delete_cs(csh* const cs)
+csh* allocate_cs()
+{
+    return new csh; // NOLINT [cppcoreguidelines-owning-memory]
+}
+void free_cs(csh* const cs)
 {
     cs_close(cs);
     delete cs; // NOLINT [cppcoreguidelines-owning-memory]
 }
 
-void delete_instruction(cs_insn* const instruction)
-{
-    cs_free(instruction, 1);
-}
-
 disassembler::disassembler() = default;
 disassembler::disassembler(cs_arch const architecture, cs_mode const mode)
-    : cs_(new csh, ::delete_cs)
+    : cs_(::allocate_cs(), ::free_cs)
 {
     HANDLE_CS_ERROR(
         cs_open(architecture, mode, cs_.get()));
@@ -37,13 +36,22 @@ disassembler::disassembler(cs_arch const architecture, cs_mode const mode)
         cs_option(*cs_, CS_OPT_DETAIL, CS_OPT_ON));
 }
 
-std::shared_ptr<cs_insn const> disassembler::operator()(uint64_t* const address,
+instruction* allocate_instruction(csh const& cs)
+{
+    return static_cast<instruction*>(cs_malloc(cs)); // NOLINT [cppcoreguidelines-pro-type-static-cast-downcast]
+}
+void free_instruction(instruction* const instruction)
+{
+    cs_free(instruction, 1);
+}
+
+std::shared_ptr<instruction> disassembler::operator()(uint64_t* const address,
     std::basic_string_view<uint8_t>* const code) const
 {
     auto const* code_ptr = code->data();
     auto size = code->size();
 
-    std::shared_ptr<cs_insn> const instruction(cs_malloc(*cs_), ::delete_instruction);
+    std::shared_ptr<instruction> const instruction(::allocate_instruction(*cs_), ::free_instruction);
     cs_disasm_iter(*cs_, &code_ptr, &size, address, instruction.get());
 
     HANDLE_CS_ERROR(

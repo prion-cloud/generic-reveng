@@ -37,10 +37,15 @@ bool emulator::memory_region_exclusive_address_order::operator()(uint64_t const 
     return address < region.begin;
 }
 
+uc_engine** allocate_uc()
+{
+    return new uc_engine*; // NOLINT [cppcoreguidelines-owning-memory]
+}
+
 emulator::emulator()
     : ip_register_() { }
 emulator::emulator(uc_arch const architecture, uc_mode const mode, int const ip_register)
-    : uc_(new uc_engine*), ip_register_(ip_register)
+    : uc_(::allocate_uc()), ip_register_(ip_register)
 {
     HANDLE_UC_ERROR(
         uc_open(architecture, mode, uc_.get()));

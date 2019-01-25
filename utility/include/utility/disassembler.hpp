@@ -22,7 +22,7 @@ public:
     disassembler();
     disassembler(architecture architecture, mode mode);
 
-    std::shared_ptr<instruction const> operator()(uint64_t* address, std::basic_string_view<uint8_t>* code) const;
+    std::shared_ptr<instruction> operator()(uint64_t* address, std::basic_string_view<uint8_t>* code) const;
 };
 
 static_assert(std::is_destructible_v<disassembler>);
