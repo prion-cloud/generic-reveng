@@ -1,4 +1,6 @@
 build/
 
+*.nvimrc
+
 *.swp
 *.vimrc

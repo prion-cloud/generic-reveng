@@ -1,0 +1,4 @@
+[submodule "decompilation/submodule/openreil"]
+	path = decompilation/submodule/openreil
+	url = https://github.com/Cr4sh/openreil.git
+	ignore = dirty
