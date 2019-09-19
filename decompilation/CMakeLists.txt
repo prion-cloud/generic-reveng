@@ -10,7 +10,8 @@ add_library(decompilation
         ${SOURCE_FILES})
 target_link_libraries(decompilation
     PRIVATE
-        openreil)
+        openreil
+        z3)
 target_include_directories(decompilation
     PRIVATE
         source

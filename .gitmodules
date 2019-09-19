@@ -2,3 +2,6 @@
 	path = decompilation/submodule/openreil
 	url = https://github.com/Cr4sh/openreil.git
 	ignore = dirty
+[submodule "decompilation/submodule/z3"]
+	path = decompilation/submodule/z3
+	url = https://github.com/Z3Prover/z3.git
