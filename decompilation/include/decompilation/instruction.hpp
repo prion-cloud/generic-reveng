@@ -1,6 +1,7 @@
 #pragma once
 
-#include <unordered_set>
+#include <cstdint>
+#include <type_traits>
 
 namespace dec
 {
@@ -21,7 +22,5 @@ namespace dec
 
         std::uint_fast64_t address;
         std::size_t size;
-
-        std::unordered_set<std::optional<std::uint_fast64_t>> jumps;
     };
 }

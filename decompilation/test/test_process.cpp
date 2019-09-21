@@ -267,6 +267,7 @@ TEST_CASE("dec::process::process(dec::program)")
             ++block_index;
         }
     }
+
     SECTION("dec::process::block_map_")
     {
         auto actual_block_map = actual.block_map_;
@@ -276,31 +277,30 @@ TEST_CASE("dec::process::process(dec::program)")
             auto actual_block_map_entry = actual_block_map.begin();
             for (; actual_block_map_entry != actual_block_map.end(); ++actual_block_map_entry)
             {
-                if (actual_block_map_entry->first->begin()->address == expected_address)
+                if (actual_block_map_entry->first == expected_address)
                     break;
             }
 
             REQUIRE(actual_block_map_entry != actual_block_map.end());
 
-            auto actual_succeeding_blocks = actual_block_map_entry->second;
+            auto actual_succeeding_addresses = actual_block_map_entry->second;
             actual_block_map.erase(actual_block_map_entry);
 
-            for (auto const expected_succeeding_address : expected_succeeding_addresses)
+            for (auto const& expected_succeeding_address : expected_succeeding_addresses)
             {
-                auto actual_succeeding_block = actual_succeeding_blocks.begin();
-                for (; actual_succeeding_block != actual_succeeding_blocks.end(); ++actual_succeeding_block)
+                auto actual_succeeding_address = actual_succeeding_addresses.begin();
+                for (; actual_succeeding_address != actual_succeeding_addresses.end(); ++actual_succeeding_address)
                 {
-                    if ((*actual_succeeding_block == nullptr && !expected_succeeding_address) ||
-                        (*actual_succeeding_block)->begin()->address == expected_succeeding_address)
+                    if (*actual_succeeding_address == expected_succeeding_address)
                         break;
                 }
 
-                REQUIRE(actual_succeeding_block != actual_succeeding_blocks.end());
+                REQUIRE(actual_succeeding_address != actual_succeeding_addresses.end());
 
-                actual_succeeding_blocks.erase(actual_succeeding_block);
+                actual_succeeding_addresses.erase(actual_succeeding_address);
             }
 
-            CHECK(actual_succeeding_blocks.empty());
+            CHECK(actual_succeeding_addresses.empty());
         }
 
         CHECK(actual_block_map.empty());

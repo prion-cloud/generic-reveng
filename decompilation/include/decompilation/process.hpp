@@ -1,25 +1,25 @@
 #pragma once
 
-#include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <decompilation/instruction_block.hpp>
 #include <decompilation/program.hpp>
 
+#include <reil/disassembler.hpp>
+
 namespace dec
 {
-    class execution_engine;
-
     class process
     {
     private:
 
         program program_;
 
-        std::unique_ptr<execution_engine> execution_engine_;
+        reil::disassembler disassembler_;
 
         std::set<instruction_block, instruction_block::exclusive_address_order> blocks_;
-        std::unordered_map<instruction_block const*, std::unordered_set<instruction_block const*>> block_map_;
+        std::unordered_map<std::uint_fast64_t, std::unordered_set<std::optional<std::uint_fast64_t>>> block_map_;
 
     public:
 
@@ -30,6 +30,7 @@ namespace dec
 
         void execute_from(std::uint_fast64_t address);
 
-        instruction_block create_block(std::uint_fast64_t address) const;
+        std::unordered_set<std::optional<std::uint_fast64_t>>
+            get_next_addresses(std::vector<reil_inst_t> const& reil_instructions) const;
     };
 }

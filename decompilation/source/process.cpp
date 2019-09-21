@@ -2,41 +2,79 @@
 
 #include <decompilation/process.hpp>
 
-#include "execution_engine.hpp"
+#include "common_exception.hpp"
+
+reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
+{
+    switch (architecture)
+    {
+        case dec::instruction_set_architecture::x86_32:
+        case dec::instruction_set_architecture::x86_64:
+            return ARCH_X86;
+
+        // TODO
+    }
+
+    throw unknown_architecture();
+}
 
 namespace dec
 {
     process::process(program program) :
         program_(std::move(program)),
-        execution_engine_(std::make_unique<execution_engine>(program_.architecture()))
+        disassembler_(to_reil(program_.architecture()))
     {
         execute_from(program_.start_address());
-
-        for (auto const& block : blocks_)
-        {
-            auto const& tail_instruction = *block.rbegin();
-            auto& successors = block_map_[&block];
-            std::transform(
-                tail_instruction.jumps.begin(),
-                tail_instruction.jumps.end(),
-                std::inserter(successors, successors.end()),
-                [this](auto const& address) -> dec::instruction_block const* // NOLINT [fuchsia-trailing-return]
-                {
-                    if (!address)
-                        return nullptr;
-                    return &*blocks_.find(*address);
-                });
-        }
     }
     process::~process() = default;
 
-    void process::execute_from(std::uint_fast64_t const address)
+    void process::execute_from(std::uint_fast64_t address)
     {
-        auto const [cur_block, cur_block_original] = blocks_.insert(create_block(address));
-        if (!cur_block_original)
+        // Use the start address of the next higher block as a maximum
+        std::optional<uint64_t> max_address;
+        if (auto const max_block = blocks_.lower_bound(address);
+            max_block != blocks_.end())
+            max_address = max_block->begin()->address;
+
+        // Fill a new block with contiguous instructions
+        instruction_block new_block;
+        std::unordered_set<std::optional<std::uint_fast64_t>> next_addresses;
+        do
+        {
+            auto const reil_instructions = disassembler_(address, program_[address]);
+
+            next_addresses = get_next_addresses(reil_instructions);
+
+            instruction const instruction
+            {
+                .address = reil_instructions.front().raw_info.addr,
+                .size = static_cast<std::size_t>(reil_instructions.front().raw_info.size)
+            };
+
+            new_block.insert(new_block.end(), instruction);
+            address += instruction.size;
+        }
+        while (
+            // Uniqueness
+            next_addresses.size() == 1 &&
+            // Unambiguity
+            *next_addresses.begin() &&
+            // Unintermediateness
+            *next_addresses.begin() == address &&
+            // Size integrity
+            (!max_address || *next_addresses.begin() < max_address));
+
+        auto const& [current_block, current_block_original] =
+            blocks_.insert(std::move(new_block));
+        if (!current_block_original)
             throw std::logic_error("");
 
-        for (auto const& next_address : cur_block->rbegin()->jumps)
+        auto const& [current_block_map_entry, current_block_map_entry_original] =
+            block_map_.emplace(current_block->begin()->address, std::move(next_addresses));
+        if (!current_block_map_entry_original)
+            throw std::logic_error("");
+
+        for (auto const& next_address : current_block_map_entry->second)
         {
             // Ambiguous jump?
             if (!next_address)
@@ -58,7 +96,6 @@ namespace dec
 
             // Search for the respective instruction in the found block
             auto const existing_instruction = existing_block->find(*next_address);
-
             if (existing_instruction == existing_block->end())
                 throw std::logic_error("");
 
@@ -68,56 +105,76 @@ namespace dec
 
             auto const existing_block_hint = std::next(existing_block);
 
-            instruction_block existing_block_head;
-            auto existing_block_tail = blocks_.extract(existing_block);
-            while (existing_block_tail.value().begin() != existing_instruction)
-                existing_block_head.insert(
-                    existing_block_head.begin(),
-                    existing_block_tail.value().extract(std::prev(existing_instruction)));
+            instruction_block existing_head_block;
+            auto existing_tail_block = blocks_.extract(existing_block);
+            while (existing_tail_block.value().begin() != existing_instruction)
+                existing_head_block.insert(
+                    existing_head_block.begin(),
+                    existing_tail_block.value().extract(std::prev(existing_instruction)));
 
-            blocks_.insert(existing_block_hint, std::move(existing_block_head));
-            blocks_.insert(existing_block_hint, std::move(existing_block_tail));
+            auto existing_head_block_map_entry = block_map_.extract(existing_head_block.begin()->address);
+            std::pair existing_tail_block_map_entry
+            {
+                existing_tail_block.value().begin()->address,
+                std::move(existing_head_block_map_entry.mapped())
+            };
+            existing_head_block_map_entry.mapped() = 
+                std::unordered_set<std::optional<std::uint_fast64_t>> { existing_tail_block.value().begin()->address };
+
+            blocks_.insert(existing_block_hint, std::move(existing_head_block));
+            blocks_.insert(existing_block_hint, std::move(existing_tail_block));
+
+            block_map_.insert(std::move(existing_head_block_map_entry));
+            block_map_.insert(std::move(existing_tail_block_map_entry));
         }
     }
 
-    instruction_block process::create_block(std::uint_fast64_t address) const
+    std::unordered_set<std::optional<std::uint_fast64_t>>
+        process::get_next_addresses(std::vector<reil_inst_t> const& reil_instructions) const
     {
-        // Use the start address of the next higher block as a maximum
-        std::optional<uint64_t> max_address;
-        if (auto const max_block = blocks_.lower_bound(address);
-            max_block != blocks_.end())
-            max_address = max_block->begin()->address;
+        std::unordered_set<std::optional<std::uint_fast64_t>> next_addresses;
 
-        // Create a new block
-        instruction_block block;
+        auto step = true;
 
-        // Fill the block with contiguous instructions
-        instruction_block::iterator instruction;
-        do
+        for (auto const& reil_instruction : reil_instructions)
         {
-            instruction = block.insert(block.end(), execution_engine_->disassemble(address, program_[address]));
+            switch (reil_instruction.op)
+            {
+            case I_UNK:
+                step = false;
+                break;
+            case I_JCC:
+                switch (reil_instruction.c.type)
+                {
+                case A_LOC:
+                    next_addresses.insert(reil_instruction.c.val);
+                    break;
+                default:
+                    next_addresses.insert(std::nullopt); // TODO
+                    break;
+                }
 
-            // Advance address
-            address += instruction->size;
+                step = reil_instruction.a.type != A_CONST || reil_instruction.a.val == 0;
+                break;
+            default:
+                break;
+            }
+
+            if (!step)
+                break;
         }
-        while (
-            // Uniqueness
-            instruction->jumps.size() == 1 &&
-            // Unambiguity
-            *instruction->jumps.begin() &&
-            // Unintermediateness
-            *instruction->jumps.begin() == address &&
-            // Size integrity
-            (!max_address || *instruction->jumps.begin() < max_address));
 
-        return block;
+        if (step)
+            next_addresses.insert(reil_instructions.front().raw_info.addr + reil_instructions.front().raw_info.size);
+
+        return next_addresses;
     }
 
     static_assert(std::is_destructible_v<process>);
 
     static_assert(!std::is_move_constructible_v<process>); // TODO
-    static_assert(!std::is_move_assignable_v<process>);    // TODO
+    static_assert(!std::is_move_assignable_v<process>); // TODO
 
     static_assert(!std::is_copy_constructible_v<process>); // TODO
-    static_assert(!std::is_copy_assignable_v<process>);    // TODO
+    static_assert(!std::is_copy_assignable_v<process>); // TODO
 }

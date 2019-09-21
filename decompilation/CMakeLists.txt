@@ -9,7 +9,7 @@ add_library(decompilation
     SHARED
         ${SOURCE_FILES})
 target_link_libraries(decompilation
-    PRIVATE
+    PUBLIC
         openreil
         z3)
 target_include_directories(decompilation
