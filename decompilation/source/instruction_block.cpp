@@ -1,5 +1,10 @@
 #include <decompilation/instruction_block.hpp>
 
+std::invalid_argument empty_instruction_block()
+{
+    return std::invalid_argument("Empty instruction block");
+}
+
 namespace dec
 {
     bool instruction_block::exclusive_address_order::operator()(
@@ -7,7 +12,7 @@ namespace dec
         instruction_block const& instruction_block_2) const
     {
         if (instruction_block_1.empty() || instruction_block_2.empty())
-            throw std::invalid_argument("Empty instruction block");
+            throw empty_instruction_block();
 
         return instruction_block_1.rbegin()->address < instruction_block_2.begin()->address;
     }
@@ -17,7 +22,7 @@ namespace dec
         std::uint_fast64_t const address) const
     {
         if (instruction_block.empty())
-            throw std::invalid_argument("Empty instruction block");
+            throw empty_instruction_block();
 
         return instruction_block.rbegin()->address < address;
     }
@@ -26,7 +31,7 @@ namespace dec
         instruction_block const& instruction_block) const
     {
         if (instruction_block.empty())
-            throw std::invalid_argument("Empty instruction block");
+            throw empty_instruction_block();
 
         return address < instruction_block.begin()->address;
     }

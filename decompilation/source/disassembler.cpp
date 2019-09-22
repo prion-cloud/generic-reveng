@@ -1,4 +1,18 @@
-#include <reil/disassembler.hpp>
+#include "disassembler.hpp"
+
+reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
+{
+    switch (architecture)
+    {
+        case dec::instruction_set_architecture::x86_32:
+        case dec::instruction_set_architecture::x86_64:
+            return ARCH_X86;
+
+        // TODO
+    }
+
+    throw std::runtime_error("Unknown architecture");
+}
 
 int store_recent_reil_instruction(reil_inst_t* const reil_instruction, void* const reil_instruction_vector)
 {
@@ -13,26 +27,19 @@ int store_recent_reil_instruction(reil_inst_t* const reil_instruction, void* con
     return 0;
 }
 
-namespace reil
+namespace dec
 {
-    disassembler::disassembler(reil_arch_t const architecture) :
-        reil_handle_(reil_init(architecture, store_recent_reil_instruction, &recent_reil_instructions_)),
+    disassembler::disassembler(instruction_set_architecture const architecture) :
+        reil_handle_(reil_init(to_reil(architecture), store_recent_reil_instruction, &recent_reil_instructions_)),
         recent_reil_instructions_(std::make_unique<std::vector<reil_inst_t>>()) { }
 
-    std::vector<reil_inst_t> disassembler::operator()(
-        std::uint_fast64_t const address,
-        std::basic_string_view<std::byte> const& code) const
+    std::vector<reil_inst_t>
+        disassembler::read(std::uint_fast64_t const address, std::basic_string_view<std::uint_fast8_t> const& code) const
     {
-        reil_translate_insn(
-            reil_handle_,
-            address,
-            // NOLINTNEXTLINE [cppcoreguidelines-pro-type-reinterpret-cast]
-            reinterpret_cast<std::uint_fast8_t*>(
-                // NOLINTNEXTLINE [cppcoreguidelines-pro-type-const-cast]
-                const_cast<std::byte*>(
-                    code.data())),
-            std::min(code.size(), static_cast<std::size_t>(MAX_INST_LEN)));
+        std::vector _code(code.data(),
+            std::next(code.data(), std::min(code.size(), static_cast<std::size_t>(MAX_INST_LEN))));
 
+        reil_translate_insn(reil_handle_, address, _code.data(), _code.size());
         return *recent_reil_instructions_;
     }
 

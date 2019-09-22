@@ -1,19 +1,18 @@
 #pragma once
 
-#include <cstdint>
-#include <type_traits>
+#include <memory>
+#include <unordered_map>
+
+#include <z3++.h>
 
 namespace dec
 {
-    /*!
-     *  Disassembled machine code instruction
-     */
     struct instruction
     {
         struct address_order
         {
             using is_transparent = std::true_type;
-
+            
             bool operator()(instruction const& instruction_1, instruction const& instruction_2) const;
 
             bool operator()(instruction const& instruction, std::uint_fast64_t address) const;
@@ -22,5 +21,7 @@ namespace dec
 
         std::uint_fast64_t address;
         std::size_t size;
+
+        std::unordered_map<std::string, z3::expr> impact;
     };
 }

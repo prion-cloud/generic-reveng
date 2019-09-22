@@ -1,22 +1,14 @@
 #include <catch2/catch.hpp>
 
-#define private public // NOLINT [cppcoreguidelines-macro-usage]
 #include <decompilation/process.hpp>
-#undef private
 
-auto const n_opt_uf64 = std::optional<std::uint_fast64_t>(std::nullopt);
-
-std::byte operator""_b(unsigned long long value) // NOLINT [google-runtime-int]
+std::uint_fast8_t operator""_uf8(unsigned long long value) // NOLINT [google-runtime-int]
 {
-    return std::byte(value);
+    return std::uint_fast8_t(value);
 }
 std::uint_fast64_t operator""_uf64(unsigned long long value) // NOLINT [google-runtime-int]
 {
     return std::uint_fast64_t(value);
-}
-std::optional<std::uint_fast64_t> operator""_opt_uf64(unsigned long long value) // NOLINT [google-runtime-int]
-{
-    return std::optional<std::uint_fast64_t>(value);
 }
 
 TEST_CASE("dec::process::process(dec::program)")
@@ -26,8 +18,8 @@ TEST_CASE("dec::process::process(dec::program)")
         {
             std::vector
             {
-                0xCC_b,         // int3
-                0xCC_b          // int3
+                0xCC_uf8, // int3
+                0xCC_uf8  // int3
             },
             std::vector<std::vector<std::uint_fast64_t>>
             {
@@ -35,15 +27,15 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector<std::optional<std::uint_fast64_t>> { } }
+                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0xC3_b,         // ret
-                0xCC_b          // int3
+                0xC3_uf8, // ret
+                0xCC_uf8  // int3
             },
             std::vector<std::vector<std::uint_fast64_t>>
             {
@@ -51,15 +43,15 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { n_opt_uf64 } }
+                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x90_b,         // nop
-                0xC3_b          // ret
+                0x90_uf8, // nop
+                0xC3_uf8  // ret
             },
             std::vector<std::vector<std::uint_fast64_t>>
             {
@@ -67,15 +59,15 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { n_opt_uf64 } }
+                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0xEB_b, 0x00_b, // jmp---,
-                0xC3_b          // ret <-'
+                0xEB_uf8, 0x00_uf8, // jmp--,
+                0xC3_uf8            // ret<-'
             },
             std::vector<std::vector<std::uint_fast64_t>>
             {
@@ -83,15 +75,15 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { n_opt_uf64 } }
+                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x74_b, 0x00_b, // je----,
-                0xC3_b          // ret <-'
+                0x74_uf8, 0x00_uf8, // je---,
+                0xC3_uf8            // ret<-'
             },
             std::vector<std::vector<std::uint_fast64_t>>
             {
@@ -99,16 +91,16 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { n_opt_uf64 } }
+                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0xEB_b, 0x01_b, // jmp---,
-                0xCC_b,         // int3  |
-                0xC3_b          // ret <-'
+                0xEB_uf8, 0x01_uf8, // jmp--,
+                0xCC_uf8,           // int3 |
+                0xC3_uf8            // ret<-'
             },
             std::vector
             {
@@ -117,17 +109,17 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 3_opt_uf64 } },
-                std::pair { 3_uf64, std::vector { n_opt_uf64 } }
+                std::pair { 0_uf64, std::vector { 3_uf64 }              },
+                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x75_b, 0x01_b, // jne---,  IF
-                0x90_b,         // nop   |  THEN
-                0xC3_b          // ret <-'
+                0x75_uf8, 0x01_uf8, // jne--,  IF
+                0x90_uf8,           // nop  |  THEN
+                0xC3_uf8            // ret<-'
             },
             std::vector
             {
@@ -137,18 +129,18 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 2_opt_uf64, 3_opt_uf64 } },
-                std::pair { 2_uf64, std::vector { 3_opt_uf64 }             },
-                std::pair { 3_uf64, std::vector { n_opt_uf64 }             }
+                std::pair { 0_uf64, std::vector { 2_uf64, 3_uf64 }      },
+                std::pair { 2_uf64, std::vector { 3_uf64 }              },
+                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x75_b, 0x01_b, // jne---,  IF
-                0xC3_b,         // ret   |  THEN
-                0xC3_b          // ret <-'  ELSE
+                0x75_uf8, 0x01_uf8, // jne--,  IF
+                0xC3_uf8,           // ret  |  THEN
+                0xC3_uf8            // ret<-'  ELSE
             },
             std::vector
             {
@@ -158,20 +150,20 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 2_opt_uf64, 3_opt_uf64 } },
-                std::pair { 2_uf64, std::vector { n_opt_uf64 }             },
-                std::pair { 3_uf64, std::vector { n_opt_uf64 }             }
+                std::pair { 0_uf64, std::vector { 2_uf64, 3_uf64 }      },
+                std::pair { 2_uf64, std::vector<std::uint_fast64_t> { } },
+                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x75_b, 0x03_b, // jne----, IF
-                0xEB_b, 0x02_b, // jmp---,| THEN
-                0xCC_b,         // int3  ||
-                0x90_b,         // nop <-|' ELSE
-                0xC3_b          // ret <-'
+                0x75_uf8, 0x03_uf8, // jne---, IF
+                0xEB_uf8, 0x02_uf8, // jmp--,| THEN
+                0xCC_uf8,           // int3 ||
+                0x90_uf8,           // nop<-|' ELSE
+                0xC3_uf8            // ret<-'
             },
             std::vector
             {
@@ -182,21 +174,21 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 2_opt_uf64, 5_opt_uf64 } },
-                std::pair { 2_uf64, std::vector { 6_opt_uf64 }             },
-                std::pair { 5_uf64, std::vector { 6_opt_uf64 }             },
-                std::pair { 6_uf64, std::vector { n_opt_uf64 }             }
+                std::pair { 0_uf64, std::vector { 2_uf64, 5_uf64 }      },
+                std::pair { 2_uf64, std::vector { 6_uf64 }              },
+                std::pair { 5_uf64, std::vector { 6_uf64 }              },
+                std::pair { 6_uf64, std::vector<std::uint_fast64_t> { } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x75_b, 0x03_b, // jne----, IF
-                0x90_b,         // nop    | THEN
-                0xC3_b,         // ret <-,|
-                0xCC_b,         // int3  ||
-                0xEB_b, 0xFC_b  // jmp-<-'' ELSE
+                0x75_uf8, 0x03_uf8, // jne---, IF
+                0x90_uf8,           // nop   | THEN
+                0xC3_uf8,           // ret<-,|
+                0xCC_uf8,           // int3 ||
+                0xEB_uf8, 0xFC_uf8  // jmp<-'' ELSE
             },
             std::vector
             {
@@ -207,17 +199,17 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 2_opt_uf64, 5_opt_uf64 } },
-                std::pair { 2_uf64, std::vector { 3_opt_uf64 }             },
-                std::pair { 3_uf64, std::vector { n_opt_uf64 }             },
-                std::pair { 5_uf64, std::vector { 3_opt_uf64 }             }
+                std::pair { 0_uf64, std::vector { 2_uf64, 5_uf64 }      },
+                std::pair { 2_uf64, std::vector { 3_uf64 }              },
+                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } },
+                std::pair { 5_uf64, std::vector { 3_uf64 }              }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0xEB_b, 0xFE_b  // jmp-<-
+                0xEB_uf8, 0xFE_uf8 // jmp<-
             },
             std::vector<std::vector<std::uint_fast64_t>>
             {
@@ -225,15 +217,15 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 0_opt_uf64 } }
+                std::pair { 0_uf64, std::vector { 0_uf64 } }
             }
         },
         std::tuple
         {
             std::vector
             {
-                0x74_b, 0xFE_b, // je--<-
-                0xC3_b          // ret
+                0x74_uf8, 0xFE_uf8, // je<-
+                0xC3_uf8            // ret
             },
             std::vector
             {
@@ -242,19 +234,19 @@ TEST_CASE("dec::process::process(dec::program)")
             },
             std::vector
             {
-                std::pair { 0_uf64, std::vector { 0_opt_uf64, 2_opt_uf64 } },
-                std::pair { 2_uf64, std::vector { n_opt_uf64 }             }
+                std::pair { 0_uf64, std::vector { 0_uf64, 2_uf64 }      },
+                std::pair { 2_uf64, std::vector<std::uint_fast64_t> { } }
             }
         });
 
-    auto const actual = dec::process(dec::program(data, dec::instruction_set_architecture::x86_32));
+    auto const actual = dec::process(data, dec::instruction_set_architecture::x86_32);
 
-    SECTION("dec::process::blocks_")
+    SECTION("dec::process::blocks()")
     {
-        REQUIRE(actual.blocks_.size() == expected_blocks.size());
+        REQUIRE(actual.blocks().size() == expected_blocks.size());
 
         auto block_index = 0;
-        for (auto const& actual_block : actual.blocks_)
+        for (auto const& actual_block : actual.blocks())
         {
             auto instruction_index = 0;
             for (auto const& actual_instruction : actual_block)
@@ -267,10 +259,9 @@ TEST_CASE("dec::process::process(dec::program)")
             ++block_index;
         }
     }
-
-    SECTION("dec::process::block_map_")
+    SECTION("dec::process::block_map()")
     {
-        auto actual_block_map = actual.block_map_;
+        auto actual_block_map = actual.block_map();
 
         for (auto const& [expected_address, expected_succeeding_addresses] : expected_block_map)
         {
