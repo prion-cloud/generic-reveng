@@ -31,6 +31,9 @@ namespace dec
 
     private:
 
-        void execute_from(std::uint_fast64_t address);
+        void execute_from(std::uint_fast64_t address, std::optional<std::uint_fast64_t> preceeding_address);
+
+        std::vector<std::uint_fast64_t>
+            search_back(instruction const& instruction, std::string const& key) const;
     };
 }

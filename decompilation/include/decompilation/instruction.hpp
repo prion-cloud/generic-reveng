@@ -5,6 +5,8 @@
 
 #include <z3++.h>
 
+#include <decompilation/instruction_impact.hpp>
+
 namespace dec
 {
     struct instruction
@@ -12,7 +14,7 @@ namespace dec
         struct address_order
         {
             using is_transparent = std::true_type;
-            
+
             bool operator()(instruction const& instruction_1, instruction const& instruction_2) const;
 
             bool operator()(instruction const& instruction, std::uint_fast64_t address) const;
@@ -22,6 +24,8 @@ namespace dec
         std::uint_fast64_t address;
         std::size_t size;
 
-        std::unordered_map<std::string, z3::expr> impact;
+        std::optional<std::uint_fast64_t> preceeding_address;
+
+        instruction_impact impact;
     };
 }

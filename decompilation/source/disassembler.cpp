@@ -1,19 +1,5 @@
 #include "disassembler.hpp"
 
-reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
-{
-    switch (architecture)
-    {
-        case dec::instruction_set_architecture::x86_32:
-        case dec::instruction_set_architecture::x86_64:
-            return ARCH_X86;
-
-        // TODO
-    }
-
-    throw std::runtime_error("Unknown architecture");
-}
-
 int store_recent_reil_instruction(reil_inst_t* const reil_instruction, void* const reil_instruction_vector)
 {
     auto& _reil_instruction_vector =
@@ -29,12 +15,12 @@ int store_recent_reil_instruction(reil_inst_t* const reil_instruction, void* con
 
 namespace dec
 {
-    disassembler::disassembler(instruction_set_architecture const architecture) :
-        reil_handle_(reil_init(to_reil(architecture), store_recent_reil_instruction, &recent_reil_instructions_)),
+    disassembler::disassembler(reil_arch_t const architecture) :
+        reil_handle_(reil_init(architecture, store_recent_reil_instruction, &recent_reil_instructions_)),
         recent_reil_instructions_(std::make_unique<std::vector<reil_inst_t>>()) { }
 
     std::vector<reil_inst_t>
-        disassembler::read(std::uint_fast64_t const address, std::basic_string_view<std::uint_fast8_t> const& code) const
+        disassembler::lift(std::uint_fast64_t const address, std::basic_string_view<std::uint_fast8_t> const& code) const
     {
         std::vector _code(code.data(),
             std::next(code.data(), std::min(code.size(), static_cast<std::size_t>(MAX_INST_LEN))));

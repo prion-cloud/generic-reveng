@@ -5,8 +5,6 @@
 
 #include <libopenreil.h>
 
-#include <decompilation/instruction_set_architecture.hpp>
-
 namespace dec
 {
     class disassembler
@@ -17,9 +15,9 @@ namespace dec
 
     public:
 
-        explicit disassembler(instruction_set_architecture architecture);
+        explicit disassembler(reil_arch_t architecture);
 
         std::vector<reil_inst_t>
-            read(std::uint_fast64_t address, std::basic_string_view<std::uint_fast8_t> const& code) const;
+            lift(std::uint_fast64_t address, std::basic_string_view<std::uint_fast8_t> const& code) const;
     };
 }
