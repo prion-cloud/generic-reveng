@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <unordered_map>
-
 #include <z3++.h>
 
 #include <decompilation/instruction_impact.hpp>
@@ -23,8 +20,6 @@ namespace dec
 
         std::uint_fast64_t address;
         std::size_t size;
-
-        std::optional<std::uint_fast64_t> preceeding_address;
 
         instruction_impact impact;
     };

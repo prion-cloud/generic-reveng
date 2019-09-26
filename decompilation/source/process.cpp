@@ -24,7 +24,7 @@ namespace dec
         disassembler_(std::make_unique<disassembler const>(to_reil(architecture))),
         monitor_(std::make_unique<monitor>())
     {
-        execute_from(0, std::nullopt);
+        execute_from(0);
     }
     process::~process() = default;
     
@@ -37,7 +37,7 @@ namespace dec
         return block_map_;
     }
 
-    void process::execute_from(std::uint_fast64_t address, std::optional<std::uint_fast64_t> preceeding_address)
+    void process::execute_from(std::uint_fast64_t address)
     {
         // Use the start address of the next higher block as a maximum
         std::optional<std::uint_fast64_t> max_address;
@@ -60,12 +60,9 @@ namespace dec
                 .address = address,
                 .size = static_cast<std::size_t>(intermediate_instructions.front().raw_info.size),
 
-                .preceeding_address = preceeding_address,
-
                 .impact = std::move(impact)
             };
 
-            preceeding_address = address;
             address += new_instruction.size;
 
             auto const current_instruction = new_block.insert(new_block.end(), std::move(new_instruction));
@@ -125,7 +122,7 @@ namespace dec
             if (existing_block == blocks_.upper_bound(next_address))
             {
                 // RECURSE with this successor
-                execute_from(next_address, preceeding_address);
+                execute_from(next_address);
                 continue;
             }
 

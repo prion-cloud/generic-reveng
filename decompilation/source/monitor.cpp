@@ -9,7 +9,7 @@ namespace dec
     monitor::monitor() :
         mem_(z3::function("bvmem", context_.bv_sort(size), context_.bv_sort(size))) { }
 
-    instruction_impact monitor::trace(std::vector<reil_inst_t> const& intermediate_instructions)
+    std::unordered_map<z3::expr, z3::expr> monitor::trace(std::vector<reil_inst_t> const& intermediate_instructions)
     {
         static std::unordered_map<reil_op_t, z3::expr (*)(z3::expr const&)> const unop
         {
@@ -35,7 +35,6 @@ namespace dec
             { I_LT, z3::operator< }
         };
 
-        instruction_impact impact;
         for (auto const& reil_instruction : intermediate_instructions)
         {
             auto const op = reil_instruction.op;
@@ -52,17 +51,17 @@ namespace dec
             case I_JCC:
                 break;
             case I_STR:
-                set(impact, destination, get(impact, source_1));
+                set(destination, get(source_1));
                 break;
             case I_STM:
-                set_mem(impact, destination, get(impact, source_1));
+                set_mem(destination, get(source_1));
                 break;
             case I_LDM:
-                set(impact, destination, get_mem(impact, source_1));
+                set(destination, get_mem(source_1));
                 break;
             case I_NEG:
             case I_NOT:
-                set(impact, destination, unop.at(op)(get(impact, source_1)));
+                set(destination, unop.at(op)(get(source_1)).simplify());
                 break;
             case I_ADD:
             case I_SUB:
@@ -79,96 +78,69 @@ namespace dec
             case I_XOR:
             case I_EQ:
             case I_LT:
-                set(impact, destination, binop.at(op)(get(impact, source_1), get(impact, source_2)));
+                set(destination, binop.at(op)(get(source_1), get(source_2)).simplify());
                 break;
             }
         }
 
-        return impact;
+        return std::move(impact_);
     }
 
-    z3::expr monitor::get(instruction_impact const& impact, reil_arg_t const& reil_argument)
+    z3::expr monitor::get(reil_arg_t const& source)
     {
-        switch (reil_argument.type)
+        switch (source.type)
         {
         case A_REG:
         {
-            auto const key = create_constant(reil_argument.name);
-            if (auto const entry = impact.registers.find(key); entry != impact.registers.end())
+            auto const key = create_constant(source.name);
+            if (auto const entry = impact_.find(key); entry != impact_.end())
                 return entry->second;
-
             return key;
         }
         case A_TEMP:
-        {
-            auto const key = create_constant(reil_argument.name);
-            if (auto const entry = impact.temporary.find(key); entry != impact.temporary.end())
-                return entry->second;
-
-            return key;
-        }
+            // There are no unbound temporaries
+            return impact_temporary_.at(source.name);
         case A_CONST:
-            return create_value(reil_argument.val);
+            return create_value(source.val);
         default:
             throw std::invalid_argument("Unexpected argument type");
         }
     }
-    void monitor::set(instruction_impact& impact, reil_arg_t const& reil_argument, z3::expr const& expression)
+    z3::expr monitor::get_mem(reil_arg_t const& source)
     {
-        auto const key = context_.bv_const(reil_argument.name, size);
+        switch (source.type)
+        {
+        case A_TEMP:
+        {
+            auto const key = mem_(get(source));
+            if (auto const entry = impact_.find(key); entry != impact_.end())
+                return entry->second;
+            return key;
+        }
+        case A_CONST:
+            return mem_(get(source));
+        default:
+            throw std::invalid_argument("Unexpected argument type");
+        }
+    }
 
-        switch (reil_argument.type)
+    void monitor::set(reil_arg_t const& destination, z3::expr const& expression)
+    {
+        switch (destination.type)
         {
         case A_REG:
-            impact.registers.insert_or_assign(key, expression);
+            impact_.insert_or_assign(create_constant(destination.name), expression);
             break;
         case A_TEMP:
-            impact.temporary.insert_or_assign(key, expression);
+            impact_temporary_.insert_or_assign(destination.name, expression);
             break;
         default:
             throw std::invalid_argument("Unexpected argument type");
         }
     }
-
-    z3::expr monitor::get_mem(instruction_impact const& impact, reil_arg_t const& reil_argument)
+    void monitor::set_mem(reil_arg_t const& destination, z3::expr const& expression)
     {
-        std::unique_ptr<z3::expr> expression;
-        switch (reil_argument.type)
-        {
-        case A_TEMP:
-        {
-            auto const key = create_constant(reil_argument.name);
-            if (auto const entry = impact.memory.find(key); entry != impact.memory.end())
-                expression = std::make_unique<z3::expr>(entry->second);
-            else
-                expression = std::make_unique<z3::expr>(mem_(key));
-            break;
-        }
-        case A_CONST:
-            expression = std::make_unique<z3::expr>(mem_(create_value(reil_argument.val)));
-            break;
-        default:
-            throw std::invalid_argument("Unexpected argument type");
-        }
-
-        return *expression;
-    }
-    void monitor::set_mem(instruction_impact& impact, reil_arg_t const& reil_argument, z3::expr const& expression)
-    {
-        std::unique_ptr<z3::expr> key;
-        switch (reil_argument.type)
-        {
-        case A_TEMP:
-            key = std::make_unique<z3::expr>(impact.temporary.at(create_constant(reil_argument.name)));
-            break;
-        case A_CONST:
-            key = std::make_unique<z3::expr>(create_value(reil_argument.val));
-            break;
-        default:
-            throw std::invalid_argument("Unexpected argument type");
-        }
-
-        impact.memory.insert_or_assign(*key, expression);
+        impact_.insert_or_assign(mem_(get(destination)), expression);
     }
 
     z3::expr monitor::create_constant(std::string const& name)

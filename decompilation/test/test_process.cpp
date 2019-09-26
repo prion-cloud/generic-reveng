@@ -2,256 +2,450 @@
 
 #include <decompilation/process.hpp>
 
-std::uint_fast8_t operator""_uf8(unsigned long long value) // NOLINT [google-runtime-int]
+struct instruction_info
 {
-    return std::uint_fast8_t(value);
-}
-std::uint_fast64_t operator""_uf64(unsigned long long value) // NOLINT [google-runtime-int]
+    std::uint_fast64_t address;
+    std::size_t size;
+
+    std::vector<std::pair<std::string, std::string>> impact;
+
+    static instruction_info make_int3(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 1,
+
+            .impact = { }
+        };
+    }
+    static instruction_info make_je(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 2,
+
+            .impact = { }
+        };
+    }
+    static instruction_info make_jmp(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 2,
+
+            .impact = { }
+        };
+    }
+    static instruction_info make_jmp_eax(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 2,
+
+            .impact = { }
+        };
+    }
+    static instruction_info make_jne(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 2,
+
+            .impact = { }
+        };
+    }
+    static instruction_info make_mov_eax_8(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 5,
+
+            .impact =
+            {
+                { "R_EAX", "#x0000000000000008" }
+            }
+        };
+    }
+    static instruction_info make_mov_eax_mem27(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 5,
+
+            .impact =
+            {
+                { "R_EAX", "(bvmem #x000000000000001b)" }
+            }
+        };
+    }
+    static instruction_info make_mov_mem28_ebx(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 6,
+
+            .impact =
+            {
+                { "(bvmem #x000000000000001c)", "R_EBX" }
+            }
+        };
+    }
+    static instruction_info make_nop(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 1,
+
+            .impact = { }
+        };
+    }
+    static instruction_info make_ret(std::uint_fast64_t const address)
+    {
+        return
+        {
+            .address = address,
+            .size = 1,
+
+            .impact =
+            {
+                { "R_ESP", "(bvadd #x0000000000000004 R_ESP)" }
+            }
+        };
+    }
+};
+struct process_info
 {
-    return std::uint_fast64_t(value);
+    std::vector<std::uint_fast8_t> data;
+
+    std::vector<std::vector<instruction_info>> blocks;
+    std::vector<std::pair<std::uint_fast64_t, std::vector<std::uint_fast64_t>>> block_map;
+};
+
+template <typename ContainerExpected, typename ContainerActual, typename Compare>
+void assert_content(ContainerExpected const& expected, ContainerActual actual, Compare const& compare)
+{
+    for (auto const& e : expected)
+    {
+        auto a = actual.begin();
+        for (; a != actual.end(); ++a)
+        {
+            if (compare(e, *a))
+                break;
+        }
+
+        REQUIRE(a != actual.end());
+
+        actual.erase(a);
+    }
+
+    CHECK(actual.empty());
 }
 
-TEST_CASE("dec::process::process(dec::program)")
+TEST_CASE("dec::process::process()")
 {
-    auto const [data, expected_blocks, expected_block_map] = GENERATE( // NOLINT
-        std::tuple
+    auto const expected = GENERATE( // NOLINT
+        process_info
         {
-            std::vector
+            .data =
             {
-                0xCC_uf8, // int3
-                0xCC_uf8  // int3
+                0xCC, // int3
+                0xCC  // int3
             },
-            std::vector<std::vector<std::uint_fast64_t>>
+            .blocks =
             {
-                std::vector { 0_uf64 }
+                { instruction_info::make_int3(0) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0xC3_uf8, // ret
-                0xCC_uf8  // int3
+                0xC3, // ret
+                0xCC  // int3
             },
-            std::vector<std::vector<std::uint_fast64_t>>
+            .blocks =
             {
-                std::vector { 0_uf64 }
+                { instruction_info::make_ret(0) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x90_uf8, // nop
-                0xC3_uf8  // ret
+                0x90, // nop
+                0xC3  // ret
             },
-            std::vector<std::vector<std::uint_fast64_t>>
+            .blocks =
             {
-                std::vector { 0_uf64, 1_uf64 }
+                { instruction_info::make_nop(0), instruction_info::make_ret(1) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0xEB_uf8, 0x00_uf8, // jmp--,
-                0xC3_uf8            // ret<-'
+                0xEB, 0x00, // jmp--,
+                0xC3        // ret<-'
             },
-            std::vector<std::vector<std::uint_fast64_t>>
+            .blocks =
             {
-                std::vector { 0_uf64, 2_uf64 }
+                { instruction_info::make_jmp(0), instruction_info::make_ret(2) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x74_uf8, 0x00_uf8, // je---,
-                0xC3_uf8            // ret<-'
+                0x74, 0x00, // je---,
+                0xC3        // ret<-'
             },
-            std::vector<std::vector<std::uint_fast64_t>>
+            .blocks =
             {
-                std::vector { 0_uf64, 2_uf64 }
+                { instruction_info::make_je(0), instruction_info::make_ret(2) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0xEB_uf8, 0x01_uf8, // jmp--,
-                0xCC_uf8,           // int3 |
-                0xC3_uf8            // ret<-'
+                0xEB, 0x01, // jmp--,
+                0xCC,       // int3 |
+                0xC3        // ret<-'
             },
-            std::vector
+            .blocks =
             {
-                std::vector { 0_uf64 },
-                std::vector { 3_uf64 }
+                { instruction_info::make_jmp(0) },
+                { instruction_info::make_ret(3) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 3_uf64 }              },
-                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { 3 } },
+                { 3, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x75_uf8, 0x01_uf8, // jne--,  IF
-                0x90_uf8,           // nop  |  THEN
-                0xC3_uf8            // ret<-'
+                0x75, 0x01, // jne--,  IF
+                0x90,       // nop  |  THEN
+                0xC3        // ret<-'
             },
-            std::vector
+            .blocks =
             {
-                std::vector { 0_uf64 },
-                std::vector { 2_uf64 },
-                std::vector { 3_uf64 }
+                { instruction_info::make_jne(0) },
+                { instruction_info::make_nop(2) },
+                { instruction_info::make_ret(3) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 2_uf64, 3_uf64 }      },
-                std::pair { 2_uf64, std::vector { 3_uf64 }              },
-                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { 2, 3 } },
+                { 2, { 3 } },
+                { 3, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x75_uf8, 0x01_uf8, // jne--,  IF
-                0xC3_uf8,           // ret  |  THEN
-                0xC3_uf8            // ret<-'  ELSE
+                0x75, 0x01, // jne--,  IF
+                0xC3,       // ret  |  THEN
+                0xC3        // ret<-'  ELSE
             },
-            std::vector
+            .blocks =
             {
-                std::vector { 0_uf64 },
-                std::vector { 2_uf64 },
-                std::vector { 3_uf64 }
+                { instruction_info::make_jne(0) },
+                { instruction_info::make_ret(2) },
+                { instruction_info::make_ret(3) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 2_uf64, 3_uf64 }      },
-                std::pair { 2_uf64, std::vector<std::uint_fast64_t> { } },
-                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { 2, 3 } },
+                { 2, { } },
+                { 3, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x75_uf8, 0x03_uf8, // jne---, IF
-                0xEB_uf8, 0x02_uf8, // jmp--,| THEN
-                0xCC_uf8,           // int3 ||
-                0x90_uf8,           // nop<-|' ELSE
-                0xC3_uf8            // ret<-'
+                0x75, 0x03, // jne---, IF
+                0xEB, 0x02, // jmp--,| THEN
+                0xCC,       // int3 ||
+                0x90,       // nop<-|' ELSE
+                0xC3        // ret<-'
             },
-            std::vector
+            .blocks =
             {
-                std::vector { 0_uf64 },
-                std::vector { 2_uf64 },
-                std::vector { 5_uf64 },
-                std::vector { 6_uf64 }
+                { instruction_info::make_jne(0) },
+                { instruction_info::make_jmp(2) },
+                { instruction_info::make_nop(5) },
+                { instruction_info::make_ret(6) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 2_uf64, 5_uf64 }      },
-                std::pair { 2_uf64, std::vector { 6_uf64 }              },
-                std::pair { 5_uf64, std::vector { 6_uf64 }              },
-                std::pair { 6_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { 2, 5 } },
+                { 2, { 6 } },
+                { 5, { 6 } },
+                { 6, { } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x75_uf8, 0x03_uf8, // jne---, IF
-                0x90_uf8,           // nop   | THEN
-                0xC3_uf8,           // ret<-,|
-                0xCC_uf8,           // int3 ||
-                0xEB_uf8, 0xFC_uf8  // jmp<-'' ELSE
+                0x75, 0x03, // jne---, IF
+                0x90,       // nop   | THEN
+                0xC3,       // ret<-,|
+                0xCC,       // int3 ||
+                0xEB, 0xFC  // jmp<-'' ELSE
             },
-            std::vector
+            .blocks =
             {
-                std::vector { 0_uf64 },
-                std::vector { 2_uf64 },
-                std::vector { 3_uf64 },
-                std::vector { 5_uf64 }
+                { instruction_info::make_jne(0) },
+                { instruction_info::make_nop(2) },
+                { instruction_info::make_ret(3) },
+                { instruction_info::make_jmp(5) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 2_uf64, 5_uf64 }      },
-                std::pair { 2_uf64, std::vector { 3_uf64 }              },
-                std::pair { 3_uf64, std::vector<std::uint_fast64_t> { } },
-                std::pair { 5_uf64, std::vector { 3_uf64 }              }
+                { 0, { 2, 5 } },
+                { 2, { 3 } },
+                { 3, { } },
+                { 5, { 3 } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0xEB_uf8, 0xFE_uf8 // jmp<-
+                0xEB, 0xFE // jmp<-
             },
-            std::vector<std::vector<std::uint_fast64_t>>
+            .blocks =
             {
-                std::vector { 0_uf64 }
+                { instruction_info::make_jmp(0) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 0_uf64 } }
+                { 0, { 0 } }
             }
         },
-        std::tuple
+        process_info
         {
-            std::vector
+            .data =
             {
-                0x74_uf8, 0xFE_uf8, // je<-
-                0xC3_uf8            // ret
+                0x74, 0xFE, // je<-
+                0xC3        // ret
             },
-            std::vector
+            .blocks =
             {
-                std::vector { 0_uf64 },
-                std::vector { 2_uf64 }
+                { instruction_info::make_je(0) },
+                { instruction_info::make_ret(2) }
             },
-            std::vector
+            .block_map =
             {
-                std::pair { 0_uf64, std::vector { 0_uf64, 2_uf64 }      },
-                std::pair { 2_uf64, std::vector<std::uint_fast64_t> { } }
+                { 0, { 0, 2 } },
+                { 2, { } }
+            }
+        },
+        process_info
+        {
+            .data =
+            {
+                0xB8, 0x08, 0x00, 0x00, 0x00, // mov eax, 8
+                0xFF, 0xE0,                   // jmp eax
+                0xCC,                         // int3
+                0xC3                          // ret
+            },
+            .blocks =
+            {
+                { instruction_info::make_mov_eax_8(0), instruction_info::make_jmp_eax(5) },
+//                { instruction_info::make_ret(8) }
+            },
+            .block_map =
+            {
+                { 0, { /*8*/ } },
+//                { 8, { } }
+            }
+        },
+        process_info
+        {
+            .data =
+            {
+                0xA1, 0x1B, 0x00, 0x00, 0x00,       // mov eax, [27]
+                0x89, 0x1D, 0x1C, 0x00, 0x00, 0x00, // mov [28], ebx
+                0xC3                                // ret
+            },
+            .blocks =
+            {
+                { instruction_info::make_mov_eax_mem27(0), instruction_info::make_mov_mem28_ebx(5), instruction_info::make_ret(11) },
+            },
+            .block_map =
+            {
+                { 0, { } },
             }
         });
 
-    auto const actual = dec::process(data, dec::instruction_set_architecture::x86_32);
+    std::unique_ptr<dec::process> actual;
+    REQUIRE_NOTHROW(actual = std::make_unique<dec::process>(expected.data, dec::instruction_set_architecture::x86_32));
+
+    auto const expression_pair_compare =
+        [](auto const& expected_expression_pair, auto const& actual_expression_pair)
+        {
+            return
+                expected_expression_pair.first == actual_expression_pair.first.to_string() &&
+                expected_expression_pair.second == actual_expression_pair.second.to_string();
+        };
 
     SECTION("dec::process::blocks()")
     {
-        REQUIRE(actual.blocks().size() == expected_blocks.size());
+        auto const& actual_blocks = actual->blocks();
+        REQUIRE(actual_blocks.size() == expected.blocks.size());
 
         auto block_index = 0;
-        for (auto const& actual_block : actual.blocks())
+        for (auto const& actual_block : actual_blocks)
         {
+            auto const& expected_block = expected.blocks.at(block_index);
+            REQUIRE(actual_block.size() == expected_block.size());
+
             auto instruction_index = 0;
             for (auto const& actual_instruction : actual_block)
             {
-                CHECK(actual_instruction.address == expected_blocks.at(block_index).at(instruction_index));
+                auto const& expected_instruction = expected.blocks.at(block_index).at(instruction_index);
+
+                CHECK(actual_instruction.address == expected_instruction.address);
+                CHECK(actual_instruction.size == expected_instruction.size);
+
+                assert_content(expected_instruction.impact, actual_instruction.impact, expression_pair_compare);
 
                 ++instruction_index;
             }
@@ -261,39 +455,15 @@ TEST_CASE("dec::process::process(dec::program)")
     }
     SECTION("dec::process::block_map()")
     {
-        auto actual_block_map = actual.block_map();
+        auto const& actual_block_map = actual->block_map();
 
-        for (auto const& [expected_address, expected_succeeding_addresses] : expected_block_map)
-        {
-            auto actual_block_map_entry = actual_block_map.begin();
-            for (; actual_block_map_entry != actual_block_map.end(); ++actual_block_map_entry)
+        assert_content(expected.block_map, actual_block_map,
+            [](auto const& expected_block_map_entry, auto const& actual_block_map_entry)
             {
-                if (actual_block_map_entry->first == expected_address)
-                    break;
-            }
+                return expected_block_map_entry.first == actual_block_map_entry.first;
+            });
 
-            REQUIRE(actual_block_map_entry != actual_block_map.end());
-
-            auto actual_succeeding_addresses = actual_block_map_entry->second;
-            actual_block_map.erase(actual_block_map_entry);
-
-            for (auto const& expected_succeeding_address : expected_succeeding_addresses)
-            {
-                auto actual_succeeding_address = actual_succeeding_addresses.begin();
-                for (; actual_succeeding_address != actual_succeeding_addresses.end(); ++actual_succeeding_address)
-                {
-                    if (*actual_succeeding_address == expected_succeeding_address)
-                        break;
-                }
-
-                REQUIRE(actual_succeeding_address != actual_succeeding_addresses.end());
-
-                actual_succeeding_addresses.erase(actual_succeeding_address);
-            }
-
-            CHECK(actual_succeeding_addresses.empty());
-        }
-
-        CHECK(actual_block_map.empty());
+        for (auto const& [expected_address, expected_succeeding_addresses] : expected.block_map)
+            assert_content(expected_succeeding_addresses, actual_block_map.find(expected_address)->second, std::equal_to { });
     }
 }

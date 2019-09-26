@@ -1,7 +1,5 @@
 #pragma once
 
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include <reil_ir.h>
@@ -17,20 +15,23 @@ namespace dec
 
         z3::func_decl mem_;
 
+        instruction_impact impact_;
+        std::unordered_map<std::string, z3::expr> impact_temporary_;
+
     public:
 
         monitor();
 
-        instruction_impact trace(std::vector<reil_inst_t> const& intermediate_instructions);
+        std::unordered_map<z3::expr, z3::expr> trace(std::vector<reil_inst_t> const& intermediate_instructions);
 
     private:
 
         // TODO Make intermediate_instruction an adaptor class?
-        z3::expr get(instruction_impact const& impact, reil_arg_t const& reil_argument);
-        void set(instruction_impact& impact, reil_arg_t const& reil_argument, z3::expr const& expression); // TODO -> impact?
+        z3::expr get(reil_arg_t const& source);
+        z3::expr get_mem(reil_arg_t const& source);
 
-        z3::expr get_mem(instruction_impact const& impact, reil_arg_t const& reil_argument);
-        void set_mem(instruction_impact& impact, reil_arg_t const& reil_argument, z3::expr const& expression);
+        void set(reil_arg_t const& destination, z3::expr const& expression); // TODO -> impact?
+        void set_mem(reil_arg_t const& destination, z3::expr const& expression);
 
         z3::expr create_constant(std::string const& name);
         z3::expr create_value(std::uint_fast64_t value);

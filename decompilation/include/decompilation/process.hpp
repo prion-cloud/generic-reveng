@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <unordered_set>
 
 #include <decompilation/instruction_block.hpp>
@@ -31,7 +32,7 @@ namespace dec
 
     private:
 
-        void execute_from(std::uint_fast64_t address, std::optional<std::uint_fast64_t> preceeding_address);
+        void execute_from(std::uint_fast64_t address);
 
         std::vector<std::uint_fast64_t>
             search_back(instruction const& instruction, std::string const& key) const;

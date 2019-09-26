@@ -15,11 +15,5 @@ namespace std
 
 namespace dec
 {
-    struct instruction_impact
-    {
-        std::unordered_map<z3::expr, z3::expr> registers;
-        std::unordered_map<z3::expr, z3::expr> memory;
-
-        std::unordered_map<z3::expr, z3::expr> temporary;
-    };
+    using instruction_impact = std::unordered_map<z3::expr, z3::expr>;
 }

@@ -1,8 +1,11 @@
 #include <decompilation/instruction_impact.hpp>
 
-std::size_t std::hash<z3::expr>::operator()(z3::expr const& expression) const
+namespace std // NOLINT [cert-dcl58-cpp]
 {
-    return expression.hash();
+    std::size_t hash<z3::expr>::operator()(z3::expr const& expression) const
+    {
+        return expression.hash();
+    }
 }
 
 namespace dec
