@@ -7,6 +7,8 @@ struct instruction_info
     std::uint64_t address;
     std::size_t size;
 
+    std::vector<std::string> jump;
+
     std::vector<std::pair<std::string, std::string>> impact;
 };
 struct process_info
@@ -45,17 +47,24 @@ void test_process_x86_32(std::vector<std::uint8_t> const& data, process_info con
 
     actual.reset();
 
-    auto const impact_entry_compare =
-        [](auto const& expected_expression_pair, auto const& actual_expression_pair)
+    auto const jump_compare =
+        [](auto const& expected_jump, auto const& actual_jump)
         {
             return
-                expected_expression_pair.first == actual_expression_pair.first.to_string() &&
-                expected_expression_pair.second == actual_expression_pair.second.to_string();
+                expected_jump == actual_jump.to_string();
+        };
+    auto const impact_entry_compare =
+        [](auto const& expected_impact_entry, auto const& actual_impact_entry)
+        {
+            return
+                expected_impact_entry.first == actual_impact_entry.first.to_string() &&
+                expected_impact_entry.second == actual_impact_entry.second.to_string();
         };
     auto const block_map_entry_compare =
         [](auto const& expected_block_map_entry, auto const& actual_block_map_entry)
         {
-            return expected_block_map_entry.first == actual_block_map_entry.first;
+            return
+                expected_block_map_entry.first == actual_block_map_entry.first;
         };
 
     SECTION("blocks")
@@ -75,6 +84,8 @@ void test_process_x86_32(std::vector<std::uint8_t> const& data, process_info con
 
                 CHECK(actual_instruction.address == expected_instruction.address);
                 CHECK(actual_instruction.size == expected_instruction.size);
+
+                assert_content(expected_instruction.jump, actual_instruction.jump, jump_compare);
 
                 assert_content(expected_instruction.impact, actual_instruction.impact, impact_entry_compare);
 
@@ -113,6 +124,8 @@ TEST_CASE("A")
                             .address = 0,
                             .size = 1,
 
+                            .jump = { },
+
                             .impact = { }
                         }
                     }
@@ -139,6 +152,8 @@ TEST_CASE("A")
                         {
                             .address = 0,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -170,12 +185,16 @@ TEST_CASE("A")
                             .address = 0,
                             .size = 1,
 
+                            .jump = { },
+
                             .impact = { }
                         },
                         instruction_info
                         {
                             .address = 1,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -213,12 +232,16 @@ TEST_CASE("B")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { },
+
                             .impact = { }
                         },
                         instruction_info
                         {
                             .address = 2,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -250,12 +273,16 @@ TEST_CASE("B")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000002" },
+
                             .impact = { }
                         },
                         instruction_info
                         {
                             .address = 2,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -288,6 +315,8 @@ TEST_CASE("B")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000003" },
+
                             .impact = { }
                         }
                     },
@@ -296,6 +325,8 @@ TEST_CASE("B")
                         {
                             .address = 3,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -335,6 +366,8 @@ TEST_CASE("C")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000002", "#x0000000000000003" },
+
                             .impact = { }
                         }
                     },
@@ -344,6 +377,8 @@ TEST_CASE("C")
                             .address = 2,
                             .size = 1,
 
+                            .jump = { },
+
                             .impact = { }
                         }
                     },
@@ -352,6 +387,8 @@ TEST_CASE("C")
                         {
                             .address = 3,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -386,6 +423,8 @@ TEST_CASE("C")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000002", "#x0000000000000003" },
+
                             .impact = { }
                         }
                     },
@@ -394,6 +433,8 @@ TEST_CASE("C")
                         {
                             .address = 2,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -406,6 +447,8 @@ TEST_CASE("C")
                         {
                             .address = 3,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -442,6 +485,8 @@ TEST_CASE("C")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000002", "#x0000000000000005" },
+
                             .impact = { }
                         }
                     },
@@ -450,6 +495,8 @@ TEST_CASE("C")
                         {
                             .address = 2,
                             .size = 2,
+
+                            .jump = { "#x0000000000000006" },
 
                             .impact = { }
                         }
@@ -460,6 +507,8 @@ TEST_CASE("C")
                             .address = 5,
                             .size = 1,
 
+                            .jump = { },
+
                             .impact = { }
                         }
                     },
@@ -468,6 +517,8 @@ TEST_CASE("C")
                         {
                             .address = 6,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -505,6 +556,8 @@ TEST_CASE("C")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000002", "#x0000000000000005" },
+
                             .impact = { }
                         }
                     },
@@ -514,6 +567,8 @@ TEST_CASE("C")
                             .address = 2,
                             .size = 1,
 
+                            .jump = { },
+
                             .impact = { }
                         }
                     },
@@ -522,6 +577,8 @@ TEST_CASE("C")
                         {
                             .address = 3,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -534,6 +591,8 @@ TEST_CASE("C")
                         {
                             .address = 5,
                             .size = 2,
+
+                            .jump = { "#x0000000000000003" },
 
                             .impact = { }
                         }
@@ -570,6 +629,8 @@ TEST_CASE("D")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000000" },
+
                             .impact = { }
                         }
                     }
@@ -597,6 +658,8 @@ TEST_CASE("D")
                             .address = 0,
                             .size = 2,
 
+                            .jump = { "#x0000000000000000", "#x0000000000000002" },
+
                             .impact = { }
                         }
                     },
@@ -605,6 +668,8 @@ TEST_CASE("D")
                         {
                             .address = 2,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {
@@ -645,6 +710,8 @@ TEST_CASE("E")
                             .address = 0,
                             .size = 5,
 
+                            .jump = { },
+
                             .impact =
                             {
                                 { "R_EAX", "#x0000000000000008" }
@@ -655,6 +722,8 @@ TEST_CASE("E")
                             .address = 5,
                             .size = 2,
 
+                            .jump = { "R_EAX" },
+
                             .impact = { }
                         }
                     },
@@ -663,6 +732,8 @@ TEST_CASE("E")
 //                        {
 //                            .address = 8,
 //                            .size = 1,
+//
+//                            .jump = { "(bvmem R_ESP)" },
 //
 //                            .impact =
 //                            {
@@ -696,6 +767,8 @@ TEST_CASE("E")
                             .address = 0,
                             .size = 5,
 
+                            .jump = { },
+
                             .impact =
                             {
                                 { "R_EAX", "(bvmem #x000000000000001b)" }
@@ -706,6 +779,8 @@ TEST_CASE("E")
                             .address = 5,
                             .size = 6,
 
+                            .jump = { },
+
                             .impact =
                             {
                                 { "(bvmem #x000000000000001c)", "R_EBX" }
@@ -715,6 +790,8 @@ TEST_CASE("E")
                         {
                             .address = 11,
                             .size = 1,
+
+                            .jump = { "(bvmem R_ESP)" },
 
                             .impact =
                             {

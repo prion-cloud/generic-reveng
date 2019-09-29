@@ -39,10 +39,10 @@ namespace dec
             next_addresses.clear();
             if (current_instruction->step)
                 next_addresses.insert(address);
-            for (auto const& expr : current_instruction->ip)
+            for (auto const& jump : current_instruction->jump)
             {
-                if (expr.is_numeral())
-                    next_addresses.insert(expr.get_numeral_uint64());
+                if (jump.is_numeral())
+                    next_addresses.insert(jump.get_numeral_uint64());
                 else
                 {
                     // TODO

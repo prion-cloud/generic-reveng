@@ -31,7 +31,7 @@ namespace dec
         std::uint64_t address;
         std::size_t size;
 
-        std::unordered_set<z3::expr> ip;
+        std::unordered_set<z3::expr> jump;
         bool step;
 
         std::unordered_map<z3::expr, z3::expr> impact;

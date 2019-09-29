@@ -16,12 +16,12 @@ reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
 
 namespace dec
 {
-    constexpr std::size_t size = sizeof(std::uint64_t) * CHAR_BIT;
+    constexpr std::size_t size_ = sizeof(std::uint64_t) * CHAR_BIT;
 
     z3::context reil_monitor::context_ { };
 
     reil_monitor::reil_monitor(instruction_set_architecture const& architecture) :
-        mem_(z3::function("bvmem", context_.bv_sort(size), context_.bv_sort(size))),
+        mem_(z3::function("bvmem", context_.bv_sort(size_), context_.bv_sort(size_))),
         disassembler_(to_reil(architecture)) { }
 
     instruction reil_monitor::trace(std::uint64_t const& address, std::basic_string_view<std::uint8_t> const& code)
@@ -52,11 +52,11 @@ namespace dec
 
         auto const& reil_instructions = disassembler_.lift(address, code);
 
-        ip_.clear();
+        std::unordered_set<z3::expr> jump;
         auto step = true;
 
         impact_.clear();
-        temporary_impact_.clear();
+        temporary_.clear();
 
         for (auto const& reil_instruction : reil_instructions)
         {
@@ -75,7 +75,7 @@ namespace dec
                 step = false;
                 break;
             case I_JCC:
-                ip_.insert(get(destination));
+                jump.insert(get(destination));
                 step = source_1.type != A_CONST || source_1.val == 0;
                 break;
             case I_STR:
@@ -118,7 +118,7 @@ namespace dec
             .address = address,
             .size = static_cast<std::size_t>(reil_instructions.front().raw_info.size),
 
-            .ip = std::move(ip_),
+            .jump = std::move(jump),
             .step = step,
 
             .impact = std::move(impact_)
@@ -138,7 +138,7 @@ namespace dec
         }
         case A_TEMP:
             // There are no unbound temporaries
-            return temporary_impact_.at(create_constant(source.name));
+            return temporary_.at(create_constant(source.name));
         case A_CONST:
         case A_LOC:
             return create_value(source.val);
@@ -172,7 +172,7 @@ namespace dec
             impact_.insert_or_assign(create_constant(destination.name), expression);
             break;
         case A_TEMP:
-            temporary_impact_.insert_or_assign(create_constant(destination.name), expression);
+            temporary_.insert_or_assign(create_constant(destination.name), expression);
             break;
         default:
             throw std::invalid_argument("Unexpected argument type");
@@ -185,11 +185,11 @@ namespace dec
 
     z3::expr reil_monitor::create_constant(std::string const& name)
     {
-        return context_.bv_const(name.c_str(), size);
+        return context_.bv_const(name.c_str(), size_);
     }
     z3::expr reil_monitor::create_value(std::uint64_t const value)
     {
-        return context_.bv_val(value, size);
+        return context_.bv_val(value, size_);
     }
 
     static_assert(std::is_destructible_v<reil_monitor>);

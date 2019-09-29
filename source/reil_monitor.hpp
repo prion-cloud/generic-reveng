@@ -17,10 +17,8 @@ namespace dec
 
         reil_disassembler disassembler_;
 
-        std::unordered_set<z3::expr> ip_;
-
         std::unordered_map<z3::expr, z3::expr> impact_;
-        std::unordered_map<z3::expr, z3::expr> temporary_impact_;
+        std::unordered_map<z3::expr, z3::expr> temporary_;
 
     public:
 
