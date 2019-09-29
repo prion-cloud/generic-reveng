@@ -1,15 +1,30 @@
-#include <memory>
+#include "reil_monitor.hpp"
 
-#include "monitor.hpp"
+reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
+{
+    switch (architecture)
+    {
+        case dec::instruction_set_architecture::x86_32:
+        case dec::instruction_set_architecture::x86_64:
+            return ARCH_X86;
+
+        // TODO
+    }
+
+    throw std::runtime_error("Unknown architecture");
+}
 
 namespace dec
 {
-    constexpr std::size_t size = sizeof(std::uint_fast64_t) * CHAR_BIT;
+    constexpr std::size_t size = sizeof(std::uint64_t) * CHAR_BIT;
 
-    monitor::monitor() :
-        mem_(z3::function("bvmem", context_.bv_sort(size), context_.bv_sort(size))) { }
+    z3::context reil_monitor::context_ { };
 
-    std::unordered_map<z3::expr, z3::expr> monitor::trace(std::vector<reil_inst_t> const& intermediate_instructions)
+    reil_monitor::reil_monitor(instruction_set_architecture const& architecture) :
+        mem_(z3::function("bvmem", context_.bv_sort(size), context_.bv_sort(size))),
+        disassembler_(to_reil(architecture)) { }
+
+    instruction reil_monitor::trace(std::uint64_t const& address, std::basic_string_view<std::uint8_t> const& code)
     {
         static std::unordered_map<reil_op_t, z3::expr (*)(z3::expr const&)> const unop
         {
@@ -35,7 +50,15 @@ namespace dec
             { I_LT, z3::operator< }
         };
 
-        for (auto const& reil_instruction : intermediate_instructions)
+        auto const& reil_instructions = disassembler_.lift(address, code);
+
+        ip_.clear();
+        auto step = true;
+
+        impact_.clear();
+        temporary_impact_.clear();
+
+        for (auto const& reil_instruction : reil_instructions)
         {
             auto const op = reil_instruction.op;
 
@@ -47,8 +70,13 @@ namespace dec
             switch (op)
             {
             case I_NONE:
+                break;
             case I_UNK:
+                step = false;
+                break;
             case I_JCC:
+                ip_.insert(get(destination));
+                step = source_1.type != A_CONST || source_1.val == 0;
                 break;
             case I_STR:
                 set(destination, get(source_1));
@@ -80,13 +108,24 @@ namespace dec
             case I_LT:
                 set(destination, binop.at(op)(get(source_1), get(source_2)).simplify());
                 break;
+            default:
+                throw std::invalid_argument("Unexpected operation type");
             }
         }
 
-        return std::move(impact_);
+        return
+        {
+            .address = address,
+            .size = static_cast<std::size_t>(reil_instructions.front().raw_info.size),
+
+            .ip = std::move(ip_),
+            .step = step,
+
+            .impact = std::move(impact_)
+        };
     }
 
-    z3::expr monitor::get(reil_arg_t const& source)
+    z3::expr reil_monitor::get(reil_arg_t const& source)
     {
         switch (source.type)
         {
@@ -99,14 +138,15 @@ namespace dec
         }
         case A_TEMP:
             // There are no unbound temporaries
-            return impact_temporary_.at(source.name);
+            return temporary_impact_.at(create_constant(source.name));
         case A_CONST:
+        case A_LOC:
             return create_value(source.val);
         default:
             throw std::invalid_argument("Unexpected argument type");
         }
     }
-    z3::expr monitor::get_mem(reil_arg_t const& source)
+    z3::expr reil_monitor::get_mem(reil_arg_t const& source)
     {
         switch (source.type)
         {
@@ -124,7 +164,7 @@ namespace dec
         }
     }
 
-    void monitor::set(reil_arg_t const& destination, z3::expr const& expression)
+    void reil_monitor::set(reil_arg_t const& destination, z3::expr const& expression)
     {
         switch (destination.type)
         {
@@ -132,31 +172,31 @@ namespace dec
             impact_.insert_or_assign(create_constant(destination.name), expression);
             break;
         case A_TEMP:
-            impact_temporary_.insert_or_assign(destination.name, expression);
+            temporary_impact_.insert_or_assign(create_constant(destination.name), expression);
             break;
         default:
             throw std::invalid_argument("Unexpected argument type");
         }
     }
-    void monitor::set_mem(reil_arg_t const& destination, z3::expr const& expression)
+    void reil_monitor::set_mem(reil_arg_t const& destination, z3::expr const& expression)
     {
         impact_.insert_or_assign(mem_(get(destination)), expression);
     }
 
-    z3::expr monitor::create_constant(std::string const& name)
+    z3::expr reil_monitor::create_constant(std::string const& name)
     {
         return context_.bv_const(name.c_str(), size);
     }
-    z3::expr monitor::create_value(std::uint_fast64_t const value)
+    z3::expr reil_monitor::create_value(std::uint64_t const value)
     {
         return context_.bv_val(value, size);
     }
 
-    static_assert(std::is_destructible_v<monitor>);
+    static_assert(std::is_destructible_v<reil_monitor>);
 
-    static_assert(!std::is_move_constructible_v<monitor>); // TODO
-    static_assert(!std::is_move_assignable_v<monitor>); // TODO
+    static_assert(std::is_move_constructible_v<reil_monitor>);
+    static_assert(std::is_move_assignable_v<reil_monitor>);
 
-    static_assert(!std::is_copy_constructible_v<monitor>); // TODO
-    static_assert(!std::is_copy_assignable_v<monitor>); // TODO
+    static_assert(!std::is_copy_constructible_v<reil_monitor>); // TODO
+    static_assert(!std::is_copy_assignable_v<reil_monitor>); // TODO
 }

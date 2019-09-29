@@ -7,27 +7,27 @@ namespace dec
         return section_1.address + section_1.data.size() <= section_2.address;
     }
 
-    bool memory::section::exclusive_address_order::operator()(section const& section, std::uint_fast64_t const address) const
+    bool memory::section::exclusive_address_order::operator()(section const& section, std::uint64_t const address) const
     {
         return section.address + section.data.size() <= address;
     }
-    bool memory::section::exclusive_address_order::operator()(std::uint_fast64_t const address, section const& section) const
+    bool memory::section::exclusive_address_order::operator()(std::uint64_t const address, section const& section) const
     {
         return address < section.address;
     }
 
-    memory::memory(std::vector<std::uint_fast8_t> data) :
+    memory::memory(std::vector<std::uint8_t> data) :
         data_(std::move(data))
     {
         sections_.insert(
             section
             {
                 .address = 0x0,
-                .data = std::basic_string_view<std::uint_fast8_t>(data_.data(), data_.size())
+                .data = std::basic_string_view<std::uint8_t>(data_.data(), data_.size())
             });
     }
 
-    std::basic_string_view<std::uint_fast8_t> memory::operator[](std::uint_fast64_t const address) const
+    std::basic_string_view<std::uint8_t> memory::operator[](std::uint64_t const address) const
     {
         auto const section = sections_.lower_bound(address);
 

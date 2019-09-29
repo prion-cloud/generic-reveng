@@ -1,28 +1,12 @@
 #include <decompilation/process.hpp>
 
-#include "disassembler.hpp"
-#include "monitor.hpp"
-
-reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
-{
-    switch (architecture)
-    {
-        case dec::instruction_set_architecture::x86_32:
-        case dec::instruction_set_architecture::x86_64:
-            return ARCH_X86;
-
-        // TODO
-    }
-
-    throw std::runtime_error("Unknown architecture");
-}
+#include "reil_monitor.hpp"
 
 namespace dec
 {
-    process::process(std::vector<std::uint_fast8_t> data, instruction_set_architecture const architecture) :
+    process::process(std::vector<std::uint8_t> data, instruction_set_architecture const& architecture) :
         memory_(std::move(data)),
-        disassembler_(std::make_unique<disassembler const>(to_reil(architecture))),
-        monitor_(std::make_unique<monitor>())
+        monitor_(std::make_unique<reil_monitor>(architecture))
     {
         execute_from(0);
     }
@@ -32,68 +16,38 @@ namespace dec
     {
         return blocks_;
     }
-    std::unordered_map<std::uint_fast64_t, std::unordered_set<std::uint_fast64_t>> const& process::block_map() const
+    std::unordered_map<std::uint64_t, std::unordered_set<std::uint64_t>> const& process::block_map() const
     {
         return block_map_;
     }
 
-    void process::execute_from(std::uint_fast64_t address)
+    void process::execute_from(std::uint64_t address)
     {
         // Use the start address of the next higher block as a maximum
-        std::optional<std::uint_fast64_t> max_address;
+        std::optional<std::uint64_t> max_address;
         if (auto const max_block = blocks_.lower_bound(address); max_block != blocks_.end())
             max_address = max_block->begin()->address;
 
         // Fill a new block with contiguous instructions
         instruction_block new_block;
-        std::unordered_set<std::uint_fast64_t> next_addresses;
+        std::unordered_set<std::uint64_t> next_addresses;
         do
         {
+            auto const current_instruction = new_block.insert(new_block.end(), monitor_->trace(address, memory_[address]));
+            address += current_instruction->size;
+
             next_addresses.clear();
-
-            auto const intermediate_instructions = disassembler_->lift(address, memory_[address]);
-
-            auto impact = monitor_->trace(intermediate_instructions);
-
-            instruction new_instruction
+            if (current_instruction->step)
+                next_addresses.insert(address);
+            for (auto const& expr : current_instruction->ip)
             {
-                .address = address,
-                .size = static_cast<std::size_t>(intermediate_instructions.front().raw_info.size),
-
-                .impact = std::move(impact)
-            };
-
-            address += new_instruction.size;
-
-            auto const current_instruction = new_block.insert(new_block.end(), std::move(new_instruction));
-
-            bool step(true);
-            for (auto const& intermediate_instruction : intermediate_instructions)
-            {
-                switch (intermediate_instruction.op)
+                if (expr.is_numeral())
+                    next_addresses.insert(expr.get_numeral_uint64());
+                else
                 {
-                case I_UNK:
-                    step = false;
-                    break;
-                case I_JCC:
-                    if (intermediate_instruction.c.type == A_LOC)
-                        next_addresses.insert(intermediate_instruction.c.val);
-                    else
-                    {
-                        std::string const key(intermediate_instruction.c.name);
-
-                        auto const concat = search_back(*current_instruction, key);
-                        next_addresses.insert(std::make_move_iterator(concat.begin()), std::make_move_iterator(concat.end()));
-                    }
-                    step = intermediate_instruction.a.type != A_CONST || intermediate_instruction.a.val == 0;
-                    break;
-                default:
-                    break;
+                    // TODO
                 }
             }
-
-            if (step)
-                next_addresses.insert(address);
         }
         while (
             // Single successor
@@ -164,7 +118,7 @@ namespace dec
         }
     }
 
-    std::vector<std::uint_fast64_t>
+    std::vector<std::uint64_t>
         process::search_back(instruction const& instruction, std::string const& key) const
     {
         return { }; // TODO

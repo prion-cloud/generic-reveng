@@ -19,7 +19,7 @@ namespace dec
 
     bool instruction_block::exclusive_address_order::operator()(
         instruction_block const& instruction_block,
-        std::uint_fast64_t const address) const
+        std::uint64_t const address) const
     {
         if (instruction_block.empty())
             throw empty_instruction_block();
@@ -27,7 +27,7 @@ namespace dec
         return instruction_block.rbegin()->address < address;
     }
     bool instruction_block::exclusive_address_order::operator()(
-        std::uint_fast64_t const address,
+        std::uint64_t const address,
         instruction_block const& instruction_block) const
     {
         if (instruction_block.empty())

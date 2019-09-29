@@ -1,7 +1,7 @@
-[submodule "decompilation/submodule/openreil"]
-	path = decompilation/submodule/openreil
-	url = https://github.com/Cr4sh/openreil.git
-	ignore = dirty
-[submodule "decompilation/submodule/z3"]
-	path = decompilation/submodule/z3
-	url = https://github.com/Z3Prover/z3.git
+[submodule "submodule/openreil"]
+    path = submodule/openreil
+    url = https://github.com/Cr4sh/openreil.git
+    ignore = dirty
+[submodule "submodule/z3"]
+    path = submodule/z3
+    url = https://github.com/Z3Prover/z3.git

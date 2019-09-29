@@ -1,5 +1,13 @@
 #include <decompilation/instruction.hpp>
 
+namespace std // NOLINT [cert-dcl58-cpp]
+{
+    std::size_t hash<z3::expr>::operator()(z3::expr const& expression) const
+    {
+        return expression.hash();
+    }
+}
+
 namespace dec
 {
     bool instruction::address_order::operator()(instruction const& instruction_1, instruction const& instruction_2) const
@@ -7,11 +15,11 @@ namespace dec
         return instruction_1.address < instruction_2.address;
     }
 
-    bool instruction::address_order::operator()(instruction const& instruction, std::uint_fast64_t const address) const
+    bool instruction::address_order::operator()(instruction const& instruction, std::uint64_t const address) const
     {
         return instruction.address < address;
     }
-    bool instruction::address_order::operator()(std::uint_fast64_t const address, instruction const& instruction) const
+    bool instruction::address_order::operator()(std::uint64_t const address, instruction const& instruction) const
     {
         return address < instruction.address;
     }
