@@ -6,7 +6,7 @@ namespace dec
 {
     process::process(std::vector<std::uint8_t> data, instruction_set_architecture const& architecture) :
         memory_(std::move(data)),
-        monitor_(std::make_unique<reil_monitor>(architecture))
+        monitor_(std::make_unique<reil_monitor const>(architecture))
     {
         execute_from(0);
     }
@@ -31,31 +31,31 @@ namespace dec
         // Fill a new block with contiguous instructions
         instruction_block new_block;
         std::unordered_set<std::uint64_t> next_addresses;
-        do
+        while (true)
         {
-            auto const current_instruction = new_block.insert(new_block.end(), monitor_->trace(address, memory_[address]));
-            address += current_instruction->size;
+            auto const instruction = new_block.insert(new_block.end(), monitor_->trace(address, memory_[address]));
+            address += instruction->size;
 
-            next_addresses.clear();
-            if (current_instruction->step)
-                next_addresses.insert(address);
-            for (auto const& jump : current_instruction->jump)
+            for (auto const& jump : instruction->jump)
             {
-                if (jump.is_numeral())
-                    next_addresses.insert(jump.get_numeral_uint64());
+                auto const& next_address = jump.evaluate();
+                if (next_address)
+                    next_addresses.insert(*next_address);
                 else
                 {
                     // TODO
                 }
             }
+
+            if (next_addresses.size() != 1)
+                break;
+            if (*next_addresses.begin() != address)
+                break;
+            if (max_address && address >= *max_address)
+                break;
+
+            next_addresses.clear();
         }
-        while (
-            // Single successor
-            next_addresses.size() == 1 &&
-            // Directly following
-            *next_addresses.begin() == address &&
-            // Block size integrity
-            (!max_address || address < max_address));
 
         auto const& [current_block, current_block_original] =
             blocks_.insert(std::move(new_block));

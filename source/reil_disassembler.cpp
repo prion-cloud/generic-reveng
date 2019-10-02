@@ -20,9 +20,9 @@ namespace dec
         constexpr std::size_t max_code_size = MAX_INST_LEN;
 
         std::vector _code(
-            code.data(),
+            code.begin(),
             std::next(
-                code.data(),
+                code.begin(),
                 std::min(code.size(), max_code_size)));
 
         reil_translate_insn(reil_handle_, address, _code.data(), _code.size());

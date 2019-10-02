@@ -3,16 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <z3++.h>
-
-namespace std
-{
-    template<>
-    struct hash<z3::expr>
-    {
-        std::size_t operator()(z3::expr const& expression) const;
-    };
-}
+#include <decompilation/expression.hpp>
 
 namespace dec
 {
@@ -31,9 +22,7 @@ namespace dec
         std::uint64_t address;
         std::size_t size;
 
-        std::unordered_set<z3::expr> jump;
-        bool step;
-
-        std::unordered_map<z3::expr, z3::expr> impact;
+        std::unordered_set<expression> jump;
+        std::unordered_map<expression, expression> impact;
     };
 }

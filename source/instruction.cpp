@@ -1,13 +1,5 @@
 #include <decompilation/instruction.hpp>
 
-namespace std // NOLINT [cert-dcl58-cpp]
-{
-    std::size_t hash<z3::expr>::operator()(z3::expr const& expression) const
-    {
-        return expression.hash();
-    }
-}
-
 namespace dec
 {
     bool instruction::address_order::operator()(instruction const& instruction_1, instruction const& instruction_2) const

@@ -34,6 +34,23 @@ void assert_content(ContainerExpected const& expected, ContainerActual actual, C
         actual.erase(a);
     }
 
+// --
+std::string x;
+if constexpr (std::is_same_v<ContainerActual, std::unordered_map<z3::expr, z3::expr>>)
+{
+    if (!actual.empty())
+    {
+        auto const& n = *actual.begin();
+        x = n.first.to_string() + " := " + n.second.to_string();
+    }
+}
+if constexpr (std::is_same_v<ContainerActual, std::unordered_set<z3::expr>>)
+{
+    if (!actual.empty())
+        x = actual.begin()->to_string();
+}
+// --
+
     CHECK(actual.empty());
 }
 
@@ -185,7 +202,7 @@ TEST_CASE("A")
                             .address = 0,
                             .size = 1,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000001" },
 
                             .impact = { }
                         },
@@ -232,7 +249,7 @@ TEST_CASE("B")
                             .address = 0,
                             .size = 2,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000002" },
 
                             .impact = { }
                         },
@@ -377,7 +394,7 @@ TEST_CASE("C")
                             .address = 2,
                             .size = 1,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000003" },
 
                             .impact = { }
                         }
@@ -507,7 +524,7 @@ TEST_CASE("C")
                             .address = 5,
                             .size = 1,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000006" },
 
                             .impact = { }
                         }
@@ -567,7 +584,7 @@ TEST_CASE("C")
                             .address = 2,
                             .size = 1,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000003" },
 
                             .impact = { }
                         }
@@ -710,7 +727,7 @@ TEST_CASE("E")
                             .address = 0,
                             .size = 5,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000005" },
 
                             .impact =
                             {
@@ -767,7 +784,7 @@ TEST_CASE("E")
                             .address = 0,
                             .size = 5,
 
-                            .jump = { },
+                            .jump = { "#x0000000000000005" },
 
                             .impact =
                             {
@@ -779,7 +796,7 @@ TEST_CASE("E")
                             .address = 5,
                             .size = 6,
 
-                            .jump = { },
+                            .jump = { "#x000000000000000b" },
 
                             .impact =
                             {
