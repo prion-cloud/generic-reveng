@@ -9,8 +9,6 @@ namespace dec
 {
     class reil_monitor
     {
-        std::shared_ptr<z3::context> context_;
-
         reil_disassembler disassembler_;
 
     public:

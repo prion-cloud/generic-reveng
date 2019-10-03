@@ -26,23 +26,21 @@ namespace std
 
 namespace dec
 {
-    class expression
+    class expression : z3::expr
     {
         friend std::equal_to<expression>;
         friend std::hash<expression>;
 
-        std::shared_ptr<z3::context> context_;
-        z3::expr base_;
-        z3::func_decl mem_;
+        static z3::context context_;
 
-        expression(std::shared_ptr<z3::context> context, z3::expr const& base);
+        explicit expression(z3::expr const& base);
 
     public:
 
-        expression(std::shared_ptr<z3::context> const& context, std::string const& variable);
-        expression(std::shared_ptr<z3::context> const& context, std::uint64_t value);
+        explicit expression(std::string const& variable);
+        explicit expression(std::uint64_t value);
 
-        std::string to_string() const;
+        using z3::expr::to_string;
 
         std::optional<std::uint64_t> evaluate() const;
 

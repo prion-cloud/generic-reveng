@@ -17,7 +17,6 @@ reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
 namespace dec
 {
     reil_monitor::reil_monitor(instruction_set_architecture const& architecture) :
-        context_(std::make_shared<z3::context>()),
         disassembler_(to_reil(architecture)) { }
 
     instruction reil_monitor::trace(std::uint64_t const& address, std::basic_string_view<std::uint8_t> const& code) const
@@ -38,17 +37,17 @@ namespace dec
             {
             case A_REG:
             {
-                auto const key = expression(context_, source.name);
+                auto const key = expression(source.name);
                 if (auto const entry = instruction.impact.find(key); entry != instruction.impact.end())
                     return entry->second;
                 return key;
             }
             case A_TEMP:
                 // There are no unbound temporaries
-                return temporary.at(expression(context_, source.name));
+                return temporary.at(expression(source.name));
             case A_CONST:
             case A_LOC:
-                return expression(context_, source.val);
+                return expression(source.val);
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
@@ -76,10 +75,10 @@ namespace dec
             switch (destination.type)
             {
             case A_REG:
-                instruction.impact.insert_or_assign(expression(context_, destination.name), value);
+                instruction.impact.insert_or_assign(expression(destination.name), value);
                 break;
             case A_TEMP:
-                temporary.insert_or_assign(expression(context_, destination.name), value);
+                temporary.insert_or_assign(expression(destination.name), value);
                 break;
             default:
                 throw std::invalid_argument("Unexpected argument type");
@@ -161,7 +160,7 @@ namespace dec
         }
 
         if (step)
-            instruction.jump.insert(expression(context_, instruction.address + instruction.size));
+            instruction.jump.insert(expression(instruction.address + instruction.size));
 
         return instruction;
     }
