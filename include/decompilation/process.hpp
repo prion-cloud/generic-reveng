@@ -1,35 +1,31 @@
 #pragma once
 
-#include <decompilation/instruction_block.hpp>
+#include <set>
+#include <vector>
+
+#include <decompilation/data_section.hpp>
 #include <decompilation/instruction_set_architecture.hpp>
-#include <decompilation/memory.hpp>
 
 namespace dec
 {
-    class reil_monitor;
-
-    class process
+    class process // TODO std::set<instruction> ?
     {
-        memory memory_;
+        std::vector<std::uint8_t> data_;
+        std::set<data_section, data_section::exclusive_address_order> data_sections_;
 
-        std::unique_ptr<reil_monitor const> monitor_;
+        instruction_set_architecture architecture_;
 
-        std::set<instruction_block, instruction_block::exclusive_address_order> blocks_;
-        std::unordered_map<std::uint64_t, std::unordered_set<std::uint64_t>> block_map_;
+        std::uint64_t start_address_;
 
     public:
 
-        process(std::vector<std::uint8_t> data, instruction_set_architecture const& architecture); // TODO Real loading mechanism
-        ~process();
+        explicit process(std::vector<std::uint8_t> data); // TODO Real loading mechanism
+        process(std::vector<std::uint8_t> data, instruction_set_architecture architecture);
 
-        std::set<instruction_block, instruction_block::exclusive_address_order> const& blocks() const;
-        std::unordered_map<std::uint64_t, std::unordered_set<std::uint64_t>> const& block_map() const;
+        instruction_set_architecture architecture() const;
 
-    private:
+        std::uint64_t start_address() const;
 
-        void execute_from(std::uint64_t address);
-
-        std::vector<std::uint64_t>
-            search_back(instruction const& instruction, std::string const& key) const;
+        data_section operator[](std::uint64_t address) const;
     };
 }

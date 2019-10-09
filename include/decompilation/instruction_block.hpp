@@ -1,13 +1,15 @@
 #pragma once
 
-#include <set>
-
+#include <decompilation/disassembler.hpp>
 #include <decompilation/instruction.hpp>
+#include <decompilation/process.hpp>
 
 namespace dec
 {
-    struct instruction_block : std::set<instruction, instruction::address_order>
+    class instruction_block : public std::set<instruction, instruction::address_order>
     {
+    public:
+
         struct exclusive_address_order
         {
             using is_transparent = std::true_type;
@@ -18,6 +20,14 @@ namespace dec
             bool operator()(std::uint64_t address, instruction_block const& instruction_block) const;
         };
 
-        using std::set<instruction, instruction::address_order>::set;
+    private:
+
+        instruction_block();
+
+    public:
+
+        instruction_block(disassembler const& disassembler, data_section data_section);
+
+        instruction_block extract_head(iterator last);
     };
 }

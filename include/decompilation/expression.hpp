@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 
 #include <z3++.h>
@@ -31,8 +30,6 @@ namespace dec
         friend std::equal_to<expression>;
         friend std::hash<expression>;
 
-        static z3::context context_;
-
         explicit expression(z3::expr const& base);
 
     public:
@@ -42,7 +39,8 @@ namespace dec
 
         using z3::expr::to_string;
 
-        std::optional<std::uint64_t> evaluate() const;
+        bool has_value() const;
+        std::uint64_t value() const;
 
         expression mem() const;
 

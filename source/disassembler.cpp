@@ -1,31 +1,18 @@
-#include "reil_monitor.hpp"
-
-reil_arch_t to_reil(dec::instruction_set_architecture const architecture)
-{
-    switch (architecture)
-    {
-        case dec::instruction_set_architecture::x86_32:
-        case dec::instruction_set_architecture::x86_64:
-            return ARCH_X86;
-
-        // TODO
-    }
-
-    throw std::runtime_error("Unknown architecture");
-}
+#include "disassembler_handle.hpp"
 
 namespace dec
 {
-    reil_monitor::reil_monitor(instruction_set_architecture const& architecture) :
-        disassembler_(to_reil(architecture)) { }
+    disassembler::disassembler(instruction_set_architecture const architecture) :
+        handle_(std::make_unique<handle>(architecture)) { }
+    disassembler::~disassembler() = default;
 
-    instruction reil_monitor::trace(std::uint64_t const& address, std::basic_string_view<std::uint8_t> const& code) const
+    instruction disassembler::operator()(data_section const& data_section) const
     {
-        auto const& reil_instructions = disassembler_.lift(address, code);
+        auto const& reil_instructions = handle_->disassemble(data_section);
 
         instruction instruction
         {
-            .address = address,
+            .address = data_section.address,
             .size = static_cast<std::uint64_t>(reil_instructions.front().raw_info.size)
         };
 
@@ -165,11 +152,11 @@ namespace dec
         return instruction;
     }
 
-    static_assert(std::is_destructible_v<reil_monitor>);
+    static_assert(std::is_destructible_v<disassembler>);
 
-    static_assert(std::is_move_constructible_v<reil_monitor>);
-    static_assert(std::is_move_assignable_v<reil_monitor>);
+    static_assert(!std::is_move_constructible_v<disassembler>); // TODO
+    static_assert(!std::is_move_assignable_v<disassembler>); // TODO
 
-    static_assert(!std::is_copy_constructible_v<reil_monitor>); // TODO
-    static_assert(!std::is_copy_assignable_v<reil_monitor>); // TODO
+    static_assert(!std::is_copy_constructible_v<disassembler>); // TODO
+    static_assert(!std::is_copy_assignable_v<disassembler>); // TODO
 }

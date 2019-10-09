@@ -16,7 +16,7 @@ namespace dec
 {
     constexpr std::size_t bv_size_ = sizeof(std::uint64_t) * CHAR_BIT;
 
-    z3::context expression::context_ { };
+    z3::context context_ { };
 
     expression::expression(z3::expr const& base) :
         z3::expr(base.simplify()) { }
@@ -26,12 +26,13 @@ namespace dec
     expression::expression(std::uint64_t const value) :
         expression(context_.bv_val(value, bv_size_)) { }
 
-    std::optional<std::uint64_t> expression::evaluate() const
+    bool expression::has_value() const
     {
-        if (is_numeral())
-            return get_numeral_uint64();
-
-        return std::nullopt;
+        return is_numeral();
+    }
+    std::uint64_t expression::value() const
+    {
+        return get_numeral_uint64();
     }
 
     expression expression::mem() const
