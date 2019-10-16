@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <decompilation/expression.hpp>
+#include <decompilation/expression_block.hpp>
 
 namespace dec
 {
@@ -23,6 +23,6 @@ namespace dec
         std::size_t size;
 
         std::unordered_set<expression> jump;
-        std::unordered_map<expression, expression> impact;
+        expression_block impact;
     };
 }

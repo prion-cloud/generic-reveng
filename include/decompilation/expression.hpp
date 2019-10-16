@@ -34,13 +34,15 @@ namespace dec
 
     public:
 
-        explicit expression(std::string const& variable);
+        explicit expression(std::string const& name);
         explicit expression(std::uint64_t value);
 
-        using z3::expr::to_string;
+        using z3::expr::to_string; // Debugging/testing purposes (TODO)
 
-        bool has_value() const;
-        std::uint64_t value() const;
+        std::optional<std::uint64_t> evaluate() const;
+
+//        std::unordered_set<expression> foo() const;
+//        expression substitute(std::vector<std::pair<expression, expression>> const& a) const;
 
         expression mem() const;
 
@@ -56,5 +58,7 @@ namespace dec
         expression operator&(expression const& other) const;
         expression operator|(expression const& other) const;
         expression operator^(expression const& other) const;
+
+        // TODO missing operations
     };
 }

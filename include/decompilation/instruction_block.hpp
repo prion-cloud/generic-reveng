@@ -1,8 +1,8 @@
 #pragma once
 
+#include <set>
+
 #include <decompilation/disassembler.hpp>
-#include <decompilation/instruction.hpp>
-#include <decompilation/process.hpp>
 
 namespace dec
 {
@@ -22,11 +22,18 @@ namespace dec
 
     private:
 
+        expression_block impact_;
+
         instruction_block();
 
     public:
 
         instruction_block(disassembler const& disassembler, data_section data_section);
+
+        std::uint64_t address() const;
+
+        std::unordered_set<expression> const& jump() const;
+        expression const& impact(expression const& key) const;
 
         instruction_block extract_head(iterator last);
     };

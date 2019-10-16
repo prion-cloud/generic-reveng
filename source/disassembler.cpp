@@ -16,69 +16,43 @@ namespace dec
             .size = static_cast<std::uint64_t>(reil_instructions.front().raw_info.size)
         };
 
-        std::unordered_map<expression, expression> temporary;
+        expression_block temporary;
 
         auto const get = [this, &instruction, &temporary](reil_arg_t const& source)
         {
             switch (source.type)
             {
             case A_REG:
-            {
-                auto const key = expression(source.name);
-                if (auto const entry = instruction.impact.find(key); entry != instruction.impact.end())
-                    return entry->second;
-                return key;
-            }
+                return instruction.impact[source.name];
             case A_TEMP:
-                // There are no unbound temporaries
-                return temporary.at(expression(source.name));
+                return temporary[source.name];
             case A_CONST:
             case A_LOC:
+                // TODO prohibit inum
                 return expression(source.val);
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
-        auto const get_mem = [&instruction, &get](reil_arg_t const& source)
-        {
-            switch (source.type)
-            {
-            case A_TEMP:
-            {
-                auto const key = get(source).mem();
-                if (auto const entry = instruction.impact.find(key); entry != instruction.impact.end())
-                    return entry->second;
-                return key;
-            }
-            case A_CONST:
-                return get(source).mem();
-            default:
-                throw std::invalid_argument("Unexpected argument type");
-            }
-        };
-
         auto const set = [this, &instruction, &temporary](reil_arg_t const& destination, expression const& value)
         {
             switch (destination.type)
             {
             case A_REG:
-                instruction.impact.insert_or_assign(expression(destination.name), value);
+                instruction.impact[destination.name] = value;
                 break;
             case A_TEMP:
-                temporary.insert_or_assign(expression(destination.name), value);
+                temporary[destination.name] = value;
                 break;
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
-        auto const set_mem = [&instruction, &get](reil_arg_t const& destination, expression const& value)
-        {
-            instruction.impact.insert_or_assign(get(destination).mem(), value);
-        };
 
         auto step = true;
         for (auto const& ins : reil_instructions)
         {
+            // TODO switch for source (expression const&) and dest (expression&)
             switch (ins.op)
             {
             case I_NONE:
@@ -96,10 +70,10 @@ namespace dec
                 set(ins.c, get(ins.a));
                 break;
             case I_STM:
-                set_mem(ins.c, get(ins.a));
+                instruction.impact[get(ins.c).mem()] = get(ins.a);
                 break;
             case I_LDM:
-                set(ins.c, get_mem(ins.a));
+                set(ins.c, instruction.impact[get(ins.a).mem()]);
                 break;
             case I_NEG:
                 set(ins.c, -get(ins.a));
