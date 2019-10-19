@@ -38,25 +38,19 @@ namespace dec
         {
             auto const& instruction = *insert(end(), disassembler(data_section));
 
-            data_section.address += instruction.size;
-            data_section.data.remove_prefix(instruction.size);
+            impact_.update(instruction.impact);
 
             if (instruction.jump.size() != 1)
                 break;
 
             auto const next_address = instruction.jump.begin()->evaluate();
 
-            if (!next_address || *next_address != data_section.address)
+            if (!next_address || *next_address != instruction.address + instruction.size)
                 break;
-        }
 
-//        for (auto const& instruction : *this)
-//        {
-//            auto v = impact_;
-//
-//            for (auto const& [a, b] : instruction.impact)
-//                impact_.insert_or_assign(a, b.substitute(v));
-//        }
+            data_section.address = *next_address;
+            data_section.data.remove_prefix(instruction.size);
+        }
     }
 
     std::uint64_t instruction_block::address() const

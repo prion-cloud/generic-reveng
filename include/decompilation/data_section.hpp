@@ -17,6 +17,6 @@ namespace dec
         };
 
         std::uint64_t address;
-        std::basic_string_view<std::uint8_t> data;
+        std::basic_string_view<std::uint8_t> data; // TODO std::span<std::uint8_t>
     };
 }

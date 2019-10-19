@@ -6,7 +6,7 @@
 
 namespace dec
 {
-    class instruction_block : public std::set<instruction, instruction::address_order>
+    class instruction_block : public std::set<instruction, instruction::address_order> // TODO private
     {
     public:
 
