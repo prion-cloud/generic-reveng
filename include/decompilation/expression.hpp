@@ -35,7 +35,7 @@ namespace dec
 
         using z3::expr::to_string; // Debugging/testing purposes (TODO)
 
-        void substitute(expression const& x, expression const& y);
+        expression substitute(expression const& x, expression const& y) const;
 
         std::optional<std::uint64_t> evaluate() const;
 

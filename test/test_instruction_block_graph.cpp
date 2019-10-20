@@ -150,17 +150,17 @@ TEST_CASE("dec::instruction_block_graph::instruction_block_graph(dec::process)")
 
             expected_block_map[0] = { 0 };
         }
-        SECTION("H")
-        {
-            data =
-            {
-                JE(-2), // <- WHILE
-                RET
-            };
-
-            expected_block_map[0] = { 0, 2 };
-            expected_block_map[2] = { };
-        }
+//        SECTION("H")
+//        {
+//            data =
+//            {
+//                JE(-2), // <- WHILE
+//                RET
+//            };
+//
+//            expected_block_map[0] = { 0, 2 };
+//            expected_block_map[2] = { };
+//        }
         SECTION("I")
         {
             data =

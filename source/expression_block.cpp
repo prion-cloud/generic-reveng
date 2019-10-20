@@ -17,7 +17,7 @@ namespace dec
         for (auto const& [key, value] : *this)
         {
             for (auto& [other_key, other_value] : other)
-                other_value.substitute(key, value);
+                other_value = other_value.substitute(key, value);
         }
         other.merge(*this);
 

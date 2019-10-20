@@ -62,9 +62,9 @@ namespace dec
     {
         return rbegin()->jump;
     }
-    expression const& instruction_block::impact(expression const& key) const
+    expression_block const& instruction_block::impact() const
     {
-        return impact_[key];
+        return impact_;
     }
 
     instruction_block instruction_block::extract_head(iterator last)

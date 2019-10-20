@@ -37,8 +37,8 @@ namespace dec
             {
                 if (auto const next_address = jump.evaluate(); next_address)
                     next_addresses.insert(*next_address);
-//                else
-//                    next_addresses.merge(patch(address, jump));
+                else
+                    next_addresses.merge(patch(address, jump));
             }
             for (auto const next_address : next_addresses)
             {
@@ -109,28 +109,50 @@ namespace dec
         bwd_.insert(std::move(tail_bwd_entry));
     }
 
-    std::unordered_set<std::uint64_t> instruction_block_graph::patch(std::uint64_t const address, expression jump)
+    std::unordered_set<std::uint64_t> instruction_block_graph::patch(std::uint64_t address, expression const& jump)
     {
-        std::unordered_set<std::uint64_t> next_addresses;
+        expression unknown = *jump.decompose().begin(); // TODO
 
-        std::unordered_set<expression> const& unknowns = jump.decompose();
+        std::vector<expression_block> monitors(1);
 
-        std::queue<std::uint64_t> address_queue;
-        address_queue.push(address);
+        std::queue<std::pair<std::uint64_t, expression_block&>> q;
+        q.emplace(address, monitors.back());
         do
         {
-            auto const& block = *find(address_queue.front());
-            address_queue.pop();
+            address = q.front().first;
+            auto& monitor = q.front().second;
+            q.pop();
 
-            expression_block monitor;
-            for (auto const& unknown : unknowns)
-                monitor[unknown] = block.impact(unknown);
-            for (auto const& unknown : unknowns)
-                jump.substitute(unknown, monitor[unknown]);
+            monitor.update(find(address)->impact());
 
-            next_addresses.insert(*jump.evaluate());
+            if (monitor[unknown].evaluate())
+                continue;
+
+            auto preceeding_addresses = bwd_.at(address);
+
+            if (preceeding_addresses.empty())
+                continue;
+
+            auto const first_preceeding_address = preceeding_addresses.begin();
+            q.emplace(*first_preceeding_address, monitor);
+            preceeding_addresses.erase(first_preceeding_address);
+
+            for (auto const preceeding_address : preceeding_addresses)
+            {
+                monitors.push_back(monitor);
+                q.emplace(preceeding_address, monitors.back());
+            }
         }
-        while (!address_queue.empty());
+        while (!q.empty());
+
+        std::unordered_set<std::uint64_t> next_addresses;
+        for (auto const& monitor : monitors)
+        {
+            auto const patched_jump = jump.substitute(unknown, monitor[unknown]);
+
+            if (auto const next_address = patched_jump.evaluate(); next_address)
+                next_addresses.insert(*next_address);
+        }
 
         return next_addresses;
     }

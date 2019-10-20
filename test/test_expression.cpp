@@ -56,9 +56,7 @@ TEST_CASE("dec::expression::substitute(dec::expression, dec::expression)")
         }
     }
 
-    base_expression->substitute(*a, *b);
-
-    REQUIRE(*base_expression == *result_expression);
+    REQUIRE(base_expression->substitute(*a, *b) == *result_expression);
 }
 
 TEST_CASE("dec::expression::evaluate() const")

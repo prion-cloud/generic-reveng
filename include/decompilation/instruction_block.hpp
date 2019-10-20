@@ -33,7 +33,7 @@ namespace dec
         std::uint64_t address() const;
 
         std::unordered_set<expression> const& jump() const;
-        expression const& impact(expression const& key) const;
+        expression_block const& impact() const;
 
         instruction_block extract_head(iterator last);
     };

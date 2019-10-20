@@ -30,14 +30,15 @@ namespace dec
     expression::expression(std::uint64_t const value) :
         expression(context_.bv_val(value, bv_size_)) { }
 
-    void expression::substitute(expression const& x, expression const& y)
+    expression expression::substitute(expression const& x, expression const& y) const
     {
         z3::expr_vector v_x(context_);
         z3::expr_vector v_y(context_);
         v_x.push_back(x);
         v_y.push_back(y);
 
-        *this = expression(z3::expr::substitute(v_x, v_y));
+        z3::expr f = *this;
+        return expression(f.substitute(v_x, v_y));
     }
 
     std::optional<std::uint64_t> expression::evaluate() const

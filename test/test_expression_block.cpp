@@ -62,10 +62,23 @@ TEST_CASE("dec::expression_block::update(dec::expression_block)")
             result_block["EBX"] = dec::expression(3);
         }
     }
+    SECTION("C")
+    {
+        base_block["EBX"] = dec::expression(1);
+
+        SECTION("C1")
+        {
+            new_block["EAX"] = dec::expression("EBX") + dec::expression(2);
+            new_block["EBX"] = dec::expression("EAX") + dec::expression(3);
+
+            result_block["EAX"] = dec::expression(3);
+            result_block["EBX"] = dec::expression("EAX") + dec::expression(3);
+        }
+    }
 
     base_block.update(new_block);
 
-    REQUIRE(result_block == base_block);
+    CHECK(base_block == result_block);
 }
 
 TEST_CASE("dec::expression_block::operator==(dec::expression_block) const")
