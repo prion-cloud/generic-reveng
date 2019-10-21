@@ -34,11 +34,12 @@ namespace dec
 
     instruction_block::instruction_block(disassembler const& disassembler, data_section data_section)
     {
-        while (!data_section.data.empty())
+        if (data_section.data.empty())
+            throw std::invalid_argument("Empty data section");
+
+        do
         {
             auto const& instruction = *insert(end(), disassembler(data_section));
-
-            impact_.update(instruction.impact);
 
             if (instruction.jump.size() != 1)
                 break;
@@ -51,6 +52,7 @@ namespace dec
             data_section.address = *next_address;
             data_section.data.remove_prefix(instruction.size);
         }
+        while (!data_section.data.empty());
     }
 
     std::uint64_t instruction_block::address() const
@@ -58,13 +60,22 @@ namespace dec
         return begin()->address;
     }
 
-    std::unordered_set<expression> const& instruction_block::jump() const
+    std::unordered_set<expression> instruction_block::jump() const
     {
-        return rbegin()->jump;
+        std::unordered_set<expression> jump;
+        auto const i = impact();
+        for (auto const& j : rbegin()->jump)
+            jump.insert(i.update(j));
+
+        return jump;
     }
-    expression_block const& instruction_block::impact() const
+    expression_composition instruction_block::impact() const
     {
-        return impact_;
+        expression_composition impact;
+        for (auto const& instruction : *this)
+            impact = instruction.impact.update(impact);
+
+        return impact;
     }
 
     instruction_block instruction_block::extract_head(iterator last)

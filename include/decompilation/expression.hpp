@@ -52,11 +52,17 @@ namespace dec
         expression operator/(expression const& other) const;
         expression operator%(expression const& other) const;
 
+        expression operator<<(expression const& other) const;
+        expression operator>>(expression const& other) const;
+
         expression operator&(expression const& other) const;
         expression operator|(expression const& other) const;
         expression operator^(expression const& other) const;
 
-        // TODO missing operations
+        expression eq(expression const& other) const;
+        expression operator<(expression const& other) const;
+
+        // TODO missing special signed operations
 
         bool operator==(expression const& other) const;
         bool operator!=(expression const& other) const;

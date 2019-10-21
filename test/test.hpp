@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <decompilation/expression_block.hpp>
+#include <decompilation/expression_composition.hpp>
 
 namespace Catch
 {
@@ -15,11 +15,31 @@ namespace Catch
         }
     };
     template<>
-    struct StringMaker<dec::expression_block>
+    struct StringMaker<dec::expression_composition>
     {
-        static std::string convert(dec::expression_block const& expression_block)
+        static std::string convert(dec::expression_composition const& expression_composition)
         {
-            return StringMaker<std::vector<std::string>>::convert(expression_block.to_string());
+            std::ostringstream ss;
+            ss << '{';
+            for (auto const& s : expression_composition.to_string())
+                ss << std::endl << std::endl << std::endl << '\t' << s;
+            ss << std::endl << '}';
+
+            return ss.str();
+        }
+    };
+    template<>
+    struct StringMaker<std::pair<std::uint64_t const, std::unordered_set<std::uint64_t>>>
+    {
+        static std::string convert(std::pair<std::uint64_t const, std::unordered_set<std::uint64_t>> const& entry)
+        {
+            std::ostringstream ss;
+            ss  << "{ "
+                << entry.first << ", "
+                << StringMaker<std::vector<std::uint64_t>>::convert(std::vector(entry.second.begin(), entry.second.end()))
+                << " }";
+
+            return ss.str();
         }
     };
 }

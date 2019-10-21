@@ -1,11 +1,11 @@
 #include "test.hpp"
 
-TEST_CASE("dec::expression_block::update(dec::expression_block)")
+TEST_CASE("dec::expression_composition::update(dec::expression_composition)")
 {
-    dec::expression_block base_block;
-    dec::expression_block new_block;
+    dec::expression_composition base_block;
+    dec::expression_composition new_block;
 
-    dec::expression_block result_block;
+    dec::expression_composition result_block;
 
     SECTION("A")
     {
@@ -76,15 +76,13 @@ TEST_CASE("dec::expression_block::update(dec::expression_block)")
         }
     }
 
-    base_block.update(new_block);
-
-    CHECK(base_block == result_block);
+    CHECK(new_block.update(base_block) == result_block);
 }
 
-TEST_CASE("dec::expression_block::operator==(dec::expression_block) const")
+TEST_CASE("dec::expression_composition::operator==(dec::expression_composition) const")
 {
-    dec::expression_block a;
-    dec::expression_block b;
+    dec::expression_composition a;
+    dec::expression_composition b;
 
     SECTION("A")
     {
@@ -145,10 +143,10 @@ TEST_CASE("dec::expression_block::operator==(dec::expression_block) const")
     CHECK(!(a != b));
     REQUIRE(a == b);
 }
-TEST_CASE("dec::expression_block::operator!=(dec::expression_block) const")
+TEST_CASE("dec::expression_composition::operator!=(dec::expression_composition) const")
 {
-    dec::expression_block a;
-    dec::expression_block b;
+    dec::expression_composition a;
+    dec::expression_composition b;
 
     SECTION("A")
     {

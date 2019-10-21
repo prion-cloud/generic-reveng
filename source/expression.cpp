@@ -110,6 +110,15 @@ namespace dec
         return expression(z3::mod(*this, other));
     }
 
+    expression expression::operator<<(expression const& other) const
+    {
+        return expression(z3::shl(*this, other));
+    }
+    expression expression::operator>>(expression const& other) const
+    {
+        return expression(z3::lshr(*this, other));
+    }
+
     expression expression::operator&(expression const& other) const
     {
         return expression(z3::operator&(*this, other));
@@ -121,6 +130,15 @@ namespace dec
     expression expression::operator^(expression const& other) const
     {
         return expression(z3::operator^(*this, other));
+    }
+
+    expression expression::eq(expression const& other) const
+    {
+        return expression(z3::operator==(*this, other));
+    }
+    expression expression::operator<(expression const& other) const
+    {
+        return expression(z3::operator<(*this, other));
     }
 
     bool expression::operator==(expression const& other) const

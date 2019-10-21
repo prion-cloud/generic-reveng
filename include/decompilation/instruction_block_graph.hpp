@@ -23,7 +23,7 @@ namespace dec
 
     private:
 
-        void split(iterator const& block, std::uint64_t address);
+        bool split(std::uint64_t address);
 
         std::unordered_set<std::uint64_t> patch(std::uint64_t address /*TODO block*/, expression const& jump);
     };

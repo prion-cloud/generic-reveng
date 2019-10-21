@@ -7,20 +7,21 @@
 
 namespace dec
 {
-    class expression_block : std::unordered_map<expression, expression>
+    class expression_composition : std::unordered_map<expression, expression>
     {
     public:
 
         std::vector<std::string> to_string() const; // Debugging/testing purposes (TODO)
 
-        void update(expression_block other);
+        expression update(expression expression) const;
+        expression_composition update(expression_composition const& expression_composition) const;
 
         expression& operator[](expression const& key);
         expression& operator[](std::string const& key_name);
 
         expression const& operator[](expression const& key) const;
 
-        bool operator==(expression_block other) const;
-        bool operator!=(expression_block const& other) const;
+        bool operator==(expression_composition other) const;
+        bool operator!=(expression_composition const& other) const;
     };
 }

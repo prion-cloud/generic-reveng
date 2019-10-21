@@ -11,7 +11,7 @@ TEST_CASE("dec::disassembler::operator(dec::data_section) const")
     std::vector<std::uint8_t> data;
 
     std::unordered_set<dec::expression> jump;
-    dec::expression_block impact;
+    dec::expression_composition impact;
 
     SECTION("x86_32")
     {
@@ -27,8 +27,8 @@ TEST_CASE("dec::disassembler::operator(dec::data_section) const")
             {
                 data = { 0xC3 };
 
-                jump = { dec::expression("R_ESP").mem() };
-                impact["R_ESP"] = dec::expression("R_ESP") + dec::expression(4);
+                jump.insert(dec::expression("R_ESP").mem());
+                impact[dec::expression("R_ESP")] = dec::expression("R_ESP") + dec::expression(4);
             }
         }
         SECTION("B")
@@ -40,11 +40,13 @@ TEST_CASE("dec::disassembler::operator(dec::data_section) const")
             SECTION("mov eax, [27]")
             {
                 data = { 0xA1, 0x1B, 0x00, 0x00, 0x00 };
+
                 impact[dec::expression("R_EAX")] = dec::expression(27).mem();
             }
             SECTION("mov [27], eax")
             {
                 data = { 0xA3, 0x1B, 0x00, 0x00, 0x00 };
+
                 impact[dec::expression(27).mem()] = dec::expression("R_EAX");
             }
 

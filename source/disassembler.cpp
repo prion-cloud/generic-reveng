@@ -16,7 +16,7 @@ namespace dec
             .size = static_cast<std::uint64_t>(reil_instructions.front().raw_info.size)
         };
 
-        expression_block temporary;
+        expression_composition temporary;
 
         auto const get = [this, &instruction, &temporary](reil_arg_t const& source)
         {
@@ -99,8 +99,12 @@ namespace dec
 //            case I_SMUL:
 //            case I_SDIV:
 //            case I_SMOD:
-//            case I_SHL:
-//            case I_SHR:
+            case I_SHL:
+                set(ins.c, get(ins.a) << get(ins.b));
+                break;
+            case I_SHR:
+                set(ins.c, get(ins.a) >> get(ins.b));
+                break;
             case I_AND:
                 set(ins.c, get(ins.a) & get(ins.b));
                 break;
@@ -110,8 +114,12 @@ namespace dec
             case I_XOR:
                 set(ins.c, get(ins.a) ^ get(ins.b));
                 break;
-//            case I_EQ:
-//            case I_LT:
+            case I_EQ:
+                set(ins.c, get(ins.a).eq(get(ins.b)));
+                break;
+            case I_LT:
+                set(ins.c, get(ins.a) < get(ins.b));
+                break;
             default:
                 throw std::invalid_argument("Unexpected operation type");
             }

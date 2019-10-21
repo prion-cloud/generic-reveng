@@ -1,9 +1,6 @@
 #pragma once
 
-#include <unordered_map>
-#include <unordered_set>
-
-#include <decompilation/expression_block.hpp>
+#include <decompilation/expression_composition.hpp>
 
 namespace dec
 {
@@ -23,6 +20,6 @@ namespace dec
         std::size_t size;
 
         std::unordered_set<expression> jump;
-        expression_block impact;
+        expression_composition impact;
     };
 }

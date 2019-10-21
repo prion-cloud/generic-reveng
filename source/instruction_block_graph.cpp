@@ -15,31 +15,21 @@ namespace dec
             auto const address = address_queue.front();
             address_queue.pop();
 
-            auto const existing_block = lower_bound(address);
-
-            if (existing_block != upper_bound(address))
-            {
-                split(existing_block, address);
+            if (split(address))
                 continue;
-            }
 
             fwd_.try_emplace(address);
             bwd_.try_emplace(address);
 
             auto data_section = process[address];
-            if (existing_block != end())
+            if (auto const existing_block = lower_bound(address); existing_block != end())
                 data_section.data.remove_suffix(address + data_section.data.size() - existing_block->address());
 
             auto const& block = *emplace(disassembler, data_section).first;
 
             std::unordered_set<std::uint64_t> next_addresses;
             for (auto const& jump : block.jump())
-            {
-                if (auto const next_address = jump.evaluate(); next_address)
-                    next_addresses.insert(*next_address);
-                else
-                    next_addresses.merge(patch(address, jump));
-            }
+                next_addresses.merge(patch(address, jump));
             for (auto const next_address : next_addresses)
             {
                 address_queue.push(next_address);
@@ -62,12 +52,17 @@ namespace dec
         return bwd_;
     }
 
-    void instruction_block_graph::split(iterator const& block, std::uint64_t const address)
+    bool instruction_block_graph::split(std::uint64_t const address)
     {
+        auto const block = lower_bound(address);
+
+        if (block == upper_bound(address))
+            return false;
+
         auto const instruction = block->find(address);
 
-        if (instruction == block->begin()) // TODO replace opaque
-            return;
+        if (instruction == block->begin()) // TODO replace opaquely
+            return true;
 
         // TODO tidy up
 
@@ -107,26 +102,36 @@ namespace dec
 
         bwd_.insert(std::move(head_bwd_entry));
         bwd_.insert(std::move(tail_bwd_entry));
+
+        return true;
     }
 
     std::unordered_set<std::uint64_t> instruction_block_graph::patch(std::uint64_t address, expression const& jump)
     {
-        expression unknown = *jump.decompose().begin(); // TODO
+        if (auto const next_address = jump.evaluate(); next_address)
+            return { *next_address };
 
-        std::vector<expression_block> monitors(1);
+        auto const unknowns = jump.decompose();
 
-        std::queue<std::pair<std::uint64_t, expression_block&>> q;
-        q.emplace(address, monitors.back());
-        do
+        std::vector<expression_composition> monitors;
+        std::queue<std::pair<std::uint64_t, expression_composition&>> q;
+
+        for (auto const preceeding_address : bwd_.at(address))
+        {
+            monitors.emplace_back();
+            q.emplace(preceeding_address, monitors.back());
+        }
+
+        while (!q.empty())
         {
             address = q.front().first;
             auto& monitor = q.front().second;
             q.pop();
 
-            monitor.update(find(address)->impact());
+            monitor = monitor.update(find(address)->impact());
 
-            if (monitor[unknown].evaluate())
-                continue;
+//            if (monitor[unknown].evaluate()) TODO early stop
+//                continue;
 
             auto preceeding_addresses = bwd_.at(address);
 
@@ -143,12 +148,13 @@ namespace dec
                 q.emplace(preceeding_address, monitors.back());
             }
         }
-        while (!q.empty());
 
         std::unordered_set<std::uint64_t> next_addresses;
         for (auto const& monitor : monitors)
         {
-            auto const patched_jump = jump.substitute(unknown, monitor[unknown]);
+            auto patched_jump = jump;
+            for (auto const& unknown : unknowns)
+                patched_jump = patched_jump.substitute(unknown, monitor[unknown]);
 
             if (auto const next_address = patched_jump.evaluate(); next_address)
                 next_addresses.insert(*next_address);
