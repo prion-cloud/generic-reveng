@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include <catch2/catch.hpp>
 
 #include <decompilation/expression_composition.hpp>
@@ -11,7 +13,7 @@ namespace Catch
     {
         static std::string convert(dec::expression const& expression)
         {
-            return expression.to_string();
+            return expression.str();
         }
     };
     template<>
@@ -21,7 +23,7 @@ namespace Catch
         {
             std::ostringstream ss;
             ss << '{';
-            for (auto const& s : expression_composition.to_string())
+            for (auto const& s : expression_composition.str())
                 ss << std::endl << std::endl << std::endl << '\t' << s;
             ss << std::endl << '}';
 
@@ -68,9 +70,9 @@ void assert_content(ExpectedContainer const& expected, ActualContainer actual, C
 
     CHECK(actual.empty());
 }
-template <typename ExpectedContainer, typename ActualContainer>
+template <typename T, typename ExpectedContainer, typename ActualContainer>
 void assert_content(ExpectedContainer const& expected, ActualContainer const& actual)
 {
-    static std::equal_to const equal_to;
+    constexpr std::equal_to<T> equal_to;
     assert_content(expected, actual, equal_to); // TODO Forwarding (?)
 }

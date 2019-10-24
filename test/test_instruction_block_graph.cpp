@@ -233,28 +233,28 @@ TEST_CASE("dec::instruction_block_graph::instruction_block_graph(dec::process)")
             expected_block_map[13] = { 18 };
             expected_block_map[18] = { };
         }
-        SECTION("N")
-        {
-            data =
-            {
-                JNE(8),      // ---, IF
-                MOV_EAX(18), //    | THEN
-                JMP(6),      // --,|
-                INT3,        //   ||
-                MOV_EAX(19), // <-|' ELSE
-                JMP_EAX,     // <-',
-                INT3,        //    |
-                RET,         // <--'
-                RET          // <--'
-            };
-
-            expected_block_map[0] = { 2, 10 };
-            expected_block_map[2] = { 15 };
-            expected_block_map[10] = { 15 };
-            expected_block_map[15] = { 18, 19 };
-            expected_block_map[18] = { };
-            expected_block_map[19] = { };
-        }
+//        SECTION("N")
+//        {
+//            data =
+//            {
+//                JNE(8),      // ---, IF
+//                MOV_EAX(18), //    | THEN
+//                JMP(6),      // --,|
+//                INT3,        //   ||
+//                MOV_EAX(19), // <-|' ELSE
+//                JMP_EAX,     // <-',
+//                INT3,        //    |
+//                RET,         // <--'
+//                RET          // <--'
+//            };
+//
+//            expected_block_map[0] = { 2, 10 };
+//            expected_block_map[2] = { 15 };
+//            expected_block_map[10] = { 15 };
+//            expected_block_map[15] = { 18, 19 };
+//            expected_block_map[18] = { };
+//            expected_block_map[19] = { };
+//        }
     }
     // TODO x86_64, etc.
 

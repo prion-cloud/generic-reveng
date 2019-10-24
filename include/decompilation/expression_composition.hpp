@@ -11,13 +11,12 @@ namespace dec
     {
     public:
 
-        std::vector<std::string> to_string() const; // Debugging/testing purposes (TODO)
-
-        expression update(expression expression) const;
-        expression_composition update(expression_composition const& expression_composition) const;
+        void update(expression_composition expression_composition);
 
         expression& operator[](expression const& key);
         expression& operator[](std::string const& key_name);
+
+        std::vector<std::string> str() const; // Debugging/testing purposes (TODO)
 
         expression const& operator[](expression const& key) const;
 

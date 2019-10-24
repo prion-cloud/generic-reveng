@@ -2,15 +2,21 @@
 
 #include <unordered_set>
 
-#include <z3++.h>
+#include <z3.h>
 
 namespace dec
 {
     class expression;
+    class expression_composition;
 }
 
 namespace std
 {
+    template<>
+    struct equal_to<dec::expression>
+    {
+        bool operator()(dec::expression const& expression_1, dec::expression const& expression_2) const;
+    };
     template<>
     struct hash<dec::expression>
     {
@@ -20,22 +26,25 @@ namespace std
 
 namespace dec
 {
-    class expression : z3::expr
+    class expression // TODO : public std::optional<std::uint64_t>
     {
         friend std::hash<expression>;
 
-        static z3::func_decl mem_;
+        static Z3_context context_;
+        static Z3_sort sort_;
 
-        explicit expression(z3::expr const& base);
+        static Z3_func_decl mem_;
+
+        Z3_ast ast_;
+
+        explicit expression(Z3_ast const& ast);
 
     public:
 
-        explicit expression(std::string const& name);
-        explicit expression(std::uint64_t value);
+        void resolve(expression const& x, expression const& y);
+        void resolve(expression_composition const& c);
 
-        using z3::expr::to_string; // Debugging/testing purposes (TODO)
-
-        expression substitute(expression const& x, expression const& y) const;
+        std::string str() const; // Debugging/testing purposes (TODO)
 
         std::optional<std::uint64_t> evaluate() const;
 
@@ -59,12 +68,16 @@ namespace dec
         expression operator|(expression const& other) const;
         expression operator^(expression const& other) const;
 
-        expression eq(expression const& other) const;
+        expression operator==(expression const& other) const;
         expression operator<(expression const& other) const;
 
-        // TODO missing special signed operations
+        // TODO missing special UNsigned operations
 
-        bool operator==(expression const& other) const;
-        bool operator!=(expression const& other) const;
+        static expression unknown(std::string const& name);
+        static expression value(std::uint64_t value);
+
+    private:
+
+        static Z3_ast bool_value(Z3_ast const& ast);
     };
 }

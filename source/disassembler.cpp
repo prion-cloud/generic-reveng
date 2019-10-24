@@ -29,7 +29,7 @@ namespace dec
             case A_CONST:
             case A_LOC:
                 // TODO prohibit inum
-                return expression(source.val);
+                return expression::value(source.val);
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
@@ -88,17 +88,17 @@ namespace dec
                 set(ins.c, get(ins.a) - get(ins.b));
                 break;
             case I_MUL:
+            case I_SMUL: // TODO
                 set(ins.c, get(ins.a) * get(ins.b));
                 break;
             case I_DIV:
+            case I_SDIV: // TODO
                 set(ins.c, get(ins.a) / get(ins.b));
                 break;
             case I_MOD:
+            case I_SMOD: // TODO
                 set(ins.c, get(ins.a) % get(ins.b));
                 break;
-//            case I_SMUL:
-//            case I_SDIV:
-//            case I_SMOD:
             case I_SHL:
                 set(ins.c, get(ins.a) << get(ins.b));
                 break;
@@ -115,7 +115,7 @@ namespace dec
                 set(ins.c, get(ins.a) ^ get(ins.b));
                 break;
             case I_EQ:
-                set(ins.c, get(ins.a).eq(get(ins.b)));
+                set(ins.c, get(ins.a) == (get(ins.b)));
                 break;
             case I_LT:
                 set(ins.c, get(ins.a) < get(ins.b));
@@ -129,7 +129,7 @@ namespace dec
         }
 
         if (step)
-            instruction.jump.insert(expression(instruction.address + instruction.size));
+            instruction.jump.insert(expression::value(instruction.address + instruction.size));
 
         return instruction;
     }

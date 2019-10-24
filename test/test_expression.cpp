@@ -1,6 +1,8 @@
 #include "test.hpp"
 
-TEST_CASE("dec::expression::substitute(dec::expression, dec::expression)")
+constexpr std::equal_to<dec::expression> equal_to;
+
+TEST_CASE("dec::expression::resolve(dec::expression, dec::expression)")
 {
     std::unique_ptr<dec::expression> base_expression;
 
@@ -11,16 +13,23 @@ TEST_CASE("dec::expression::substitute(dec::expression, dec::expression)")
 
     SECTION("A")
     {
-        base_expression = std::make_unique<dec::expression>(GENERATE(as<dec::expression>(), // NOLINT
-            0, "TEST"));
+        base_expression = std::make_unique<dec::expression>(GENERATE( // NOLINT
+            dec::expression::value(0),
+            dec::expression::unknown("TEST")));
 
-        b = std::make_unique<dec::expression const>(GENERATE(as<dec::expression>(), // NOLINT
-            0, 1, 2, "TEST", "x"));
+        b = std::make_unique<dec::expression const>(GENERATE( // NOLINT
+            dec::expression::value(0),
+            dec::expression::value(1),
+            dec::expression::value(2),
+            dec::expression::unknown("TEST"),
+            dec::expression::unknown("x"),
+            dec::expression::unknown("x") == dec::expression::value(7)));
 
         SECTION("A1")
         {
-            a = std::make_unique<dec::expression const>(GENERATE(as<dec::expression>(), // NOLINT
-                1, "NONE"));
+            a = std::make_unique<dec::expression const>(GENERATE( // NOLINT
+                dec::expression::value(1),
+                dec::expression::unknown("NONE")));
 
             result_expression = std::make_unique<dec::expression const>(*base_expression);
         }
@@ -33,8 +42,10 @@ TEST_CASE("dec::expression::substitute(dec::expression, dec::expression)")
     }
     SECTION("B")
     {
-        auto const unknown = GENERATE(as<dec::expression>(), // NOLINT
-            "TEST", "n", "25");
+        auto const unknown = GENERATE( // NOLINT
+            dec::expression::unknown("TEST"),
+            dec::expression::unknown("n"),
+            dec::expression::unknown("25"));
 
         auto const addend_1 = GENERATE(as<std::uint64_t>(), // NOLINT
             0, 1, 2, 3, 4);
@@ -42,21 +53,23 @@ TEST_CASE("dec::expression::substitute(dec::expression, dec::expression)")
             0, 1, 2, 3, 4);
 
         a = std::make_unique<dec::expression const>(unknown);
-        b = std::make_unique<dec::expression const>(dec::expression(addend_1));
+        b = std::make_unique<dec::expression const>(dec::expression::value(addend_1));
 
         SECTION("+")
         {
-            base_expression = std::make_unique<dec::expression>(unknown + dec::expression(addend_2));
-            result_expression = std::make_unique<dec::expression const>(addend_1 + addend_2);
+            base_expression = std::make_unique<dec::expression>(unknown + dec::expression::value(addend_2));
+            result_expression = std::make_unique<dec::expression const>(dec::expression::value(addend_1 + addend_2));
         }
         SECTION("*")
         {
-            base_expression = std::make_unique<dec::expression>(unknown * dec::expression(addend_2));
-            result_expression = std::make_unique<dec::expression const>(addend_1 * addend_2);
+            base_expression = std::make_unique<dec::expression>(unknown * dec::expression::value(addend_2));
+            result_expression = std::make_unique<dec::expression const>(dec::expression::value(addend_1 * addend_2));
         }
     }
 
-    REQUIRE(base_expression->substitute(*a, *b) == *result_expression);
+    base_expression->resolve(*a, *b);
+
+    CHECK(equal_to(*base_expression, *result_expression));
 }
 
 TEST_CASE("dec::expression::evaluate() const")
@@ -70,19 +83,18 @@ TEST_CASE("dec::expression::evaluate() const")
         value = GENERATE( // NOLINT
             0, 1, 2, 3, 4);
 
-        expression = std::make_unique<dec::expression const>(*value);
+        expression = std::make_unique<dec::expression const>(dec::expression::value(*value));
     }
     SECTION("B")
     {
-        auto const name = GENERATE( // NOLINT
-            as<std::string>(),
+        auto const name = GENERATE(as<std::string>(), // NOLINT
             "TEST", "RAX", "rbx");
-        expression = std::make_unique<dec::expression const>(name);
+        expression = std::make_unique<dec::expression const>(dec::expression::unknown(name));
 
         value = std::nullopt;
     }
 
-    REQUIRE(expression->evaluate() == value);
+    CHECK(expression->evaluate() == value);
 }
 
 TEST_CASE("dec::expression::decompose() const")
@@ -93,55 +105,44 @@ TEST_CASE("dec::expression::decompose() const")
 
     SECTION("A")
     {
-        expression = std::make_unique<dec::expression const>(0);
+        expression = std::make_unique<dec::expression const>(dec::expression::value(0));
     }
     SECTION("B")
     {
-        expression = std::make_unique<dec::expression const>(GENERATE(as<dec::expression>(), // NOLINT
-            "TEST", dec::expression("EAX").mem()));
+        expression = std::make_unique<dec::expression const>(GENERATE( // NOLINT
+            dec::expression::unknown("TEST"),
+            dec::expression::unknown("EAX").mem()));
 
         components.push_back(std::make_unique<dec::expression const>(*expression));
     }
     SECTION("C")
     {
         expression = std::make_unique<dec::expression const>(
-            dec::expression("EAX") * (dec::expression("EBX") + dec::expression(4)));
+            dec::expression::unknown("EAX") * (dec::expression::unknown("EBX") + dec::expression::value(4)));
 
-        components.push_back(std::make_unique<dec::expression const>("EAX"));
-        components.push_back(std::make_unique<dec::expression const>("EBX"));
+        components.push_back(std::make_unique<dec::expression const>(dec::expression::unknown("EAX")));
+        components.push_back(std::make_unique<dec::expression const>(dec::expression::unknown("EBX")));
     }
 
     assert_content(components, expression->decompose(),
         [](auto const& a, auto const& b)
         {
-            return *a == b;
+            return equal_to(*a, b);
         });
 }
 
 TEST_CASE("dec::expression::operator==(expression) const")
 {
-    std::unique_ptr<dec::expression const> expression;
+    auto const expression = GENERATE( // NOLINT
+        dec::expression::value(0),
+        dec::expression::value(1),
+        dec::expression::unknown("TEST"),
+        dec::expression::unknown("TEST") + dec::expression::value(2));
 
-    SECTION("A")
-    {
-        expression = std::make_unique<dec::expression const>(0);
-    }
-    SECTION("B")
-    {
-        expression = std::make_unique<dec::expression const>(1);
-    }
-    SECTION("C")
-    {
-        expression = std::make_unique<dec::expression const>("TEST");
-    }
+    auto const a = expression;
+    auto const b = expression;
 
-    auto const a = *expression;
-    auto const b = *expression;
-
-    expression.reset();
-
-    CHECK(!(a != b));
-    REQUIRE(a == b);
+    CHECK(equal_to(a, b));
 }
 TEST_CASE("dec::expression::operator!=(expression) const")
 {
@@ -150,31 +151,30 @@ TEST_CASE("dec::expression::operator!=(expression) const")
 
     SECTION("A")
     {
-        a = std::make_unique<dec::expression const>(0);
+        a = std::make_unique<dec::expression const>(dec::expression::value(0));
 
         SECTION("A1")
         {
-            b = std::make_unique<dec::expression const>(1);
+            b = std::make_unique<dec::expression const>(dec::expression::value(1));
         }
         SECTION("A2")
         {
-            b = std::make_unique<dec::expression const>("TEST");
+            b = std::make_unique<dec::expression const>(dec::expression::unknown("TEST"));
         }
     }
     SECTION("B")
     {
-        a = std::make_unique<dec::expression const>("TEST");
+        a = std::make_unique<dec::expression const>(dec::expression::unknown("TEST"));
 
         SECTION("B1")
         {
-            b = std::make_unique<dec::expression const>(0);
+            b = std::make_unique<dec::expression const>(dec::expression::value(0));
         }
         SECTION("B2")
         {
-            b = std::make_unique<dec::expression const>(1);
+            b = std::make_unique<dec::expression const>(dec::expression::value(1));
         }
     }
 
-    CHECK(!(*a == *b));
-    REQUIRE(*a != *b);
+    CHECK(!equal_to(*a, *b));
 }

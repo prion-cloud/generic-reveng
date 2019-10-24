@@ -1,50 +1,64 @@
-#include <decompilation/expression.hpp>
+#include <climits>
 
-bool operator==(z3::func_decl const& a, z3::func_decl const& b)
-{
-    return a.hash() == b.hash();
-}
+#include <decompilation/expression.hpp>
+#include <decompilation/expression_composition.hpp>
 
 namespace std // NOLINT [cert-dcl58-cpp]
 {
+    bool equal_to<dec::expression>::operator()(dec::expression const& expression_1, dec::expression const& expression_2) const
+    {
+        constexpr hash<dec::expression> hash;
+        return hash(expression_1) == hash(expression_2);
+    }
     std::size_t hash<dec::expression>::operator()(dec::expression const& expression) const
     {
-        return expression.hash();
+        return Z3_get_ast_hash(dec::expression::context_, expression.ast_);
     }
 }
 
 namespace dec
 {
-    constexpr std::size_t bv_size_ = sizeof(std::uint64_t) * CHAR_BIT;
+    Z3_context expression::context_ = Z3_mk_context({ }); // TODO std::shared_ptr<z3::context>
+    Z3_sort expression::sort_ = Z3_mk_bv_sort(context_, sizeof(std::uint64_t) * CHAR_BIT);
 
-    z3::context context_ { }; // TODO std::shared_ptr<z3::context>
+    Z3_func_decl expression::mem_ = // NOLINT [cert-err58-cpp]
+        Z3_mk_func_decl(context_, Z3_mk_string_symbol(context_, "bvmem"), 1, &sort_, sort_);
 
-    z3::func_decl expression::mem_ = // NOLINT [cert-err58-cpp]
-        context_.function("bvmem", context_.bv_sort(bv_size_), context_.bv_sort(bv_size_));
+    expression::expression(Z3_ast const& ast) :
+        ast_(Z3_simplify(context_, ast)) { }
 
-    expression::expression(z3::expr const& base) :
-        z3::expr(base.simplify()) { }
-
-    expression::expression(std::string const& name) :
-        expression(context_.bv_const(name.c_str(), bv_size_)) { }
-    expression::expression(std::uint64_t const value) :
-        expression(context_.bv_val(value, bv_size_)) { }
-
-    expression expression::substitute(expression const& x, expression const& y) const
+    void expression::resolve(expression const& x, expression const& y)
     {
-        z3::expr_vector v_x(context_);
-        z3::expr_vector v_y(context_);
-        v_x.push_back(x);
-        v_y.push_back(y);
+        ast_ = Z3_simplify(context_, Z3_substitute(context_, ast_, 1, &x.ast_, &y.ast_));
+    }
+    void expression::resolve(expression_composition const& c)
+    {
+        std::vector<Z3_ast> source;
+        std::vector<Z3_ast> destination;
 
-        z3::expr f = *this;
-        return expression(f.substitute(v_x, v_y));
+        auto const unknowns = decompose();
+
+        source.reserve(unknowns.size());
+        destination.reserve(unknowns.size());
+
+        for (auto const& unknown : unknowns)
+        {
+            source.push_back(unknown.ast_);
+            destination.push_back(c[unknown].ast_);
+        }
+
+        ast_ = Z3_simplify(context_, Z3_substitute(context_, ast_, unknowns.size(), source.data(), destination.data()));
+    }
+
+    std::string expression::str() const
+    {
+        return Z3_ast_to_string(context_, ast_);
     }
 
     std::optional<std::uint64_t> expression::evaluate() const
     {
         std::uint64_t value;
-        if (is_numeral_u64(value))
+        if (Z3_get_numeral_uint64(context_, ast_, &value))
             return value;
 
         return std::nullopt;
@@ -52,102 +66,110 @@ namespace dec
 
     std::unordered_set<expression> expression::decompose() const
     {
-        if (!is_app())
-            throw std::logic_error("Unexpected expression kind");
+        static auto const mem_hash = Z3_get_ast_hash(context_, Z3_func_decl_to_ast(context_, mem_));
 
-        if (decl() == mem_)
+        auto const app = Z3_to_app(context_, ast_);
+        auto const app_decl = Z3_get_app_decl(context_, app);
+        auto const app_decl_hash = Z3_get_ast_hash(context_, Z3_func_decl_to_ast(context_, app_decl));
+
+        if (app_decl_hash == mem_hash)
             return { *this };
 
-        auto const argument_count = num_args();
+        std::size_t const argument_count = Z3_get_app_num_args(context_, app);
 
         if (argument_count == 0)
         {
-            if (is_numeral())
+            if (Z3_is_numeral_ast(context_, ast_))
                 return { };
 
             return { *this };
         }
 
         std::unordered_set<expression> unknowns;
-        for (auto argument_index = 0; argument_index < argument_count; ++argument_index)
-            unknowns.merge(expression(arg(argument_index)).decompose());
+        for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
+            unknowns.merge(expression(Z3_get_app_arg(context_, app, argument_index)).decompose());
 
         return unknowns;
     }
 
     expression expression::mem() const
     {
-        return expression(mem_(*this));
+        return expression(Z3_mk_app(context_, mem_, 1, &ast_));
     }
 
     expression expression::operator-() const
     {
-        return expression(z3::operator-(*this));
+        return expression(Z3_mk_bvneg(context_, ast_));
     }
     expression expression::operator~() const
     {
-        return expression(z3::operator~(*this));
+        return expression(Z3_mk_bvnot(context_, ast_));
     }
 
     expression expression::operator+(expression const& other) const
     {
-        return expression(z3::operator+(*this, other));
+        return expression(Z3_mk_bvadd(context_, ast_, other.ast_));
     }
     expression expression::operator-(expression const& other) const
     {
-        return expression(z3::operator-(*this, other));
+        return expression(Z3_mk_bvsub(context_, ast_, other.ast_));
     }
     expression expression::operator*(expression const& other) const
     {
-        return expression(z3::operator*(*this, other));
+        return expression(Z3_mk_bvmul(context_, ast_, other.ast_));
     }
     expression expression::operator/(expression const& other) const
     {
-        return expression(z3::operator/(*this, other));
+        return expression(Z3_mk_bvsdiv(context_, ast_, other.ast_));
     }
     expression expression::operator%(expression const& other) const
     {
-        return expression(z3::mod(*this, other));
+        return expression(Z3_mk_bvsmod(context_, ast_, other.ast_));
     }
 
     expression expression::operator<<(expression const& other) const
     {
-        return expression(z3::shl(*this, other));
+        return expression(Z3_mk_bvshl(context_, ast_, other.ast_));
     }
     expression expression::operator>>(expression const& other) const
     {
-        return expression(z3::lshr(*this, other));
+        return expression(Z3_mk_bvlshr(context_, ast_, other.ast_));
     }
 
     expression expression::operator&(expression const& other) const
     {
-        return expression(z3::operator&(*this, other));
+        return expression(Z3_mk_bvand(context_, ast_, other.ast_));
     }
     expression expression::operator|(expression const& other) const
     {
-        return expression(z3::operator|(*this, other));
+        return expression(Z3_mk_bvor(context_, ast_, other.ast_));
     }
     expression expression::operator^(expression const& other) const
     {
-        return expression(z3::operator^(*this, other));
+        return expression(Z3_mk_bvxor(context_, ast_, other.ast_));
     }
 
-    expression expression::eq(expression const& other) const
+    expression expression::operator==(expression const& other) const
     {
-        return expression(z3::operator==(*this, other));
+        return expression(bool_value(Z3_mk_eq(context_, ast_, other.ast_)));
     }
     expression expression::operator<(expression const& other) const
     {
-        return expression(z3::operator<(*this, other));
+        return expression(bool_value(Z3_mk_bvslt(context_, ast_, other.ast_)));
     }
 
-    bool expression::operator==(expression const& other) const
+    expression expression::unknown(std::string const& name)
     {
-        return hash() == other.hash();
+        return expression(Z3_mk_const(context_, Z3_mk_string_symbol(context_, name.c_str()), sort_));
     }
-    bool expression::operator!=(expression const& other) const
+    expression expression::value(std::uint64_t const value)
     {
-        return !operator==(other);
+        return expression(Z3_mk_int(context_, value, sort_));
+    }
+
+    Z3_ast expression::bool_value(Z3_ast const& ast)
+    {
+        return Z3_mk_ite(context_, ast, Z3_mk_int(context_, 1, sort_), Z3_mk_int(context_, 0, sort_));
     }
 
     static_assert(std::is_destructible_v<expression>);

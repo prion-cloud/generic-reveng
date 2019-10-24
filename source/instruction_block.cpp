@@ -64,8 +64,11 @@ namespace dec
     {
         std::unordered_set<expression> jump;
         auto const i = impact();
-        for (auto const& j : rbegin()->jump)
-            jump.insert(i.update(j));
+        for (auto j : rbegin()->jump)
+        {
+            j.resolve(i);
+            jump.insert(std::move(j));
+        }
 
         return jump;
     }
@@ -73,7 +76,7 @@ namespace dec
     {
         expression_composition impact;
         for (auto const& instruction : *this)
-            impact = instruction.impact.update(impact);
+            impact.update(instruction.impact);
 
         return impact;
     }

@@ -128,7 +128,9 @@ namespace dec
             auto& monitor = q.front().second;
             q.pop();
 
-            monitor = monitor.update(find(address)->impact());
+            auto block_impact = find(address)->impact();
+            block_impact.update(monitor);
+            monitor = block_impact;
 
 //            if (monitor[unknown].evaluate()) TODO early stop
 //                continue;
@@ -154,7 +156,7 @@ namespace dec
         {
             auto patched_jump = jump;
             for (auto const& unknown : unknowns)
-                patched_jump = patched_jump.substitute(unknown, monitor[unknown]);
+                patched_jump.resolve(unknown, monitor[unknown]);
 
             if (auto const next_address = patched_jump.evaluate(); next_address)
                 next_addresses.insert(*next_address);

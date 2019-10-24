@@ -27,8 +27,8 @@ TEST_CASE("dec::disassembler::operator(dec::data_section) const")
             {
                 data = { 0xC3 };
 
-                jump.insert(dec::expression("R_ESP").mem());
-                impact[dec::expression("R_ESP")] = dec::expression("R_ESP") + dec::expression(4);
+                jump.insert(dec::expression::unknown("R_ESP").mem());
+                impact[dec::expression::unknown("R_ESP")] = dec::expression::unknown("R_ESP") + dec::expression::value(4);
             }
         }
         SECTION("B")
@@ -41,16 +41,16 @@ TEST_CASE("dec::disassembler::operator(dec::data_section) const")
             {
                 data = { 0xA1, 0x1B, 0x00, 0x00, 0x00 };
 
-                impact[dec::expression("R_EAX")] = dec::expression(27).mem();
+                impact[dec::expression::unknown("R_EAX")] = dec::expression::value(27).mem();
             }
             SECTION("mov [27], eax")
             {
                 data = { 0xA3, 0x1B, 0x00, 0x00, 0x00 };
 
-                impact[dec::expression(27).mem()] = dec::expression("R_EAX");
+                impact[dec::expression::value(27).mem()] = dec::expression::unknown("R_EAX");
             }
 
-            jump.insert(dec::expression(address + data.size()));
+            jump.insert(dec::expression::value(address + data.size()));
         }
     }
     // TODO x86_64, etc.
@@ -76,6 +76,6 @@ TEST_CASE("dec::disassembler::operator(dec::data_section) const")
     CHECK(actual_instruction.address == expected_instruction.address);
     CHECK(actual_instruction.size == expected_instruction.size);
 
-    assert_content(expected_instruction.jump, actual_instruction.jump);
+    assert_content<dec::expression>(expected_instruction.jump, actual_instruction.jump);
     CHECK(actual_instruction.impact == expected_instruction.impact);
 }

@@ -2,33 +2,16 @@
 
 namespace dec
 {
-    std::vector<std::string> expression_composition::to_string() const
+    void expression_composition::update(expression_composition expression_composition)
     {
-        std::vector<std::string> result;
-        result.reserve(size());
         for (auto const& [key, value] : *this)
-            result.push_back(key.to_string() + " := " + value.to_string());
-
-        return result;
-    }
-
-    expression expression_composition::update(expression expression) const
-    {
-        for (auto const& key : expression.decompose())
         {
-            if (auto const entry = find(key); entry != end())
-                expression = expression.substitute(key, entry->second);
+            for (auto& entry : expression_composition)
+                entry.second.resolve(key, value);
         }
+        expression_composition.merge(*this);
 
-        return expression;
-    }
-    expression_composition expression_composition::update(expression_composition const& expression_composition) const
-    {
-        auto updated = expression_composition;
-        for (auto const& [key, value] : *this)
-            updated.insert_or_assign(key, expression_composition.update(value));
-
-        return updated;
+        swap(expression_composition);
     }
 
     expression& expression_composition::operator[](expression const& key)
@@ -37,7 +20,17 @@ namespace dec
     }
     expression& expression_composition::operator[](std::string const& key_name)
     {
-        return operator[](expression(key_name));
+        return operator[](expression::unknown(key_name));
+    }
+
+    std::vector<std::string> expression_composition::str() const
+    {
+        std::vector<std::string> result;
+        result.reserve(size());
+        for (auto const& [key, value] : *this)
+            result.push_back(key.str() + " := " + value.str());
+
+        return result;
     }
 
     expression const& expression_composition::operator[](expression const& key) const
@@ -50,20 +43,21 @@ namespace dec
 
     bool expression_composition::operator==(expression_composition other) const
     {
+        constexpr std::equal_to<expression> equal_to;
         for (auto const& [key, value] : *this)
         {
-            if (key == value)
+            if (equal_to(key, value))
                 continue;
 
             auto const search = other.find(key);
-            if (search == other.end() || search->second != value)
+            if (search == other.end() || !equal_to(search->second, value))
                 return false;
 
             other.erase(search);
         }
         for (auto const& [key, value] : other)
         {
-            if (key != value)
+            if (!equal_to(key, value))
                 return false;
         }
 
