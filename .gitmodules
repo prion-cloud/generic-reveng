@@ -1,7 +1,7 @@
-[submodule "submodule/openreil"]
-    path = submodule/openreil
+[submodule "revengine/submodule/z3"]
+    path = revengine/submodule/z3
+    url = https://github.com/Z3Prover/z3.git
+[submodule "revengine-disassembler/submodule/openreil"]
+    path = revengine-disassembler/submodule/openreil
     url = https://github.com/Cr4sh/openreil.git
     ignore = dirty
-[submodule "submodule/z3"]
-    path = submodule/z3
-    url = https://github.com/Z3Prover/z3.git
