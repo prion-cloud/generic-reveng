@@ -1,8 +1,8 @@
-#include <revengine/disassembler.hpp>
+#include <revengine/reil_disassembler.hpp>
 
 #include "test.hpp"
 
-TEST_CASE("rev::dis::disassembler::operator(rev::data_section) const")
+TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
 {
     auto const address = GENERATE(as<std::uint64_t>(), // NOLINT
         0, 1, 17, 1639);
@@ -64,14 +64,14 @@ TEST_CASE("rev::dis::disassembler::operator(rev::data_section) const")
         .impact = impact
     };
 
-    rev::dis::disassembler const disassembler(architecture);
+    rev::dis::reil_disassembler const reil_disassembler(architecture);
     rev::data_section const data_section
     {
         .address = address,
         .data = std::basic_string_view(data.data(), data.size())
     };
 
-    auto const actual_instruction = disassembler(data_section);
+    auto const actual_instruction = reil_disassembler(data_section);
 
     CHECK(actual_instruction.address == expected_instruction.address);
     CHECK(actual_instruction.size == expected_instruction.size);

@@ -1,4 +1,4 @@
-#ifdef LINTER
+#ifdef LINT
 #include <revengine/instruction_block.hpp>
 #endif
 
@@ -17,14 +17,19 @@ namespace rev
             if (instruction.jump.size() != 1)
                 break;
 
-            auto const next_address = instruction.jump.begin()->evaluate();
+            auto const& step = *instruction.jump.begin();
 
-            if (!next_address || *next_address != instruction.address + instruction.size)
+            if (!step || *step != instruction.address + instruction.size)
                 break;
 
-            data_section.address = *next_address;
+            data_section.address = *step;
             data_section.data.remove_prefix(instruction.size);
         }
         while (!data_section.data.empty());
     }
 }
+
+#ifdef LINT
+#include <revengine/reil_disassembler.hpp>
+template rev::instruction_block::instruction_block(rev::dis::reil_disassembler const&, data_section);
+#endif

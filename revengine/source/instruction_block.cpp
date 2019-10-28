@@ -37,15 +37,13 @@ namespace rev
         return begin()->address;
     }
 
+    // TODO
     std::unordered_set<expression> instruction_block::jump() const
     {
         std::unordered_set<expression> jump;
         auto const i = impact();
-        for (auto j : rbegin()->jump)
-        {
-            j.resolve(i);
-            jump.insert(std::move(j));
-        }
+        for (auto const& j : rbegin()->jump)
+            jump.insert(j.resolve(i));
 
         return jump;
     }

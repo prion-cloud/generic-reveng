@@ -67,34 +67,30 @@ TEST_CASE("rev::expression::resolve(rev::expression, rev::expression)")
         }
     }
 
-    base_expression->resolve(*a, *b);
-
-    CHECK(equal_to(*base_expression, *result_expression));
+    CHECK(equal_to(base_expression->resolve(*a, *b), *result_expression));
 }
 
-TEST_CASE("rev::expression::evaluate() const")
+TEST_CASE("rev::expression::operator*() const")
 {
-    std::unique_ptr<rev::expression const> expression;
-
-    std::optional<std::uint64_t> value;
-
     SECTION("A")
     {
-        value = GENERATE( // NOLINT
+        auto const value = GENERATE(as<std::uint64_t>(), // NOLINT
             0, 1, 2, 3, 4);
 
-        expression = std::make_unique<rev::expression const>(rev::expression::value(*value));
+        auto const expression = rev::expression::value(value);
+
+        CHECK(expression);
+        CHECK(*expression == value);
     }
     SECTION("B")
     {
         auto const name = GENERATE(as<std::string>(), // NOLINT
-            "TEST", "RAX", "rbx");
-        expression = std::make_unique<rev::expression const>(rev::expression::unknown(name));
+            "TEST", "RAX", "rbx", "27");
 
-        value = std::nullopt;
+        auto const expression = rev::expression::unknown(name);
+
+        CHECK(!expression);
     }
-
-    CHECK(expression->evaluate() == value);
 }
 
 TEST_CASE("rev::expression::decompose() const")
@@ -131,7 +127,7 @@ TEST_CASE("rev::expression::decompose() const")
         });
 }
 
-TEST_CASE("rev::expression::operator==(expression) const")
+TEST_CASE("std::equal_to<rev::expression>::operator()(expression) const")
 {
     auto const expression = GENERATE( // NOLINT
         rev::expression::value(0),
@@ -144,7 +140,7 @@ TEST_CASE("rev::expression::operator==(expression) const")
 
     CHECK(equal_to(a, b));
 }
-TEST_CASE("rev::expression::operator!=(expression) const")
+TEST_CASE("!std::equal_to<rev::expression>::operator()(expression) const")
 {
     std::unique_ptr<rev::expression const> a;
     std::unique_ptr<rev::expression const> b;

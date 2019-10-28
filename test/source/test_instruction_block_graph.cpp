@@ -1,5 +1,5 @@
 #include <revengine/instruction_block_graph.hpp>
-#include <revengine/disassembler.hpp>
+#include <revengine/reil_disassembler.hpp>
 
 #include "test.hpp"
 
@@ -269,7 +269,7 @@ TEST_CASE("rev::instruction_block_graph::instruction_block_graph(rev::process)")
     }
 
     auto process = std::make_unique<rev::process const>(data, architecture);
-    auto disassembler = std::make_unique<rev::dis::disassembler const>(process->architecture());
+    auto disassembler = std::make_unique<rev::dis::reil_disassembler const>(process->architecture());
 
     auto instruction_block_graph = std::make_unique<rev::instruction_block_graph const>(*disassembler, *process);
 

@@ -30,6 +30,6 @@ namespace rev
     };
 }
 
-#ifndef LINTER
-#include <revengine/template_instruction_block_graph.cpp>
+#ifndef LINT
+#include <template_instruction_block_graph.cpp>
 #endif

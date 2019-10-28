@@ -26,10 +26,8 @@ namespace std
 
 namespace rev
 {
-    class expression // TODO : public std::optional<std::uint64_t>
+    class expression
     {
-        friend std::hash<expression>;
-
         static Z3_context context_;
         static Z3_sort sort_;
 
@@ -37,18 +35,21 @@ namespace rev
 
         Z3_ast ast_;
 
-        explicit expression(Z3_ast const& ast);
+        std::optional<std::uint64_t> value_;
+
+        expression(Z3_ast const& ast);
 
     public:
 
-        void resolve(expression const& x, expression const& y);
-        void resolve(expression_composition const& c);
+        operator Z3_ast() const;
+        operator bool() const;
 
-        std::string str() const; // Debugging/testing purposes (TODO)
-
-        std::optional<std::uint64_t> evaluate() const;
+        std::uint64_t operator*() const;
 
         std::unordered_set<expression> decompose() const;
+
+        expression resolve(expression const& x, expression const& y) const;
+        expression resolve(expression_composition const& c) const;
 
         expression mem() const;
 
@@ -72,6 +73,8 @@ namespace rev
         expression operator<(expression const& other) const;
 
         // TODO missing special UNsigned operations
+
+        static Z3_context const& context();
 
         static expression unknown(std::string const& name);
         static expression value(std::uint64_t value);

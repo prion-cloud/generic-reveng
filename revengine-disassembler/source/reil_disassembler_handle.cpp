@@ -1,4 +1,4 @@
-#include "disassembler_handle.hpp"
+#include "reil_disassembler_handle.hpp"
 
 namespace rev::dis
 {
@@ -8,7 +8,7 @@ namespace rev::dis
         return 0;
     }
 
-    disassembler::handle::handle(instruction_set_architecture const architecture)
+    reil_disassembler::handle::handle(instruction_set_architecture const architecture)
     {
         reil_arch_t reil_architecture;
         switch (architecture)
@@ -24,7 +24,7 @@ namespace rev::dis
         reil_ = reil_init(reil_architecture, store_reil_instruction, &reil_instructions_);
     }
 
-    std::vector<reil_inst_t> disassembler::handle::disassemble(data_section const& data_section)
+    std::vector<reil_inst_t> reil_disassembler::handle::disassemble(data_section const& data_section)
     {
         constexpr std::size_t max_code_size = MAX_INST_LEN;
 

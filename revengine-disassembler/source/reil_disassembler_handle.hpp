@@ -5,11 +5,11 @@
 
 #include <libopenreil.h>
 
-#include <revengine/disassembler.hpp>
+#include <revengine/reil_disassembler.hpp>
 
 namespace rev::dis
 {
-    class disassembler::handle
+    class reil_disassembler::handle
     {
         reil_t reil_;
         std::vector<reil_inst_t> reil_instructions_;

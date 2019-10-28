@@ -1,12 +1,12 @@
-#include "disassembler_handle.hpp"
+#include "reil_disassembler_handle.hpp"
 
 namespace rev::dis
 {
-    disassembler::disassembler(instruction_set_architecture const architecture) :
+    reil_disassembler::reil_disassembler(instruction_set_architecture const architecture) :
         handle_(std::make_unique<handle>(architecture)) { }
-    disassembler::~disassembler() = default;
+    reil_disassembler::~reil_disassembler() = default;
 
-    instruction disassembler::operator()(data_section const& data_section) const
+    instruction reil_disassembler::operator()(data_section const& data_section) const
     {
         auto const& reil_instructions = handle_->disassemble(data_section);
 
@@ -134,11 +134,11 @@ namespace rev::dis
         return instruction;
     }
 
-    static_assert(std::is_destructible_v<disassembler>);
+    static_assert(std::is_destructible_v<reil_disassembler>);
 
-    static_assert(!std::is_move_constructible_v<disassembler>); // TODO
-    static_assert(!std::is_move_assignable_v<disassembler>); // TODO
+    static_assert(!std::is_move_constructible_v<reil_disassembler>); // TODO
+    static_assert(!std::is_move_assignable_v<reil_disassembler>); // TODO
 
-    static_assert(!std::is_copy_constructible_v<disassembler>); // TODO
-    static_assert(!std::is_copy_assignable_v<disassembler>); // TODO
+    static_assert(!std::is_copy_constructible_v<reil_disassembler>); // TODO
+    static_assert(!std::is_copy_assignable_v<reil_disassembler>); // TODO
 }

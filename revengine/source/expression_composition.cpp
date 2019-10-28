@@ -7,7 +7,7 @@ namespace rev
         for (auto const& [key, value] : *this)
         {
             for (auto& entry : expression_composition)
-                entry.second.resolve(key, value);
+                entry.second = entry.second.resolve(key, value);
         }
         expression_composition.merge(*this);
 
@@ -21,16 +21,6 @@ namespace rev
     expression& expression_composition::operator[](std::string const& key_name)
     {
         return operator[](expression::unknown(key_name));
-    }
-
-    std::vector<std::string> expression_composition::str() const
-    {
-        std::vector<std::string> result;
-        result.reserve(size());
-        for (auto const& [key, value] : *this)
-            result.push_back(key.str() + " := " + value.str());
-
-        return result;
     }
 
     expression const& expression_composition::operator[](expression const& key) const

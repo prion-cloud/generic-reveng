@@ -16,8 +16,6 @@ namespace rev
         expression& operator[](expression const& key);
         expression& operator[](std::string const& key_name);
 
-        std::vector<std::string> str() const; // Debugging/testing purposes (TODO)
-
         expression const& operator[](expression const& key) const;
 
         bool operator==(expression_composition other) const;

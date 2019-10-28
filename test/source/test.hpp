@@ -13,21 +13,7 @@ namespace Catch
     {
         static std::string convert(rev::expression const& expression)
         {
-            return expression.str();
-        }
-    };
-    template<>
-    struct StringMaker<rev::expression_composition>
-    {
-        static std::string convert(rev::expression_composition const& expression_composition)
-        {
-            std::ostringstream ss;
-            ss << '{';
-            for (auto const& s : expression_composition.str())
-                ss << std::endl << std::endl << std::endl << '\t' << s;
-            ss << std::endl << '}';
-
-            return ss.str();
+            return Z3_ast_to_string(rev::expression::context(), expression);
         }
     };
     template<>

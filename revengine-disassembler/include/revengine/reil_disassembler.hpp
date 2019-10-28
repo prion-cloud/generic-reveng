@@ -8,15 +8,15 @@
 
 namespace rev::dis
 {
-    class disassembler
+    class reil_disassembler
     {
         class handle;
         std::unique_ptr<handle> handle_;
 
     public:
 
-        explicit disassembler(instruction_set_architecture architecture);
-        ~disassembler();
+        explicit reil_disassembler(instruction_set_architecture architecture);
+        ~reil_disassembler();
 
         instruction operator()(data_section const& data_section) const;
     };

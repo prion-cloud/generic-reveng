@@ -1,3 +1,5 @@
+#include <queue>
+
 #include <revengine/instruction_block_graph.hpp>
 
 namespace rev
@@ -69,8 +71,8 @@ namespace rev
 
     std::unordered_set<std::uint64_t> instruction_block_graph::patch(std::uint64_t address, expression const& jump)
     {
-        if (auto const next_address = jump.evaluate(); next_address)
-            return { *next_address };
+        if (jump)
+            return { *jump };
 
         auto const unknowns = jump.decompose();
 
@@ -117,10 +119,10 @@ namespace rev
         {
             auto patched_jump = jump;
             for (auto const& unknown : unknowns)
-                patched_jump.resolve(unknown, monitor[unknown]);
+                patched_jump = patched_jump.resolve(unknown, monitor[unknown]);
 
-            if (auto const next_address = patched_jump.evaluate(); next_address)
-                next_addresses.insert(*next_address);
+            if (patched_jump)
+                next_addresses.insert(*patched_jump);
         }
 
         return next_addresses;

@@ -1,6 +1,6 @@
 #include <queue>
 
-#ifdef LINTER
+#ifdef LINT
 #include <revengine/instruction_block_graph.hpp>
 #endif
 
@@ -42,3 +42,8 @@ namespace rev
         while (!address_queue.empty());
     }
 }
+
+#ifdef LINT
+#include <revengine/reil_disassembler.hpp>
+template rev::instruction_block_graph::instruction_block_graph(rev::dis::reil_disassembler const&, rev::process const&);
+#endif
