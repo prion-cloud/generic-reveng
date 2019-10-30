@@ -2,7 +2,6 @@
 
 #include <set>
 
-#include <revengine/data_section.hpp>
 #include <revengine/instruction.hpp>
 
 namespace rev

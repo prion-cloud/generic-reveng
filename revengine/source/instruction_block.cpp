@@ -6,14 +6,14 @@ namespace rev
         instruction_block const& instruction_block_1,
         instruction_block const& instruction_block_2) const
     {
-        return instruction_block_1.rbegin()->address < instruction_block_2.address();
+        return instruction_block_1.rbegin()->address() < instruction_block_2.address();
     }
 
     bool instruction_block::exclusive_address_order::operator()(
         instruction_block const& instruction_block,
         std::uint64_t const address) const
     {
-        return instruction_block.rbegin()->address < address;
+        return instruction_block.rbegin()->address() < address;
     }
     bool instruction_block::exclusive_address_order::operator()(
         std::uint64_t const address,
@@ -34,7 +34,7 @@ namespace rev
 
     std::uint64_t instruction_block::address() const
     {
-        return begin()->address;
+        return begin()->address();
     }
 
     // TODO
@@ -42,7 +42,7 @@ namespace rev
     {
         machine_impact impact;
         for (auto const& instruction : *this)
-            impact.update(instruction.impact);
+            impact.update(instruction.impact());
 
         return impact;
     }

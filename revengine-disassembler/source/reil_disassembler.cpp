@@ -6,26 +6,21 @@ namespace rev::dis
         handle_(std::make_unique<handle>(architecture)) { }
     reil_disassembler::~reil_disassembler() = default;
 
-    instruction reil_disassembler::operator()(data_section const& data_section) const
+    machine_impact reil_disassembler::operator()(data_section* const data_section) const
     {
         auto const& reil_instructions = handle_->disassemble(data_section);
 
-        instruction instruction
-        {
-            .address = data_section.address,
-            .size = static_cast<std::uint64_t>(reil_instructions.front().raw_info.size)
-        };
+        machine_impact impact;
+        machine_impact temporary_impact;
 
-        machine_impact temporary;
-
-        auto const get = [this, &instruction, &temporary](reil_arg_t const& source)
+        auto const get = [this, &impact, &temporary_impact](reil_arg_t const& source)
         {
             switch (source.type)
             {
             case A_REG:
-                return instruction.impact[source.name];
+                return impact[source.name];
             case A_TEMP:
-                return temporary[source.name];
+                return temporary_impact[source.name];
             case A_CONST:
             case A_LOC:
                 // TODO prohibit inum
@@ -34,15 +29,15 @@ namespace rev::dis
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
-        auto const set = [this, &instruction, &temporary](reil_arg_t const& destination, expression const& value)
+        auto const set = [this, &impact, &temporary_impact](reil_arg_t const& destination, expression const& value)
         {
             switch (destination.type)
             {
             case A_REG:
-                instruction.impact[destination.name] = value;
+                impact[destination.name] = value;
                 break;
             case A_TEMP:
-                temporary[destination.name] = value;
+                temporary_impact[destination.name] = value;
                 break;
             default:
                 throw std::invalid_argument("Unexpected argument type");
@@ -61,7 +56,7 @@ namespace rev::dis
                 step = false;
                 break;
             case I_JCC:
-                instruction.impact.jump(get(ins.c));
+                impact.jump(get(ins.c));
                 if (ins.a.type == A_CONST && ins.a.val != 0)
                     step = false;
                 break;
@@ -69,10 +64,10 @@ namespace rev::dis
                 set(ins.c, get(ins.a));
                 break;
             case I_STM:
-                instruction.impact[get(ins.c).mem()] = get(ins.a);
+                impact[get(ins.c).mem()] = get(ins.a);
                 break;
             case I_LDM:
-                set(ins.c, instruction.impact[get(ins.a).mem()]);
+                set(ins.c, impact[get(ins.a).mem()]);
                 break;
             case I_NEG:
                 set(ins.c, -get(ins.a));
@@ -128,9 +123,9 @@ namespace rev::dis
         }
 
         if (step)
-            instruction.impact.jump(expression::value(instruction.address + instruction.size));
+            impact.jump(expression::value(data_section->address + data_section->data.size()));
 
-        return instruction;
+        return impact;
     }
 
     static_assert(std::is_destructible_v<reil_disassembler>);

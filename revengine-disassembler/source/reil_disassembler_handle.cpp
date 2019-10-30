@@ -24,17 +24,21 @@ namespace rev::dis
         reil_ = reil_init(reil_architecture, store_reil_instruction, &reil_instructions_);
     }
 
-    std::vector<reil_inst_t> reil_disassembler::handle::disassemble(data_section const& data_section)
+    std::vector<reil_inst_t> reil_disassembler::handle::disassemble(data_section* const data_section)
     {
         constexpr std::size_t max_code_size = MAX_INST_LEN;
 
         std::vector code(
-            data_section.data.begin(),
+            data_section->data.begin(),
             std::next(
-                data_section.data.begin(),
-                std::min(data_section.data.size(), max_code_size)));
+                data_section->data.begin(),
+                std::min(data_section->data.size(), max_code_size)));
 
-        reil_translate_insn(reil_, data_section.address, code.data(), code.size());
+        reil_translate_insn(reil_, data_section->address, code.data(), code.size());
+
+        auto const size = reil_instructions_.front().raw_info.size;
+        data_section->data.remove_suffix(data_section->data.size() - size);
+
         return std::move(reil_instructions_);
     }
 }

@@ -12,18 +12,15 @@ namespace rev
 
         do
         {
-            auto const& instruction = *insert(end(), disassembler(data_section));
+            auto const& instruction = *emplace_hint(end(), disassembler, data_section);
 
-            if (!instruction.impact.jump())
+            auto const& jump = instruction.impact().jump();
+
+            if (!jump || *jump != instruction.address() + instruction.size())
                 break;
 
-            auto const step = *instruction.impact.jump();
-
-            if (step != instruction.address + instruction.size)
-                break;
-
-            data_section.address = step;
-            data_section.data.remove_prefix(instruction.size);
+            data_section.address = *jump;
+            data_section.data.remove_prefix(instruction.size());
         }
         while (!data_section.data.empty());
     }

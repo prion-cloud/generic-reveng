@@ -18,6 +18,6 @@ namespace rev::dis
 
         explicit handle(machine_architecture architecture);
 
-        std::vector<reil_inst_t> disassemble(data_section const& data_section);
+        std::vector<reil_inst_t> disassemble(data_section* data_section);
     };
 }

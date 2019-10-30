@@ -54,26 +54,18 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
     }
     // TODO x86_64, etc.
 
-    rev::instruction const expected_instruction
-    {
-        .address = address,
-        .size = data.size(),
-
-        .impact = impact
-    };
-
     rev::dis::reil_disassembler const reil_disassembler(architecture);
-    rev::data_section const data_section
+    rev::data_section data_section
     {
         .address = address,
         .data = std::basic_string_view(data.data(), data.size())
     };
 
-    auto const actual_instruction = reil_disassembler(data_section);
+    auto const actual_impact = reil_disassembler(&data_section);
 
-    CHECK(actual_instruction.address == expected_instruction.address);
-    CHECK(actual_instruction.size == expected_instruction.size);
+    CHECK(data_section.address == address);
+    CHECK(data_section.data.size() == data.size());
 
-    assert_content<rev::expression>(expected_instruction.impact.jump(), *reinterpret_cast<std::unordered_set<rev::expression> const*>(&actual_instruction.impact.jump()));
-    CHECK(actual_instruction.impact == expected_instruction.impact);
+    assert_content<rev::expression>(impact.jump(), *reinterpret_cast<std::unordered_set<rev::expression> const*>(&actual_impact.jump()));
+    CHECK(actual_impact == impact);
 }

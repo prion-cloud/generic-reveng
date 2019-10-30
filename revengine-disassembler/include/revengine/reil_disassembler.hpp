@@ -3,8 +3,8 @@
 #include <memory>
 
 #include <revengine/data_section.hpp>
-#include <revengine/instruction.hpp>
 #include <revengine/machine_architecture.hpp>
+#include <revengine/machine_impact.hpp>
 
 namespace rev::dis
 {
@@ -18,6 +18,6 @@ namespace rev::dis
         explicit reil_disassembler(machine_architecture architecture);
         ~reil_disassembler();
 
-        instruction operator()(data_section const& data_section) const;
+        machine_impact operator()(data_section* data_section) const;
     };
 }
