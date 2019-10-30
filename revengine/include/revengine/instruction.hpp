@@ -19,7 +19,6 @@ namespace rev
         std::uint64_t address;
         std::size_t size;
 
-        std::unordered_set<expression> jump;
         expression_composition impact;
     };
 }

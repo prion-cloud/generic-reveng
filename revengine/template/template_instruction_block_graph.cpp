@@ -27,9 +27,10 @@ namespace rev
                 data_section.data.remove_suffix(address + data_section.data.size() - existing_block->address());
 
             auto const& block = *emplace(disassembler, data_section).first;
+            auto const block_impact = block.impact();
 
             std::unordered_set<std::uint64_t> next_addresses;
-            for (auto const& jump : block.jump())
+            for (auto const& jump : block_impact.jump())
                 next_addresses.merge(patch(address, jump));
             for (auto const next_address : next_addresses)
             {

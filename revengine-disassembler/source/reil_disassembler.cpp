@@ -58,11 +58,10 @@ namespace rev::dis
             case I_NONE:
                 break;
             case I_UNK:
-                instruction.jump.clear();
                 step = false;
                 break;
             case I_JCC:
-                instruction.jump.insert(get(ins.c));
+                instruction.impact.jump(get(ins.c));
                 if (ins.a.type == A_CONST && ins.a.val != 0)
                     step = false;
                 break;
@@ -129,7 +128,7 @@ namespace rev::dis
         }
 
         if (step)
-            instruction.jump.insert(expression::value(instruction.address + instruction.size));
+            instruction.impact.jump(expression::value(instruction.address + instruction.size));
 
         return instruction;
     }

@@ -7,11 +7,25 @@ namespace rev
         for (auto const& [key, value] : *this)
         {
             for (auto& entry : expression_composition)
-                entry.second = entry.second.resolve(key, value);
+                entry.second.resolve(key, value);
+
+            expression_composition.jump_.resolve(key, value);
         }
         expression_composition.merge(*this);
 
         swap(expression_composition);
+
+        jump_ = expression_composition.jump_;
+    }
+
+    void expression_composition::jump(expression location)
+    {
+        jump_.fork(std::move(location));
+    }
+
+    expression_fork const& expression_composition::jump() const
+    {
+        return jump_;
     }
 
     expression& expression_composition::operator[](expression const& key)

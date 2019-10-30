@@ -14,15 +14,15 @@ namespace rev
         {
             auto const& instruction = *insert(end(), disassembler(data_section));
 
-            if (instruction.jump.size() != 1)
+            if (!instruction.impact.jump())
                 break;
 
-            auto const& step = *instruction.jump.begin();
+            auto const step = *instruction.impact.jump();
 
-            if (!step || *step != instruction.address + instruction.size)
+            if (step != instruction.address + instruction.size)
                 break;
 
-            data_section.address = *step;
+            data_section.address = step;
             data_section.data.remove_prefix(instruction.size);
         }
         while (!data_section.data.empty());

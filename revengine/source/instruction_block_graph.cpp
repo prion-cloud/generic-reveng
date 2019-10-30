@@ -119,7 +119,7 @@ namespace rev
         {
             auto patched_jump = jump;
             for (auto const& unknown : unknowns)
-                patched_jump = patched_jump.resolve(unknown, monitor[unknown]);
+                patched_jump.resolve(unknown, monitor[unknown]);
 
             if (patched_jump)
                 next_addresses.insert(*patched_jump);

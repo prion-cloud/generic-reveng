@@ -67,7 +67,9 @@ TEST_CASE("rev::expression::resolve(rev::expression, rev::expression)")
         }
     }
 
-    CHECK(equal_to(base_expression->resolve(*a, *b), *result_expression));
+    base_expression->resolve(*a, *b);
+
+    CHECK(equal_to(*base_expression, *result_expression));
 }
 
 TEST_CASE("rev::expression::operator*() const")

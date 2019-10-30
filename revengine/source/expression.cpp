@@ -1,7 +1,6 @@
 #include <climits>
 
 #include <revengine/expression.hpp>
-#include <revengine/expression_composition.hpp>
 
 namespace std // NOLINT [cert-dcl58-cpp]
 {
@@ -75,27 +74,9 @@ namespace rev
         return unknowns;
     }
 
-    expression expression::resolve(expression const& x, expression const& y) const
+    void expression::resolve(expression const& x, expression const& y)
     {
-        return Z3_substitute(context_, ast_, 1, &x.ast_, &y.ast_);
-    }
-    expression expression::resolve(expression_composition const& c) const
-    {
-        std::vector<Z3_ast> source;
-        std::vector<Z3_ast> destination;
-
-        auto const unknowns = decompose();
-
-        source.reserve(unknowns.size());
-        destination.reserve(unknowns.size());
-
-        for (auto const& unknown : unknowns)
-        {
-            source.push_back(unknown);
-            destination.push_back(c[unknown]);
-        }
-
-        return Z3_substitute(context_, ast_, unknowns.size(), source.data(), destination.data());
+        *this = Z3_substitute(context_, ast_, 1, &x.ast_, &y.ast_);
     }
 
     expression expression::mem() const

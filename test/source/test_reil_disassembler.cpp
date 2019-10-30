@@ -10,7 +10,6 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
     rev::instruction_set_architecture architecture;
     std::vector<std::uint8_t> data;
 
-    std::unordered_set<rev::expression> jump;
     rev::expression_composition impact;
 
     SECTION("x86_32")
@@ -27,8 +26,8 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
             {
                 data = { 0xC3 };
 
-                jump.insert(rev::expression::unknown("R_ESP").mem());
                 impact[rev::expression::unknown("R_ESP")] = rev::expression::unknown("R_ESP") + rev::expression::value(4);
+                impact.jump(rev::expression::unknown("R_ESP").mem());
             }
         }
         SECTION("B")
@@ -50,7 +49,7 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
                 impact[rev::expression::value(27).mem()] = rev::expression::unknown("R_EAX");
             }
 
-            jump.insert(rev::expression::value(address + data.size()));
+            impact.jump(rev::expression::value(address + data.size()));
         }
     }
     // TODO x86_64, etc.
@@ -60,7 +59,6 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
         .address = address,
         .size = data.size(),
 
-        .jump = jump,
         .impact = impact
     };
 
@@ -76,6 +74,6 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
     CHECK(actual_instruction.address == expected_instruction.address);
     CHECK(actual_instruction.size == expected_instruction.size);
 
-    assert_content<rev::expression>(expected_instruction.jump, actual_instruction.jump);
+    assert_content<rev::expression>(expected_instruction.impact.jump(), *reinterpret_cast<std::unordered_set<rev::expression> const*>(&actual_instruction.impact.jump()));
     CHECK(actual_instruction.impact == expected_instruction.impact);
 }

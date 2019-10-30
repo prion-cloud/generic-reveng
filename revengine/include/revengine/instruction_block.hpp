@@ -32,7 +32,6 @@ namespace rev
 
         std::uint64_t address() const;
 
-        std::unordered_set<expression> jump() const;
         expression_composition impact() const;
 
         instruction_block extract_head(iterator last);

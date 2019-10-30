@@ -7,7 +7,6 @@
 namespace rev
 {
     class expression;
-    class expression_composition;
 }
 
 namespace std
@@ -46,10 +45,9 @@ namespace rev
 
         std::uint64_t operator*() const;
 
-        std::unordered_set<expression> decompose() const;
+        void resolve(expression const& x, expression const& y);
 
-        expression resolve(expression const& x, expression const& y) const;
-        expression resolve(expression_composition const& c) const;
+        std::unordered_set<expression> decompose() const;
 
         expression mem() const;
 
