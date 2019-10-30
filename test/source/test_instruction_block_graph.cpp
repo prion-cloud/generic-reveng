@@ -17,14 +17,14 @@
 
 TEST_CASE("rev::instruction_block_graph::instruction_block_graph(rev::process)")
 {
-    rev::instruction_set_architecture architecture;
+    rev::machine_architecture architecture;
     std::vector<std::uint8_t> data;
 
     std::unordered_map<std::uint64_t, std::unordered_set<std::uint64_t>> expected_block_map;
 
     SECTION("x86_32")
     {
-        architecture = rev::instruction_set_architecture::x86_32;
+        architecture = rev::machine_architecture::x86_32;
 
         SECTION("A")
         {

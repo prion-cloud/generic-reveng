@@ -1,6 +1,6 @@
 #pragma once
 
-#include <revengine/expression_composition.hpp>
+#include <revengine/machine_impact.hpp>
 
 namespace rev
 {
@@ -19,6 +19,6 @@ namespace rev
         std::uint64_t address;
         std::size_t size;
 
-        expression_composition impact;
+        machine_impact impact;
     };
 }

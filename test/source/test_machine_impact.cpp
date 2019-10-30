@@ -1,8 +1,8 @@
 #include "test.hpp"
 
-TEST_CASE("rev::expression_composition::expression_composition(expression_composition const&)")
+TEST_CASE("rev::machine_impact::machine_impact(machine_impact const&)")
 {
-    rev::expression_composition a;
+    rev::machine_impact a;
     a["R_ZF"];
 
     auto const b = a;
@@ -10,12 +10,12 @@ TEST_CASE("rev::expression_composition::expression_composition(expression_compos
     CHECK(b == a);
 }
 
-TEST_CASE("rev::expression_composition::update(rev::expression_composition)")
+TEST_CASE("rev::machine_impact::update(rev::machine_impact)")
 {
-    rev::expression_composition base_block;
-    rev::expression_composition new_block;
+    rev::machine_impact base_block;
+    rev::machine_impact new_block;
 
-    rev::expression_composition result_block;
+    rev::machine_impact result_block;
 
     SECTION("A")
     {
@@ -91,10 +91,10 @@ TEST_CASE("rev::expression_composition::update(rev::expression_composition)")
     CHECK(base_block == result_block);
 }
 
-TEST_CASE("rev::expression_composition::operator==(rev::expression_composition) const")
+TEST_CASE("rev::machine_impact::operator==(rev::machine_impact) const")
 {
-    rev::expression_composition a;
-    rev::expression_composition b;
+    rev::machine_impact a;
+    rev::machine_impact b;
 
     SECTION("A")
     {
@@ -155,10 +155,10 @@ TEST_CASE("rev::expression_composition::operator==(rev::expression_composition) 
     CHECK(!(a != b));
     REQUIRE(a == b);
 }
-TEST_CASE("rev::expression_composition::operator!=(rev::expression_composition) const")
+TEST_CASE("rev::machine_impact::operator!=(rev::machine_impact) const")
 {
-    rev::expression_composition a;
-    rev::expression_composition b;
+    rev::machine_impact a;
+    rev::machine_impact b;
 
     SECTION("A")
     {

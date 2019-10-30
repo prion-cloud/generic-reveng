@@ -8,13 +8,13 @@ namespace rev::dis
         return 0;
     }
 
-    reil_disassembler::handle::handle(instruction_set_architecture const architecture)
+    reil_disassembler::handle::handle(machine_architecture const architecture)
     {
         reil_arch_t reil_architecture;
         switch (architecture)
         {
-            case instruction_set_architecture::x86_32:
-            case instruction_set_architecture::x86_64:
+            case machine_architecture::x86_32:
+            case machine_architecture::x86_64:
                 reil_architecture = ARCH_X86;
                 break;
             default:

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <revengine/data_section.hpp>
-#include <revengine/instruction_set_architecture.hpp>
+#include <revengine/machine_architecture.hpp>
 
 namespace rev
 {
@@ -13,16 +13,16 @@ namespace rev
         std::vector<std::uint8_t> data_;
         std::set<data_section, data_section::exclusive_address_order> data_sections_;
 
-        instruction_set_architecture architecture_;
+        machine_architecture architecture_;
 
         std::uint64_t start_address_;
 
     public:
 
         explicit process(std::vector<std::uint8_t> data); // TODO Real loading mechanism
-        process(std::vector<std::uint8_t> data, instruction_set_architecture architecture);
+        process(std::vector<std::uint8_t> data, machine_architecture architecture);
 
-        instruction_set_architecture architecture() const;
+        machine_architecture architecture() const;
 
         std::uint64_t start_address() const;
 

@@ -4,7 +4,7 @@
 
 #include <revengine/data_section.hpp>
 #include <revengine/instruction.hpp>
-#include <revengine/instruction_set_architecture.hpp>
+#include <revengine/machine_architecture.hpp>
 
 namespace rev::dis
 {
@@ -15,7 +15,7 @@ namespace rev::dis
 
     public:
 
-        explicit reil_disassembler(instruction_set_architecture architecture);
+        explicit reil_disassembler(machine_architecture architecture);
         ~reil_disassembler();
 
         instruction operator()(data_section const& data_section) const;

@@ -38,9 +38,9 @@ namespace rev
     }
 
     // TODO
-    expression_composition instruction_block::impact() const
+    machine_impact instruction_block::impact() const
     {
-        expression_composition impact;
+        machine_impact impact;
         for (auto const& instruction : *this)
             impact.update(instruction.impact);
 

@@ -7,14 +7,14 @@ TEST_CASE("rev::dis::reil_disassembler::operator(rev::data_section) const")
     auto const address = GENERATE(as<std::uint64_t>(), // NOLINT
         0, 1, 17, 1639);
 
-    rev::instruction_set_architecture architecture;
+    rev::machine_architecture architecture;
     std::vector<std::uint8_t> data;
 
-    rev::expression_composition impact;
+    rev::machine_impact impact;
 
     SECTION("x86_32")
     {
-        architecture = rev::instruction_set_architecture::x86_32;
+        architecture = rev::machine_architecture::x86_32;
 
         SECTION("A")
         {

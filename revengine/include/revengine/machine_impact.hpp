@@ -8,13 +8,13 @@
 
 namespace rev
 {
-    class expression_composition : std::unordered_map<expression, expression>
+    class machine_impact : std::unordered_map<expression, expression>
     {
         expression_fork jump_;
 
     public:
 
-        void update(expression_composition expression_composition);
+        void update(machine_impact other);
 
         void jump(expression location);
 
@@ -26,7 +26,7 @@ namespace rev
         expression const& operator[](expression const& key) const;
 
         // TODO move to tests
-        bool operator==(expression_composition other) const;
-        bool operator!=(expression_composition const& other) const;
+        bool operator==(machine_impact other) const;
+        bool operator!=(machine_impact const& other) const;
     };
 }

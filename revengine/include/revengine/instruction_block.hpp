@@ -32,7 +32,7 @@ namespace rev
 
         std::uint64_t address() const;
 
-        expression_composition impact() const;
+        machine_impact impact() const;
 
         instruction_block extract_head(iterator last);
     };

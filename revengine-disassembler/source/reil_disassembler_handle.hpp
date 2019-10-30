@@ -16,7 +16,7 @@ namespace rev::dis
 
     public:
 
-        explicit handle(instruction_set_architecture architecture);
+        explicit handle(machine_architecture architecture);
 
         std::vector<reil_inst_t> disassemble(data_section const& data_section);
     };

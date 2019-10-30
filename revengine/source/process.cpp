@@ -4,7 +4,7 @@ namespace rev
 {
     // TODO Real loading mechanism
 
-    process::process(std::vector<std::uint8_t> data, instruction_set_architecture const architecture) :
+    process::process(std::vector<std::uint8_t> data, machine_architecture const architecture) :
         data_(std::move(data)),
         architecture_(architecture),
         start_address_(0)
@@ -17,7 +17,7 @@ namespace rev
             });
     }
 
-    instruction_set_architecture process::architecture() const
+    machine_architecture process::architecture() const
     {
         return architecture_;
     }

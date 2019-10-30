@@ -2,7 +2,7 @@
 
 namespace rev::dis
 {
-    reil_disassembler::reil_disassembler(instruction_set_architecture const architecture) :
+    reil_disassembler::reil_disassembler(machine_architecture const architecture) :
         handle_(std::make_unique<handle>(architecture)) { }
     reil_disassembler::~reil_disassembler() = default;
 
@@ -16,7 +16,7 @@ namespace rev::dis
             .size = static_cast<std::uint64_t>(reil_instructions.front().raw_info.size)
         };
 
-        expression_composition temporary;
+        machine_impact temporary;
 
         auto const get = [this, &instruction, &temporary](reil_arg_t const& source)
         {

@@ -4,7 +4,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <revengine/expression_composition.hpp>
+#include <revengine/machine_impact.hpp>
 
 namespace Catch
 {

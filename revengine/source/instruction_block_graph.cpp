@@ -76,8 +76,8 @@ namespace rev
 
         auto const unknowns = jump.decompose();
 
-        std::vector<expression_composition> monitors;
-        std::queue<std::pair<std::uint64_t, expression_composition&>> q;
+        std::vector<machine_impact> monitors;
+        std::queue<std::pair<std::uint64_t, machine_impact&>> q;
 
         for (auto const preceeding_address : bwd_.at(address))
         {
