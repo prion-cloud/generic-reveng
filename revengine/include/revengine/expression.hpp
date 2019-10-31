@@ -51,6 +51,10 @@ namespace rev
 
         expression mem() const;
 
+        expression smul(expression const& other) const;
+        expression sdiv(expression const& other) const;
+        expression smod(expression const& other) const;
+
         expression operator-() const;
         expression operator~() const;
 

@@ -84,6 +84,19 @@ namespace rev
         return Z3_mk_app(context_, mem_, 1, &ast_);
     }
 
+    expression expression::smul(expression const& other) const
+    {
+        return Z3_mk_bvmul(context_, ast_, other);
+    }
+    expression expression::sdiv(expression const& other) const
+    {
+        return Z3_mk_bvsdiv(context_, ast_, other);
+    }
+    expression expression::smod(expression const& other) const
+    {
+        return Z3_mk_bvsmod(context_, ast_, other);
+    }
+
     expression expression::operator-() const
     {
         return Z3_mk_bvneg(context_, ast_);
@@ -101,17 +114,17 @@ namespace rev
     {
         return Z3_mk_bvsub(context_, ast_, other);
     }
-    expression expression::operator*(expression const& other) const
+    expression expression::operator*(expression const&) const
     {
-        return Z3_mk_bvmul(context_, ast_, other);
+        throw std::logic_error("Not implemented"); // TODO
     }
     expression expression::operator/(expression const& other) const
     {
-        return Z3_mk_bvsdiv(context_, ast_, other);
+        return Z3_mk_bvudiv(context_, ast_, other);
     }
-    expression expression::operator%(expression const& other) const
+    expression expression::operator%(expression const&) const
     {
-        return Z3_mk_bvsmod(context_, ast_, other);
+        throw std::logic_error("Not implemented"); // TODO
     }
 
     expression expression::operator<<(expression const& other) const
@@ -142,7 +155,7 @@ namespace rev
     }
     expression expression::operator<(expression const& other) const
     {
-        return bool_value(Z3_mk_bvslt(context_, ast_, other));
+        return bool_value(Z3_mk_bvult(context_, ast_, other));
     }
 
     Z3_context const& expression::context()

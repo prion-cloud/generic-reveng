@@ -69,29 +69,32 @@ namespace rev::dis
             case I_LDM:
                 set(ins.c, impact[get(ins.a).mem()]);
                 break;
-            case I_NEG:
-                set(ins.c, -get(ins.a));
-                break;
-            case I_NOT:
-                set(ins.c, ~get(ins.a));
-                break;
             case I_ADD:
                 set(ins.c, get(ins.a) + get(ins.b));
                 break;
             case I_SUB:
                 set(ins.c, get(ins.a) - get(ins.b));
                 break;
+            case I_NEG:
+                set(ins.c, -get(ins.a));
+                break;
             case I_MUL:
-            case I_SMUL: // TODO
                 set(ins.c, get(ins.a) * get(ins.b));
                 break;
             case I_DIV:
-            case I_SDIV: // TODO
                 set(ins.c, get(ins.a) / get(ins.b));
                 break;
             case I_MOD:
-            case I_SMOD: // TODO
                 set(ins.c, get(ins.a) % get(ins.b));
+                break;
+            case I_SMUL:
+                set(ins.c, get(ins.a).smul(get(ins.b)));
+                break;
+            case I_SDIV:
+                set(ins.c, get(ins.a).sdiv(get(ins.b)));
+                break;
+            case I_SMOD:
+                set(ins.c, get(ins.a).smod(get(ins.b)));
                 break;
             case I_SHL:
                 set(ins.c, get(ins.a) << get(ins.b));
@@ -107,6 +110,9 @@ namespace rev::dis
                 break;
             case I_XOR:
                 set(ins.c, get(ins.a) ^ get(ins.b));
+                break;
+            case I_NOT:
+                set(ins.c, ~get(ins.a));
                 break;
             case I_EQ:
                 set(ins.c, get(ins.a) == (get(ins.b)));

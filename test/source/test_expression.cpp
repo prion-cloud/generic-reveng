@@ -60,10 +60,10 @@ TEST_CASE("rev::expression::resolve(rev::expression, rev::expression)")
             base_expression = std::make_unique<rev::expression>(unknown + rev::expression::value(addend_2));
             result_expression = std::make_unique<rev::expression const>(rev::expression::value(addend_1 + addend_2));
         }
-        SECTION("*")
+        SECTION("&")
         {
-            base_expression = std::make_unique<rev::expression>(unknown * rev::expression::value(addend_2));
-            result_expression = std::make_unique<rev::expression const>(rev::expression::value(addend_1 * addend_2));
+            base_expression = std::make_unique<rev::expression>(unknown & rev::expression::value(addend_2));
+            result_expression = std::make_unique<rev::expression const>(rev::expression::value(addend_1 & addend_2));
         }
     }
 
@@ -116,7 +116,7 @@ TEST_CASE("rev::expression::decompose() const")
     SECTION("C")
     {
         expression = std::make_unique<rev::expression const>(
-            rev::expression::unknown("EAX") * (rev::expression::unknown("EBX") + rev::expression::value(4)));
+            rev::expression::unknown("EAX") & (rev::expression::unknown("EBX") + rev::expression::value(4)));
 
         components.push_back(std::make_unique<rev::expression const>(rev::expression::unknown("EAX")));
         components.push_back(std::make_unique<rev::expression const>(rev::expression::unknown("EBX")));
@@ -128,6 +128,8 @@ TEST_CASE("rev::expression::decompose() const")
             return equal_to(*a, b);
         });
 }
+
+// TODO operators
 
 TEST_CASE("std::equal_to<rev::expression>::operator()(expression) const")
 {
