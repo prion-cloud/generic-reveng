@@ -22,9 +22,7 @@ namespace rev
         if (block == upper_bound(address))
             return false;
 
-        auto const instruction = block->find(address);
-
-        if (instruction == block->begin()) // TODO replace opaquely
+        if (block->address() == address)
             return true;
 
         // TODO tidy up
@@ -32,7 +30,7 @@ namespace rev
         auto const block_hint = std::next(block);
 
         auto tail_block = extract(block);
-        auto head_block = tail_block.value().extract_head(instruction); // switch head/tail?
+        auto head_block = tail_block.value().extract_head(address); // switch head/tail?
 
         auto head_fwd_entry = std::pair
         {

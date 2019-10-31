@@ -6,7 +6,7 @@
 
 namespace rev
 {
-    class instruction_block : public std::set<instruction, instruction::address_order> // TODO private
+    class instruction_block : std::set<instruction, instruction::address_order>
     {
     public:
 
@@ -33,7 +33,7 @@ namespace rev
 
         machine_impact impact() const;
 
-        instruction_block extract_head(iterator last);
+        instruction_block extract_head(std::uint64_t new_address);
     };
 }
 

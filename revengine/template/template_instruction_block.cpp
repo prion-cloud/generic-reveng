@@ -8,7 +8,7 @@ namespace rev
     instruction_block::instruction_block(Disassembler const& disassembler, data_section data_section)
     {
         if (data_section.data.empty())
-            throw std::invalid_argument("Empty data section");
+            throw std::invalid_argument("Invalid (empty) data section");
 
         do
         {

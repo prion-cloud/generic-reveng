@@ -47,11 +47,19 @@ namespace rev
         return impact;
     }
 
-    instruction_block instruction_block::extract_head(iterator last)
+    instruction_block instruction_block::extract_head(std::uint64_t const new_address)
     {
+        auto const new_begin = find(new_address);
+
+        if (new_begin == end())
+            throw std::invalid_argument("Invalid address");
+
         instruction_block head;
-        while (begin() != last)
-            head.insert(head.begin(), extract(std::prev(last)));
+        while (begin() != new_begin)
+            head.insert(head.begin(), extract(std::prev(new_begin)));
+
+        if (head.empty())
+            throw std::invalid_argument("Nothing to extract");
 
         return head;
     }
