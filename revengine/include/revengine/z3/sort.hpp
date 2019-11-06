@@ -8,13 +8,15 @@ namespace rev::z3
 {
     class sort : public ast<Z3_sort>
     {
-        explicit sort(Z3_sort const& base);
+        using ast<Z3_sort>::ast;
 
     public:
 
-        sort(sort const& other) = delete;
-        sort& operator=(sort const& other) = delete;
-
-        static sort const& bv_64();
+        template <std::size_t Size>
+        static sort bit_vector();
     };
 }
+
+#ifndef LINT
+#include <revengine/z3/template_sort.cpp>
+#endif

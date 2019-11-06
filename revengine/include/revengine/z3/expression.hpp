@@ -1,13 +1,13 @@
 #pragma once
 
-#include <memory>
 #include <unordered_set>
 
 #include <revengine/z3/ast.hpp>
+#include <revengine/z3/function_declaration.hpp>
 
 namespace rev::z3
 {
-    class expression : ast<Z3_ast>
+    class expression : public ast<Z3_ast>
     {
         explicit expression(Z3_ast const& base);
 
@@ -18,7 +18,7 @@ namespace rev::z3
 
         std::optional<std::uint64_t> evaluate() const;
 
-        std::unordered_set<expression> decompose() const;
+        std::unordered_set<expression, hasher, comparator> decompose() const;
 
         expression resolve(expression const& x, expression const& y) const;
 
@@ -49,6 +49,8 @@ namespace rev::z3
 
     private:
 
-        expression ite() const;
+        expression ite() const; // TODO rename
+
+        static function_declaration const& dereference_function();
     };
 }

@@ -1,5 +1,3 @@
-#include <utility>
-
 #include <revengine/z3/context.hpp>
 
 #ifdef LINT
@@ -17,7 +15,7 @@ namespace std // NOLINT [cert-dcl58-cpp]
     template <typename Base>
     std::size_t hash<rev::z3::ast<Base>>::operator()(rev::z3::ast<Base> const& ast) const
     {
-        return Z3_get_base_hash(rev::z3::context::instance(), ast.base());
+        return Z3_get_ast_hash(rev::z3::context::instance(), ast.upcast());
     }
 }
 
@@ -92,6 +90,12 @@ namespace rev::z3
 }
 
 #ifdef LINT
+template struct std::equal_to<rev::z3::ast<Z3_ast>>;
+template struct std::equal_to<rev::z3::ast<Z3_func_decl>>;
+template struct std::equal_to<rev::z3::ast<Z3_sort>>;
+template struct std::hash<rev::z3::ast<Z3_ast>>;
+template struct std::hash<rev::z3::ast<Z3_func_decl>>;
+template struct std::hash<rev::z3::ast<Z3_sort>>;
 template class rev::z3::ast<Z3_ast>;
 template class rev::z3::ast<Z3_func_decl>;
 template class rev::z3::ast<Z3_sort>;

@@ -6,13 +6,15 @@ namespace rev::z3
 {
     class function_declaration : public ast<Z3_func_decl>
     {
-        explicit function_declaration(Z3_func_decl const& base);
+        using ast<Z3_func_decl>::ast;
 
     public:
 
-        function_declaration(function_declaration const& other) = delete;
-        function_declaration& operator=(function_declaration const& other) = delete;
-
-        static function_declaration const& mem();
+        template <std::size_t RangeSize, std::size_t... DomainSizes>
+        static function_declaration const& bit_vector_function(std::string const& name);
     };
 }
+
+#ifndef LINT
+#include <revengine/z3/template_function_declaration.cpp>
+#endif

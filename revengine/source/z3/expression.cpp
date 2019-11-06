@@ -7,6 +7,8 @@
 
 namespace rev::z3
 {
+    constexpr std::size_t size = sizeof(std::uint64_t) * CHAR_BIT;
+
     template <>
     Z3_ast ast<Z3_ast>::upcast() const
     {
@@ -17,9 +19,9 @@ namespace rev::z3
         ast(Z3_simplify(context::instance(), base)) { }
 
     expression::expression(std::string const& name) :
-        expression(Z3_mk_const(context::instance(), Z3_mk_string_symbol(context::instance(), name.c_str()), sort::bv_64().base())) { }
+        expression(Z3_mk_const(context::instance(), Z3_mk_string_symbol(context::instance(), name.c_str()), sort::bit_vector<size>().base())) { }
     expression::expression(std::uint64_t const value) :
-        expression(Z3_mk_int(context::instance(), value, sort::bv_64().base())) { }
+        expression(Z3_mk_int(context::instance(), value, sort::bit_vector<size>().base())) { }
 
     std::optional<std::uint64_t> expression::evaluate() const
     {
@@ -29,33 +31,33 @@ namespace rev::z3
         return std::nullopt;
     }
 
-//    std::unordered_set<expression> expression::decompose() const
-//    {
-//        static auto const mem_hash = Z3_get_ast_hash(context::instance(), Z3_func_decl_to_ast(context::instance(), mem_decl()));
-//
-//        auto const app = Z3_to_app(context::instance(), base());
-//        auto const app_decl = Z3_get_app_decl(context::instance(), app);
-//        auto const app_decl_hash = Z3_get_ast_hash(context::instance(), Z3_func_decl_to_ast(context::instance(), app_decl));
-//
-//        if (app_decl_hash == mem_hash)
-//            return { *this };
-//
-//        std::size_t const argument_count = Z3_get_app_num_args(context::instance(), app);
-//
-//        if (argument_count == 0)
-//        {
-//            if (Z3_is_numeral_ast(context::instance(), base()))
-//                return { };
-//
-//            return { *this };
-//        }
-//
-//        std::unordered_set<expression> unknowns;
-//        for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
-//            unknowns.merge(expression(Z3_get_app_arg(context::instance(), app, argument_index)).decompose());
-//
-//        return unknowns;
-//    }
+    std::unordered_set<expression, expression::hasher, expression::comparator> expression::decompose() const
+    {
+        static auto const mem_hash = function_declaration::hash(dereference_function());
+
+        auto const app = Z3_to_app(context::instance(), base());
+        auto const app_decl = Z3_get_app_decl(context::instance(), app);
+        auto const app_decl_hash = Z3_get_ast_hash(context::instance(), Z3_func_decl_to_ast(context::instance(), app_decl));
+
+        if (app_decl_hash == mem_hash)
+            return { *this };
+
+        std::size_t const argument_count = Z3_get_app_num_args(context::instance(), app);
+
+        if (argument_count == 0)
+        {
+            if (Z3_is_numeral_ast(context::instance(), base()))
+                return { };
+
+            return { *this };
+        }
+
+        std::unordered_set<expression, hasher, comparator> unknowns;
+        for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
+            unknowns.merge(expression(Z3_get_app_arg(context::instance(), app, argument_index)).decompose());
+
+        return unknowns;
+    }
 
     expression expression::resolve(expression const& x, expression const& y) const
     {
@@ -64,7 +66,7 @@ namespace rev::z3
 
     expression expression::operator*() const
     {
-        return expression(Z3_mk_app(context::instance(), function_declaration::mem().base(), 1, &base()));
+        return expression(Z3_mk_app(context::instance(), dereference_function().base(), 1, &base()));
     }
 
     expression expression::operator-() const
@@ -148,12 +150,17 @@ namespace rev::z3
 
         return expression(Z3_mk_ite(context::instance(), base(), t.base(), e.base()));
     }
+
+    function_declaration const& expression::dereference_function()
+    {
+        return function_declaration::bit_vector_function<size, size>("deref");
+    }
 }
 
 static_assert(std::is_destructible_v<rev::z3::expression>);
 
-static_assert(std::is_move_constructible_v<rev::z3::expression>);
-static_assert(std::is_move_assignable_v<rev::z3::expression>);
-
 static_assert(std::is_copy_constructible_v<rev::z3::expression>);
 static_assert(std::is_copy_assignable_v<rev::z3::expression>);
+
+static_assert(std::is_move_constructible_v<rev::z3::expression>);
+static_assert(std::is_move_assignable_v<rev::z3::expression>);

@@ -29,6 +29,18 @@ namespace rev::z3
     template <typename Base>
     class ast
     {
+        friend std::hash<ast>;
+
+    public:
+
+        using comparator = std::equal_to<ast>;
+        using hasher = std::hash<ast>;
+
+        static constexpr comparator compare { };
+        static constexpr hasher hash { };
+
+    private:
+
         Base base_;
 
     protected:
