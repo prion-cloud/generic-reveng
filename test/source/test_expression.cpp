@@ -1,180 +1,205 @@
-#include "test.hpp"
+#include <iomanip>
 
-constexpr std::equal_to<rev::expression> equal_to;
+#include <catch2/catch.hpp>
 
-TEST_CASE("rev::expression::resolve(rev::expression, rev::expression)")
+#include <revengine/z3/expression.hpp>
+
+#define TEST_NAMES "a"
+#define TEST_VALUES 0, 0xA, 0x10
+
+namespace Catch
 {
-    std::unique_ptr<rev::expression> base_expression;
-
-    std::unique_ptr<rev::expression const> a;
-    std::unique_ptr<rev::expression const> b;
-
-    std::unique_ptr<rev::expression const> result_expression;
-
-    SECTION("A")
+    template<>
+    struct StringMaker<std::optional<std::uint64_t>>
     {
-        base_expression = std::make_unique<rev::expression>(GENERATE( // NOLINT
-            rev::expression::value(0),
-            rev::expression::unknown("TEST")));
-
-        b = std::make_unique<rev::expression const>(GENERATE( // NOLINT
-            rev::expression::value(0),
-            rev::expression::value(1),
-            rev::expression::value(2),
-            rev::expression::unknown("TEST"),
-            rev::expression::unknown("x"),
-            rev::expression::unknown("x") == rev::expression::value(7)));
-
-        SECTION("A1")
+        static std::string convert(std::optional<std::uint64_t> const& value)
         {
-            a = std::make_unique<rev::expression const>(GENERATE( // NOLINT
-                rev::expression::value(1),
-                rev::expression::unknown("NONE")));
+            if (value)
+                return StringMaker<std::uint64_t>::convert(*value);
 
-            result_expression = std::make_unique<rev::expression const>(*base_expression);
+            return "(No value)";
         }
-        SECTION("A2")
-        {
-            a = std::make_unique<rev::expression const>(*base_expression);
-
-            result_expression = std::make_unique<rev::expression const>(*b);
-        }
-    }
-    SECTION("B")
-    {
-        auto const unknown = GENERATE( // NOLINT
-            rev::expression::unknown("TEST"),
-            rev::expression::unknown("n"),
-            rev::expression::unknown("25"));
-
-        auto const addend_1 = GENERATE(as<std::uint64_t>(), // NOLINT
-            0, 1, 2, 3, 4);
-        auto const addend_2 = GENERATE(as<std::uint64_t>(), // NOLINT
-            0, 1, 2, 3, 4);
-
-        a = std::make_unique<rev::expression const>(unknown);
-        b = std::make_unique<rev::expression const>(rev::expression::value(addend_1));
-
-        SECTION("+")
-        {
-            base_expression = std::make_unique<rev::expression>(unknown + rev::expression::value(addend_2));
-            result_expression = std::make_unique<rev::expression const>(rev::expression::value(addend_1 + addend_2));
-        }
-        SECTION("&")
-        {
-            base_expression = std::make_unique<rev::expression>(unknown & rev::expression::value(addend_2));
-            result_expression = std::make_unique<rev::expression const>(rev::expression::value(addend_1 & addend_2));
-        }
-    }
-
-    base_expression->resolve(*a, *b);
-
-    CHECK(equal_to(*base_expression, *result_expression));
+    };
 }
 
-TEST_CASE("rev::expression::operator*() const")
+//constexpr std::equal_to<rev::z3::expression> equal_to;
+
+//std::string to_string(rev::z3::expression const& expression)
+//{
+//    return Z3_ast_to_string(rev::z3::expression::context(), expression.base());
+//}
+//std::string to_string(std::uint64_t const value)
+//{
+//    std::ostringstream stream;
+//    stream << "#x" << std::setfill('0') << std::setw(sizeof(std::uint64_t) * 2) << std::hex << value;
+//
+//    return stream.str();
+//}
+
+TEST_CASE("Evaluate", "[rev::z3::expression]")
 {
-    SECTION("A")
+    SECTION("Unknown")
     {
-        auto const value = GENERATE(as<std::uint64_t>(), // NOLINT
-            0, 1, 2, 3, 4);
+        auto const name = GENERATE(as<std::string>(), TEST_NAMES); // NOLINT
 
-        auto const expression = rev::expression::value(value);
+        rev::z3::expression const a(name);
 
-        CHECK(expression);
-        CHECK(*expression == value);
+        CHECK(a.evaluate() == std::nullopt);
     }
-    SECTION("B")
+    SECTION("Value")
     {
-        auto const name = GENERATE(as<std::string>(), // NOLINT
-            "TEST", "RAX", "rbx", "27");
+        auto const value_a = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
 
-        auto const expression = rev::expression::unknown(name);
+        rev::z3::expression const a(value_a);
 
-        CHECK(!expression);
+        SECTION("Nullary")
+        {
+            CHECK(a.evaluate() == value_a);
+        }
+        SECTION("Unary")
+        {
+            SECTION("DEREF")
+            {
+                CHECK((*a).evaluate() == std::nullopt);
+            }
+
+            SECTION("NEG")
+            {
+                CHECK((-a).evaluate() == -value_a);
+            }
+            SECTION("NOT")
+            {
+                CHECK((~a).evaluate() == ~value_a);
+            }
+        }
+        SECTION("Binary")
+        {
+            auto const value_b = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
+
+            rev::z3::expression const b(value_b);
+
+            SECTION("ADD")
+            {
+                CHECK((a + b).evaluate() == value_a + value_b);
+            }
+            SECTION("SUB")
+            {
+                CHECK((a - b).evaluate() == value_a - value_b);
+            }
+
+//            SECTION("MUL")
+//            {
+//                CHECK((a * b).evaluate() == value_a UMUL value_b);
+//            }
+//            SECTION("DIV")
+//            {
+//                CHECK((a / b).evaluate() == value_a UDIV value_b);
+//            }
+//            SECTION("MOD")
+//            {
+//                CHECK((a % b).evaluate() == value_a UMOD value_b);
+//            }
+
+//            SECTION("SMUL")
+//            {
+//                CHECK(a.smul(b).evaluate() == value_a SMUL value_b);
+//            }
+//            SECTION("SDIV")
+//            {
+//                CHECK(a.sdiv(b).evaluate() == value_a SDIV value_b);
+//            }
+//            SECTION("SMOD")
+//            {
+//                CHECK(a.smod(b).evaluate() == value_a SMOD value_b);
+//            }
+
+            SECTION("SHL")
+            {
+                CHECK((a << b).evaluate() == value_a << value_b);
+            }
+            SECTION("SHR")
+            {
+                CHECK((a >> b).evaluate() == value_a >> value_b);
+            }
+
+            SECTION("AND")
+            {
+                CHECK((a & b).evaluate() == (value_a & value_b));
+            }
+            SECTION("OR")
+            {
+                CHECK((a | b).evaluate() == (value_a | value_b));
+            }
+            SECTION("XOR")
+            {
+                CHECK((a ^ b).evaluate() == (value_a ^ value_b));
+            }
+
+            SECTION("EQ")
+            {
+                CHECK((a == b).evaluate() == (value_a == value_b ? 1 : 0));
+            }
+            SECTION("LT")
+            {
+                CHECK((a < b).evaluate() == (value_a < value_b ? 1 : 0));
+            }
+        }
     }
 }
 
-TEST_CASE("rev::expression::decompose() const")
+TEST_CASE("Copy", "[rev::z3::expression]")
 {
-    std::unique_ptr<rev::expression const> expression;
+    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
 
-    std::vector<std::unique_ptr<rev::expression const>> components;
+    auto a = std::make_unique<rev::z3::expression const>(value);
 
-    SECTION("A")
+    SECTION("Construction")
     {
-        expression = std::make_unique<rev::expression const>(rev::expression::value(0));
+        rev::z3::expression const b = *a;
+
+        CHECK(b.evaluate() == value);
+
+        a.reset();
+
+        CHECK(b.evaluate() == value);
     }
-    SECTION("B")
+    SECTION("Assignment")
     {
-        expression = std::make_unique<rev::expression const>(GENERATE( // NOLINT
-            rev::expression::unknown("TEST"),
-            rev::expression::unknown("EAX").mem()));
+        rev::z3::expression b(value + 1);
+        b = *a;
 
-        components.push_back(std::make_unique<rev::expression const>(*expression));
+        CHECK(b.evaluate() == value);
+
+        a.reset();
+
+        CHECK(b.evaluate() == value);
     }
-    SECTION("C")
-    {
-        expression = std::make_unique<rev::expression const>(
-            rev::expression::unknown("EAX") & (rev::expression::unknown("EBX") + rev::expression::value(4)));
-
-        components.push_back(std::make_unique<rev::expression const>(rev::expression::unknown("EAX")));
-        components.push_back(std::make_unique<rev::expression const>(rev::expression::unknown("EBX")));
-    }
-
-    assert_content(components, expression->decompose(),
-        [](auto const& a, auto const& b)
-        {
-            return equal_to(*a, b);
-        });
 }
-
-// TODO operators
-
-TEST_CASE("std::equal_to<rev::expression>::operator()(expression) const")
+TEST_CASE("Move", "[rev::z3::expression]")
 {
-    auto const expression = GENERATE( // NOLINT
-        rev::expression::value(0),
-        rev::expression::value(1),
-        rev::expression::unknown("TEST"),
-        rev::expression::unknown("TEST") + rev::expression::value(2));
+    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
 
-    auto const a = expression;
-    auto const b = expression;
+    auto a = std::make_unique<rev::z3::expression>(value);
 
-    CHECK(equal_to(a, b));
-}
-TEST_CASE("!std::equal_to<rev::expression>::operator()(expression) const")
-{
-    std::unique_ptr<rev::expression const> a;
-    std::unique_ptr<rev::expression const> b;
-
-    SECTION("A")
+    SECTION("Construction")
     {
-        a = std::make_unique<rev::expression const>(rev::expression::value(0));
+        rev::z3::expression const b = std::move(*a);
 
-        SECTION("A1")
-        {
-            b = std::make_unique<rev::expression const>(rev::expression::value(1));
-        }
-        SECTION("A2")
-        {
-            b = std::make_unique<rev::expression const>(rev::expression::unknown("TEST"));
-        }
+        CHECK(b.evaluate() == value);
+
+        a.reset();
+
+        CHECK(b.evaluate() == value);
     }
-    SECTION("B")
+    SECTION("Assignment")
     {
-        a = std::make_unique<rev::expression const>(rev::expression::unknown("TEST"));
+        rev::z3::expression b(value + 1);
+        b = std::move(*a);
 
-        SECTION("B1")
-        {
-            b = std::make_unique<rev::expression const>(rev::expression::value(0));
-        }
-        SECTION("B2")
-        {
-            b = std::make_unique<rev::expression const>(rev::expression::value(1));
-        }
+        CHECK(b.evaluate() == value);
+
+        a.reset();
+
+        CHECK(b.evaluate() == value);
     }
-
-    CHECK(!equal_to(*a, *b));
 }
