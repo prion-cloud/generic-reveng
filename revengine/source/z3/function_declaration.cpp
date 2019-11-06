@@ -6,6 +6,12 @@
 
 namespace rev::z3
 {
+    template <>
+    Z3_ast ast<Z3_func_decl>::upcast() const
+    {
+        return Z3_func_decl_to_ast(context::instance(), base_);
+    }
+
     function_declaration::function_declaration(Z3_func_decl const& base) :
         ast(base) { }
 

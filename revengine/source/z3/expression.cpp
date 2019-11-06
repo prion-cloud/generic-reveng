@@ -7,8 +7,11 @@
 
 namespace rev::z3
 {
-//    Z3_sort expression::sort_ = // NOLINT [cert-err58-cpp]
-//        Z3_mk_bv_sort(context::instance(), sizeof(std::uint64_t) * CHAR_BIT);
+    template <>
+    Z3_ast ast<Z3_ast>::upcast() const
+    {
+        return base_;
+    }
 
     expression::expression(Z3_ast const& base) :
         ast(Z3_simplify(context::instance(), base)) { }

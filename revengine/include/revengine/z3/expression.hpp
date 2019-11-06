@@ -9,8 +9,6 @@ namespace rev::z3
 {
     class expression : ast<Z3_ast>
     {
-        friend std::hash<expression>;
-
         explicit expression(Z3_ast const& base);
 
     public:

@@ -24,34 +24,34 @@ namespace std // NOLINT [cert-dcl58-cpp]
 namespace rev::z3
 {
     template <typename Base>
-    ast<Base>::ast(Base base) :
-        base_(std::move(base))
+    ast<Base>::ast(Base const& base) :
+        base_(base)
     {
-        Z3_inc_ref(context::instance(), reinterpret_cast<Z3_ast>(base_));
+        increase_reference();
     }
 
     template <typename Base>
     ast<Base>::~ast()
     {
-        Z3_dec_ref(context::instance(), reinterpret_cast<Z3_ast>(base_));
+        decrease_reference();
     }
 
     template <typename Base>
     ast<Base>::ast(ast const& other) :
         base_(other.base_)
     {
-        Z3_inc_ref(context::instance(), reinterpret_cast<Z3_ast>(base_));
+        increase_reference();
     }
     template <typename Base>
     ast<Base>& ast<Base>::operator=(ast const& other)
     {
         if (&other != this)
         {
-            Z3_dec_ref(context::instance(), reinterpret_cast<Z3_ast>(base_));
+            decrease_reference();
 
             base_ = other.base_;
 
-            Z3_inc_ref(context::instance(), reinterpret_cast<Z3_ast>(base_));
+            increase_reference();
         }
 
         return *this;
@@ -59,15 +59,15 @@ namespace rev::z3
 
     template <typename Base>
     ast<Base>::ast(ast&& other) noexcept :
-        base_(std::exchange(other.base_, { })) { }
+        base_(std::exchange(other.base_, nullptr)) { }
     template <typename Base>
     ast<Base>& ast<Base>::operator=(ast&& other) noexcept
     {
         if (&other != this)
         {
-            Z3_dec_ref(context::instance(), reinterpret_cast<Z3_ast>(base_));
+            decrease_reference();
 
-            base_ = std::exchange(other.base_, { });
+            base_ = std::exchange(other.base_, nullptr);
         }
 
         return *this;
@@ -77,6 +77,17 @@ namespace rev::z3
     Base const& ast<Base>::base() const
     {
         return base_;
+    }
+
+    template <typename Base>
+    void ast<Base>::increase_reference() const
+    {
+        Z3_inc_ref(context::instance(), upcast());
+    }
+    template <typename Base>
+    void ast<Base>::decrease_reference() const
+    {
+        Z3_dec_ref(context::instance(), upcast());
     }
 }
 

@@ -7,6 +7,12 @@
 
 namespace rev::z3
 {
+    template <>
+    Z3_ast ast<Z3_sort>::upcast() const
+    {
+        return Z3_sort_to_ast(context::instance(), base_);
+    }
+
     sort::sort(Z3_sort const& base) :
         ast(base) { }
 

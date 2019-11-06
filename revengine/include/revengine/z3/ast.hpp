@@ -33,7 +33,7 @@ namespace rev::z3
 
     protected:
 
-        explicit ast(Base base);
+        explicit ast(Base const& base);
 
     public:
 
@@ -46,6 +46,13 @@ namespace rev::z3
         ast& operator=(ast&& other) noexcept;
 
         Base const& base() const; // TODO operator Base()
+
+    private:
+
+        void increase_reference() const;
+        void decrease_reference() const;
+
+        Z3_ast upcast() const;
     };
 }
 
