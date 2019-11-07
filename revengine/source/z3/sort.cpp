@@ -1,12 +1,11 @@
-#include <revengine/z3/context.hpp>
-#include <revengine/z3/sort.hpp>
+#include "sort.hpp"
 
 namespace rev::z3
 {
     template <>
-    Z3_ast ast<Z3_sort>::upcast() const
+    Z3_ast ast<Z3_sort>::ast_native() const
     {
-        return Z3_sort_to_ast(context::instance(), base_);
+        return Z3_sort_to_ast(context(), native_);
     }
 }
 

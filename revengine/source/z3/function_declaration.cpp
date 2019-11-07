@@ -1,12 +1,11 @@
-#include <revengine/z3/context.hpp>
-#include <revengine/z3/function_declaration.hpp>
+#include "function_declaration.hpp"
 
 namespace rev::z3
 {
     template <>
-    Z3_ast ast<Z3_func_decl>::upcast() const
+    Z3_ast ast<Z3_func_decl>::ast_native() const
     {
-        return Z3_func_decl_to_ast(context::instance(), base_);
+        return Z3_func_decl_to_ast(context(), native_);
     }
 }
 

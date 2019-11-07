@@ -18,5 +18,5 @@ namespace rev::z3
 }
 
 #ifndef LINT
-#include <revengine/z3/template_sort.cpp>
+#include "sort.tpp"
 #endif

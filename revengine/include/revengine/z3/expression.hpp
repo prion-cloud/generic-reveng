@@ -3,7 +3,6 @@
 #include <unordered_set>
 
 #include <revengine/z3/ast.hpp>
-#include <revengine/z3/function_declaration.hpp>
 
 namespace rev::z3
 {
@@ -50,7 +49,5 @@ namespace rev::z3
     private:
 
         expression ite() const; // TODO rename
-
-        static function_declaration const& dereference_function();
     };
 }

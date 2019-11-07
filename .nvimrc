@@ -1,3 +1,5 @@
+au BufRead,BufNewFile *.tpp setfiletype cpp
+
 let g:ale_linters_explicit = 1
 let g:ale_linters = {
 \ 'cpp': [ 'gcc', 'clangtidy' ],

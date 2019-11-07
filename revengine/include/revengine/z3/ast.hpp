@@ -6,28 +6,37 @@
 
 namespace rev::z3
 {
-    template <typename Base>
+    template <typename Native>
     class ast;
 }
 
 namespace std
 {
-    template <typename Base>
-    struct equal_to<rev::z3::ast<Base>>
+    template <typename Native>
+    struct equal_to<rev::z3::ast<Native>>
     {
-        bool operator()(rev::z3::ast<Base> const& ast_1, rev::z3::ast<Base> const& ast_2) const;
+        bool operator()(rev::z3::ast<Native> const& ast_1, rev::z3::ast<Native> const& ast_2) const;
     };
-    template <typename Base>
-    struct hash<rev::z3::ast<Base>>
+    template <typename Native>
+    struct hash<rev::z3::ast<Native>>
     {
-        std::size_t operator()(rev::z3::ast<Base> const& ast) const;
+        std::size_t operator()(rev::z3::ast<Native> const& ast) const;
     };
 }
 
 namespace rev::z3
 {
-    template <typename Base>
-    class ast
+    class ast_base
+    {
+    protected:
+
+        ast_base();
+
+        static Z3_context const& context();
+    };
+
+    template <typename Native>
+    class ast : public ast_base
     {
         friend std::hash<ast>;
 
@@ -41,11 +50,11 @@ namespace rev::z3
 
     private:
 
-        Base base_;
+        Native native_;
 
     protected:
 
-        explicit ast(Base const& base);
+        explicit ast(Native const& native);
 
     public:
 
@@ -57,17 +66,17 @@ namespace rev::z3
         ast(ast&& other) noexcept;
         ast& operator=(ast&& other) noexcept;
 
-        Base const& base() const; // TODO operator Base()
+        Native const& native() const; // TODO operator Native()
 
     private:
 
+        Z3_ast ast_native() const;
+
         void increase_reference() const;
         void decrease_reference() const;
-
-        Z3_ast upcast() const;
     };
 }
 
 #ifndef LINT
-#include <revengine/z3/template_ast.cpp>
+#include <revengine/z3/ast.tpp>
 #endif
