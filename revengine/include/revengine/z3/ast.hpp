@@ -33,11 +33,8 @@ namespace rev::z3
     {
     public:
 
-        using comparator = std::equal_to<ast>;
-        using hasher = std::hash<ast>;
-
-        static constexpr comparator compare { };
-        static constexpr hasher hash { };
+        using equal_to = std::equal_to<ast>;
+        using hash = std::hash<ast>;
 
     private:
 

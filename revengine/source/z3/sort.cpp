@@ -2,10 +2,13 @@
 
 namespace rev::z3
 {
+    sort::sort(std::size_t const size) :
+        ast(Z3_mk_bv_sort(context(), size)) { }
+
     template <>
     Z3_ast ast<Z3_sort>::ast_native() const
     {
-        return Z3_sort_to_ast(context(), native_);
+        return Z3_sort_to_ast(context(), *this);
     }
 }
 

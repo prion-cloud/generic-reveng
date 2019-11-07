@@ -2,32 +2,22 @@
 
 #include <revengine/z3/expression.hpp>
 
-#include "function_declaration.hpp"
-#include "sort.hpp"
+#include "function.hpp"
 
 namespace rev::z3
 {
-    constexpr std::size_t size = sizeof(std::uint64_t) * CHAR_BIT;
-
-    function_declaration const& dereference_function()
-    {
-        static auto const dereference_function = function_declaration::bit_vector_function<size, size>("deref");
-        return dereference_function;
-    }
-
-    template <>
-    Z3_ast ast<Z3_ast>::ast_native() const
-    {
-        return native_;
-    }
-
     expression::expression(Z3_ast const& native) :
         ast(Z3_simplify(context(), native)) { }
 
     expression::expression(std::string const& name) :
-        expression(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), sort::bit_vector<size>())) { }
+        ast(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), unique_sort())) { }
     expression::expression(std::uint64_t const value) :
-        expression(Z3_mk_int(context(), value, sort::bit_vector<size>())) { }
+        ast(Z3_mk_unsigned_int64(context(), value, unique_sort())) { }
+
+    Z3_app expression::app_native() const
+    {
+        return Z3_to_app(context(), *this);
+    }
 
     std::optional<std::uint64_t> expression::evaluate() const
     {
@@ -37,18 +27,14 @@ namespace rev::z3
         return std::nullopt;
     }
 
-    std::unordered_set<expression, expression::hasher, expression::comparator> expression::decompose() const
+    std::unordered_set<expression, expression::hash, expression::equal_to> expression::decompose() const
     {
-        static auto const mem_hash = function_declaration::hash(dereference_function());
+        constexpr function::equal_to equal_to;
 
-        auto const app = Z3_to_app(context(), *this);
-        auto const app_decl = Z3_get_app_decl(context(), app);
-        auto const app_decl_hash = Z3_get_ast_hash(context(), Z3_func_decl_to_ast(context(), app_decl));
-
-        if (app_decl_hash == mem_hash)
+        if (equal_to(function(*this), dereference_function()))
             return { *this };
 
-        std::size_t const argument_count = Z3_get_app_num_args(context(), app);
+        std::size_t const argument_count = Z3_get_app_num_args(context(), app_native());
 
         if (argument_count == 0)
         {
@@ -58,9 +44,9 @@ namespace rev::z3
             return { *this };
         }
 
-        std::unordered_set<expression, hasher, comparator> unknowns;
+        std::unordered_set<expression, expression::hash, expression::equal_to> unknowns;
         for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
-            unknowns.merge(expression(Z3_get_app_arg(context(), app, argument_index)).decompose());
+            unknowns.merge(expression(Z3_get_app_arg(context(), app_native(), argument_index)).decompose());
 
         return unknowns;
     }
@@ -145,19 +131,37 @@ namespace rev::z3
 
     expression expression::operator==(expression const& other) const
     {
-        return expression(Z3_mk_eq(context(), *this, other)).ite();
+        return expression(
+            Z3_mk_ite(context(),
+                Z3_mk_eq(context(), *this, other),
+                expression(std::uint64_t{1}),
+                expression(std::uint64_t{0})));
     }
     expression expression::operator<(expression const& other) const
     {
-        return expression(Z3_mk_bvult(context(), *this, other)).ite();
+        return expression(
+            Z3_mk_ite(context(),
+                Z3_mk_bvult(context(), *this, other),
+                expression(std::uint64_t{1}),
+                expression(std::uint64_t{0})));
     }
 
-    expression expression::ite() const
+    sort expression::unique_sort()
     {
-        expression const t(1UL);
-        expression const e(0UL);
+        // TODO static ?
+        return sort(sizeof(std::uint64_t) * CHAR_BIT);
+    }
 
-        return expression(Z3_mk_ite(context(), *this, t, e));
+    function expression::dereference_function()
+    {
+        // TODO static ?
+        return function("deref", { unique_sort() }, unique_sort());
+    }
+
+    template <>
+    Z3_ast ast<Z3_ast>::ast_native() const
+    {
+        return *this;
     }
 }
 
