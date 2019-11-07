@@ -25,13 +25,13 @@ namespace rev::z3
         ast(Z3_simplify(context(), native)) { }
 
     expression::expression(std::string const& name) :
-        expression(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), sort::bit_vector<size>().native())) { }
+        expression(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), sort::bit_vector<size>())) { }
     expression::expression(std::uint64_t const value) :
-        expression(Z3_mk_int(context(), value, sort::bit_vector<size>().native())) { }
+        expression(Z3_mk_int(context(), value, sort::bit_vector<size>())) { }
 
     std::optional<std::uint64_t> expression::evaluate() const
     {
-        if (std::uint64_t value; Z3_get_numeral_uint64(context(), native(), &value))
+        if (std::uint64_t value; Z3_get_numeral_uint64(context(), *this, &value))
             return value;
 
         return std::nullopt;
@@ -41,7 +41,7 @@ namespace rev::z3
     {
         static auto const mem_hash = function_declaration::hash(dereference_function());
 
-        auto const app = Z3_to_app(context(), native());
+        auto const app = Z3_to_app(context(), *this);
         auto const app_decl = Z3_get_app_decl(context(), app);
         auto const app_decl_hash = Z3_get_ast_hash(context(), Z3_func_decl_to_ast(context(), app_decl));
 
@@ -52,7 +52,7 @@ namespace rev::z3
 
         if (argument_count == 0)
         {
-            if (Z3_is_numeral_ast(context(), native()))
+            if (Z3_is_numeral_ast(context(), *this))
                 return { };
 
             return { *this };
@@ -67,30 +67,33 @@ namespace rev::z3
 
     expression expression::resolve(expression const& x, expression const& y) const
     {
-        return expression(Z3_substitute(context(), native(), 1, &x.native(), &y.native()));
+        Z3_ast const& native_x = x;
+        Z3_ast const& native_y = y;
+        return expression(Z3_substitute(context(), *this, 1, &native_x, &native_y));
     }
 
     expression expression::operator*() const
     {
-        return expression(Z3_mk_app(context(), dereference_function().native(), 1, &native()));
+        Z3_ast const& native = *this;
+        return expression(Z3_mk_app(context(), dereference_function(), 1, &native));
     }
 
     expression expression::operator-() const
     {
-        return expression(Z3_mk_bvneg(context(), native()));
+        return expression(Z3_mk_bvneg(context(), *this));
     }
     expression expression::operator~() const
     {
-        return expression(Z3_mk_bvnot(context(), native()));
+        return expression(Z3_mk_bvnot(context(), *this));
     }
 
     expression expression::operator+(expression const& other) const
     {
-        return expression(Z3_mk_bvadd(context(), native(), other.native()));
+        return expression(Z3_mk_bvadd(context(), *this, other));
     }
     expression expression::operator-(expression const& other) const
     {
-        return expression(Z3_mk_bvsub(context(), native(), other.native()));
+        return expression(Z3_mk_bvsub(context(), *this, other));
     }
     expression expression::operator*(expression const&) const
     {
@@ -98,7 +101,7 @@ namespace rev::z3
     }
     expression expression::operator/(expression const& other) const
     {
-        return expression(Z3_mk_bvudiv(context(), native(), other.native()));
+        return expression(Z3_mk_bvudiv(context(), *this, other));
     }
     expression expression::operator%(expression const&) const
     {
@@ -107,46 +110,46 @@ namespace rev::z3
 
     expression expression::smul(expression const& other) const
     {
-        return expression(Z3_mk_bvmul(context(), native(), other.native()));
+        return expression(Z3_mk_bvmul(context(), *this, other));
     }
     expression expression::sdiv(expression const& other) const
     {
-        return expression(Z3_mk_bvsdiv(context(), native(), other.native()));
+        return expression(Z3_mk_bvsdiv(context(), *this, other));
     }
     expression expression::smod(expression const& other) const
     {
-        return expression(Z3_mk_bvsmod(context(), native(), other.native()));
+        return expression(Z3_mk_bvsmod(context(), *this, other));
     }
 
     expression expression::operator<<(expression const& other) const
     {
-        return expression(Z3_mk_bvshl(context(), native(), other.native()));
+        return expression(Z3_mk_bvshl(context(), *this, other));
     }
     expression expression::operator>>(expression const& other) const
     {
-        return expression(Z3_mk_bvlshr(context(), native(), other.native()));
+        return expression(Z3_mk_bvlshr(context(), *this, other));
     }
 
     expression expression::operator&(expression const& other) const
     {
-        return expression(Z3_mk_bvand(context(), native(), other.native()));
+        return expression(Z3_mk_bvand(context(), *this, other));
     }
     expression expression::operator|(expression const& other) const
     {
-        return expression(Z3_mk_bvor(context(), native(), other.native()));
+        return expression(Z3_mk_bvor(context(), *this, other));
     }
     expression expression::operator^(expression const& other) const
     {
-        return expression(Z3_mk_bvxor(context(), native(), other.native()));
+        return expression(Z3_mk_bvxor(context(), *this, other));
     }
 
     expression expression::operator==(expression const& other) const
     {
-        return expression(Z3_mk_eq(context(), native(), other.native())).ite();
+        return expression(Z3_mk_eq(context(), *this, other)).ite();
     }
     expression expression::operator<(expression const& other) const
     {
-        return expression(Z3_mk_bvult(context(), native(), other.native())).ite();
+        return expression(Z3_mk_bvult(context(), *this, other)).ite();
     }
 
     expression expression::ite() const
@@ -154,7 +157,7 @@ namespace rev::z3
         expression const t(1UL);
         expression const e(0UL);
 
-        return expression(Z3_mk_ite(context(), native(), t.native(), e.native()));
+        return expression(Z3_mk_ite(context(), *this, t, e));
     }
 }
 

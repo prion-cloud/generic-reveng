@@ -70,7 +70,7 @@ namespace rev::z3
     }
 
     template <typename Native>
-    Native const& ast<Native>::native() const
+    ast<Native>::operator Native() const
     {
         return native_;
     }

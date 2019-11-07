@@ -1,4 +1,6 @@
-#include <revengine/z3/ast.hpp>
+#include <type_traits>
+
+#include <revengine/z3/ast_base.hpp>
 
 namespace rev::z3
 {

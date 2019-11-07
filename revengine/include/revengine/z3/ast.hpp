@@ -4,6 +4,8 @@
 
 #include <z3.h>
 
+#include <revengine/z3/ast_base.hpp>
+
 namespace rev::z3
 {
     template <typename Native>
@@ -26,20 +28,9 @@ namespace std
 
 namespace rev::z3
 {
-    class ast_base
-    {
-    protected:
-
-        ast_base();
-
-        static Z3_context const& context();
-    };
-
     template <typename Native>
     class ast : public ast_base
     {
-        friend std::hash<ast>;
-
     public:
 
         using comparator = std::equal_to<ast>;
@@ -66,11 +57,11 @@ namespace rev::z3
         ast(ast&& other) noexcept;
         ast& operator=(ast&& other) noexcept;
 
-        Native const& native() const; // TODO operator Native()
-
-    private:
+        operator Native() const;
 
         Z3_ast ast_native() const;
+
+    private:
 
         void increase_reference() const;
         void decrease_reference() const;
