@@ -18,7 +18,7 @@ namespace rev::z3
         explicit expression(std::string const& name);
         explicit expression(std::uint64_t value);
 
-        Z3_app app_native() const;
+        operator Z3_app() const;
 
         std::optional<std::uint64_t> evaluate() const;
 

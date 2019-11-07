@@ -6,9 +6,9 @@ namespace rev::z3
         ast(Z3_mk_bv_sort(context(), size)) { }
 
     template <>
-    Z3_ast ast<Z3_sort>::ast_native() const
+    ast<Z3_sort>::operator Z3_ast() const
     {
-        return Z3_sort_to_ast(context(), *this);
+        return Z3_sort_to_ast(context(), native_);
     }
 }
 

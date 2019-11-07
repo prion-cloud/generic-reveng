@@ -3,10 +3,16 @@
 namespace rev::z3
 {
     function::function(expression const& expression) :
-        ast(Z3_get_app_decl(context(), expression.app_native())) { }
+        ast(Z3_get_app_decl(context(), expression)) { }
 
     function::function(std::string const& name, std::vector<sort> const& domain, sort const& range) :
         ast(make(name, domain, range)) { }
+
+    template <>
+    ast<Z3_func_decl>::operator Z3_ast() const
+    {
+        return Z3_func_decl_to_ast(context(), native_);
+    }
 
     Z3_func_decl function::make(std::string const& name, std::vector<sort> const& domain, sort const& range)
     {
@@ -18,12 +24,6 @@ namespace rev::z3
             native_domain.size(),
             native_domain.data(),
             range);
-    }
-
-    template <>
-    Z3_ast ast<Z3_func_decl>::ast_native() const
-    {
-        return Z3_func_decl_to_ast(context(), *this);
     }
 }
 

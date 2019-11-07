@@ -13,7 +13,7 @@ namespace std // NOLINT [cert-dcl58-cpp]
     template <typename Native>
     std::size_t hash<rev::z3::ast<Native>>::operator()(rev::z3::ast<Native> const& ast) const
     {
-        return Z3_get_ast_hash(ast.context(), ast.ast_native());
+        return Z3_get_ast_hash(ast.context(), ast);
     }
 }
 
@@ -70,20 +70,21 @@ namespace rev::z3
     }
 
     template <typename Native>
-    ast<Native>::operator Native() const
+    ast<Native>::operator std::conditional_t<is_native_ast, void, Native>() const
     {
-        return native_;
+        if constexpr (!is_native_ast)
+            return native_;
     }
 
     template <typename Native>
     void ast<Native>::increase_reference() const
     {
-        Z3_inc_ref(context(), ast_native());
+        Z3_inc_ref(context(), *this);
     }
     template <typename Native>
     void ast<Native>::decrease_reference() const
     {
-        Z3_dec_ref(context(), ast_native());
+        Z3_dec_ref(context(), *this);
     }
 }
 

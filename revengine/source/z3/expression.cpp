@@ -14,7 +14,13 @@ namespace rev::z3
     expression::expression(std::uint64_t const value) :
         ast(Z3_mk_unsigned_int64(context(), value, unique_sort())) { }
 
-    Z3_app expression::app_native() const
+    template <>
+    ast<Z3_ast>::operator Z3_ast() const
+    {
+        return native_;
+    }
+
+    expression::operator Z3_app() const
     {
         return Z3_to_app(context(), *this);
     }
@@ -34,7 +40,7 @@ namespace rev::z3
         if (equal_to(function(*this), dereference_function()))
             return { *this };
 
-        std::size_t const argument_count = Z3_get_app_num_args(context(), app_native());
+        std::size_t const argument_count = Z3_get_app_num_args(context(), *this);
 
         if (argument_count == 0)
         {
@@ -46,7 +52,7 @@ namespace rev::z3
 
         std::unordered_set<expression, expression::hash, expression::equal_to> unknowns;
         for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
-            unknowns.merge(expression(Z3_get_app_arg(context(), app_native(), argument_index)).decompose());
+            unknowns.merge(expression(Z3_get_app_arg(context(), *this, argument_index)).decompose());
 
         return unknowns;
     }
@@ -156,12 +162,6 @@ namespace rev::z3
     {
         // TODO static ?
         return function("deref", { unique_sort() }, unique_sort());
-    }
-
-    template <>
-    Z3_ast ast<Z3_ast>::ast_native() const
-    {
-        return *this;
     }
 }
 

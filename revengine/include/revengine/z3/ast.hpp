@@ -31,6 +31,8 @@ namespace rev::z3
     template <typename Native>
     class ast : public ast_base
     {
+        static constexpr bool is_native_ast = std::is_same_v<Native, Z3_ast>;
+
     public:
 
         using equal_to = std::equal_to<ast>;
@@ -54,9 +56,9 @@ namespace rev::z3
         ast(ast&& other) noexcept;
         ast& operator=(ast&& other) noexcept;
 
-        operator Native() const;
+        operator std::conditional_t<is_native_ast, void, Native>() const;
 
-        Z3_ast ast_native() const;
+        operator Z3_ast() const;
 
     private:
 
