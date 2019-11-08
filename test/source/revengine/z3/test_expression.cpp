@@ -1,5 +1,3 @@
-#include <iomanip>
-
 #include <catch2/catch.hpp>
 
 #include <revengine/z3/expression.hpp>

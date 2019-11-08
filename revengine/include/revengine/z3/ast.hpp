@@ -2,8 +2,6 @@
 
 #include <functional>
 
-#include <z3.h>
-
 #include <revengine/z3/ast_base.hpp>
 
 namespace rev::z3
