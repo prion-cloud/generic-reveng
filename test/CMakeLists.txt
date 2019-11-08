@@ -10,3 +10,6 @@ target_link_libraries(test
     PRIVATE
         revengine
         revengine-disassembler)
+target_include_directories(test
+    PRIVATE
+        source)

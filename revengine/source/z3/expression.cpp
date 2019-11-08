@@ -35,7 +35,7 @@ namespace rev::z3
 
     std::unordered_set<expression, expression::hash, expression::equal_to> expression::decompose() const
     {
-        constexpr function::equal_to equal_to;
+        static constexpr function::equal_to equal_to;
 
         if (equal_to(function(*this), dereference_function()))
             return { *this };

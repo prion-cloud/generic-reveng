@@ -56,9 +56,9 @@ namespace rev::z3
         ast(ast&& other) noexcept;
         ast& operator=(ast&& other) noexcept;
 
-        operator std::conditional_t<is_native_ast, void, Native>() const;
+        operator std::conditional_t<is_native_ast, void, Native>() const; // NOLINT [hicpp-explicit-conversions]
 
-        operator Z3_ast() const;
+        operator Z3_ast() const; // NOLINT [hicpp-explicit-conversions]
 
     private:
 

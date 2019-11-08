@@ -2,12 +2,12 @@
 #include <revengine/z3/ast.hpp>
 #endif
 
-namespace std // NOLINT [cert-dcl58-cpp]
+namespace std
 {
     template <typename Native>
     bool equal_to<rev::z3::ast<Native>>::operator()(rev::z3::ast<Native> const& ast_1, rev::z3::ast<Native> const& ast_2) const
     {
-        constexpr hash<rev::z3::ast<Native>> hash;
+        constexpr typename rev::z3::ast<Native>::hash hash;
         return hash(ast_1) == hash(ast_2);
     }
     template <typename Native>

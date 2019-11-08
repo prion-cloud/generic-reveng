@@ -10,7 +10,7 @@ namespace rev::z3
     {
         struct context
         {
-            Z3_context native;
+            Z3_context native; // NOLINT [misc-non-private-member-variables-in-classes]
 
             context()
             {
@@ -20,10 +20,17 @@ namespace rev::z3
 
                 Z3_del_config(configuration);
             }
+
             ~context()
             {
                 Z3_del_context(native);
             }
+
+            context(context const& other) = delete;
+            context& operator=(context const& other) = delete;
+
+            context(context&& other) = delete;
+            context& operator=(context&& other) = delete;
         };
 
         static context const context;
@@ -32,6 +39,7 @@ namespace rev::z3
 }
 
 static_assert(!std::is_constructible_v<rev::z3::ast_base>);
+
 static_assert(std::is_destructible_v<rev::z3::ast_base>);
 
 static_assert(std::is_copy_constructible_v<rev::z3::ast_base>);
