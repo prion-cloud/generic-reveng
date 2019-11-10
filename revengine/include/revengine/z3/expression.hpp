@@ -22,10 +22,6 @@ namespace rev::z3
 
         std::optional<std::uint64_t> evaluate() const;
 
-        std::unordered_set<expression, expression::hash, expression::equal_to> /*TODO replace*/ decompose() const;
-
-        expression resolve(expression const& x, expression const& y) const;
-
         expression operator*() const;
 
         expression operator-() const;

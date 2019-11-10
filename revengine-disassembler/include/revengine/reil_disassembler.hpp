@@ -18,6 +18,7 @@ namespace rev::dis
         explicit reil_disassembler(machine_architecture architecture);
         ~reil_disassembler();
 
-        machine_impact operator()(data_section* data_section) const;
+        std::optional<std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to>>
+            operator()(data_section* data_section, machine_impact* impact) const;
     };
 }

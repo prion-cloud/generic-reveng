@@ -6,7 +6,7 @@ let g:ale_linters = {
 \}
 
 let options = '
-\ -std=c++17
+\ -std=c++2a
 \
 \ -D LINT
 \

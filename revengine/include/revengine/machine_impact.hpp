@@ -1,32 +1,16 @@
 #pragma once
 
-#include <unordered_map>
-#include <vector>
-
-#include <revengine/expression.hpp>
-#include <revengine/expression_fork.hpp>
+#include <revengine/z3/expression.hpp>
 
 namespace rev
 {
-    class machine_impact : std::unordered_map<expression, expression>
+    class machine_impact :
+        std::unordered_map<z3::expression, z3::expression, z3::expression::hash, z3::expression::equal_to>
     {
-        expression_fork jump_;
-
     public:
 
-        void update(machine_impact other);
+        void revise(z3::expression const& key, z3::expression const& value);
 
-        void jump(expression location);
-
-        expression_fork const& jump() const;
-
-        expression& operator[](expression const& key);
-        expression& operator[](std::string const& key_name);
-
-        expression const& operator[](expression const& key) const;
-
-        // TODO move to tests
-        bool operator==(machine_impact other) const;
-        bool operator!=(machine_impact const& other) const;
+        z3::expression const& operator[](z3::expression const& key) const;
     };
 }

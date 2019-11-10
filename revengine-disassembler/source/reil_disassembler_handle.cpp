@@ -37,7 +37,8 @@ namespace rev::dis
         reil_translate_insn(reil_, data_section->address, code.data(), code.size());
 
         auto const size = reil_instructions_.front().raw_info.size;
-        data_section->data.remove_suffix(data_section->data.size() - size);
+        data_section->address += size;
+        data_section->data.remove_prefix(size);
 
         return std::move(reil_instructions_);
     }

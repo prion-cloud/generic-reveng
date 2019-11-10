@@ -6,43 +6,45 @@ namespace rev::dis
         handle_(std::make_unique<handle>(architecture)) { }
     reil_disassembler::~reil_disassembler() = default;
 
-    machine_impact reil_disassembler::operator()(data_section* const data_section) const
+    std::optional<std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to>>
+        reil_disassembler::operator()(data_section* const data_section, machine_impact* const impact) const
     {
         auto const& reil_instructions = handle_->disassemble(data_section);
 
-        machine_impact impact;
         machine_impact temporary_impact;
 
-        auto const get = [this, &impact, &temporary_impact](reil_arg_t const& source)
+        auto const get = [this, &impact, &temporary_impact](reil_arg_t const& source) -> z3::expression
         {
             switch (source.type)
             {
             case A_REG:
-                return impact[source.name];
+                return (*impact)[z3::expression(source.name)];
             case A_TEMP:
-                return temporary_impact[source.name];
+                return temporary_impact[z3::expression(source.name)];
             case A_CONST:
             case A_LOC:
                 // TODO prohibit inum
-                return expression::value(source.val);
+                return z3::expression(source.val);
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
-        auto const set = [this, &impact, &temporary_impact](reil_arg_t const& destination, expression const& value)
+        auto const set = [this, &impact, &temporary_impact](reil_arg_t const& destination, z3::expression const& value) -> void
         {
             switch (destination.type)
             {
             case A_REG:
-                impact[destination.name] = value;
+                impact->revise(z3::expression(destination.name), value);
                 break;
             case A_TEMP:
-                temporary_impact[destination.name] = value;
+                temporary_impact.revise(z3::expression(destination.name), value);
                 break;
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
+
+        std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to> jumps;
 
         auto step = true;
         for (auto const& ins : reil_instructions)
@@ -56,7 +58,7 @@ namespace rev::dis
                 step = false;
                 break;
             case I_JCC:
-                impact.jump(get(ins.c));
+                jumps.insert(get(ins.c));
                 if (ins.a.type == A_CONST && ins.a.val != 0)
                     step = false;
                 break;
@@ -64,10 +66,10 @@ namespace rev::dis
                 set(ins.c, get(ins.a));
                 break;
             case I_STM:
-                impact[get(ins.c).mem()] = get(ins.a);
+                impact->revise(*get(ins.c), get(ins.a));
                 break;
             case I_LDM:
-                set(ins.c, impact[get(ins.a).mem()]);
+                set(ins.c, (*impact)[*get(ins.a)]);
                 break;
             case I_ADD:
                 set(ins.c, get(ins.a) + get(ins.b));
@@ -129,9 +131,14 @@ namespace rev::dis
         }
 
         if (step)
-            impact.jump(expression::value(data_section->address + data_section->data.size()));
+        {
+            if (jumps.empty())
+                return std::nullopt;
 
-        return impact;
+            jumps.insert(z3::expression(data_section->address));
+        }
+
+        return jumps;
     }
 
     static_assert(std::is_destructible_v<reil_disassembler>);

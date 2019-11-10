@@ -24,7 +24,7 @@ namespace Catch
 
 TEST_CASE("Copy", "[rev::z3::expression]")
 {
-    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
+    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
     auto a = std::make_unique<rev::z3::expression const>(value);
 
@@ -52,7 +52,7 @@ TEST_CASE("Copy", "[rev::z3::expression]")
 }
 TEST_CASE("Move", "[rev::z3::expression]")
 {
-    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
+    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
     auto a = std::make_unique<rev::z3::expression>(value);
 
@@ -83,7 +83,7 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
 {
     SECTION("Unknown")
     {
-        auto const name_a = GENERATE(as<std::string>(), TEST_NAMES); // NOLINT
+        auto const name_a = GENERATE(as<std::string>(), TEST_NAMES);
 
         rev::z3::expression const a(name_a);
 
@@ -91,7 +91,7 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
     }
     SECTION("Value")
     {
-        auto const value_a = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
+        auto const value_a = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
         rev::z3::expression const a(value_a);
 
@@ -108,7 +108,7 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
         }
         SECTION("Binary")
         {
-            auto const value_b = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
+            auto const value_b = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
             rev::z3::expression const b(value_b);
 
@@ -131,136 +131,6 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
 
             SECTION("==") { CHECK((a == b).evaluate() == (value_a == value_b ? 1 : 0)); }
             SECTION("<")  { CHECK((a <  b).evaluate() == (value_a <  value_b ? 1 : 0)); }
-        }
-    }
-}
-
-TEST_CASE("Decompose", "[rev::z3::expression]")
-{
-    static constexpr rev::z3::expression::equal_to eq;
-
-    using e_set = std::unordered_set<rev::z3::expression, rev::z3::expression::hash, rev::z3::expression::equal_to>;
-
-    SECTION("Value")
-    {
-        auto const value_a = GENERATE(as<std::uint64_t>(), TEST_VALUES); // NOLINT
-
-        rev::z3::expression const a(value_a);
-
-        assert_content(e_set { }, a.decompose(), eq);
-    }
-    SECTION("Unknown")
-    {
-        auto const name_a = GENERATE(as<std::string>(), TEST_NAMES); // NOLINT
-
-        rev::z3::expression const a(name_a);
-
-        SECTION("Nullary")
-        {
-            assert_content(e_set { a }, a.decompose(), eq);
-        }
-        SECTION("Unary")
-        {
-            SECTION("*") { assert_content(e_set { *a }, (*a).decompose(), eq); }
-
-            SECTION("-") { assert_content(e_set { a }, (-a).decompose(), eq); }
-            SECTION("~") { assert_content(e_set { a }, (~a).decompose(), eq); }
-        }
-        SECTION("Binary")
-        {
-            auto const name_b = GENERATE(as<std::string>(), TEST_NAMES); // NOLINT
-
-            rev::z3::expression const b(name_b);
-
-            SECTION("+") { assert_content(e_set { a, b }, (a + b).decompose(), eq); }
-            SECTION("-") { assert_content(name_a == name_b ? e_set { } : e_set { a, b }, (a - b).decompose(), eq); }
-//            SECTION("*") { assert_content(e_set { a, b }, (a * b).decompose(), eq); }
-            SECTION("/") { assert_content(e_set { a, b }, (a / b).decompose(), eq); }
-//            SECTION("%") { assert_content(e_set { a, b }, (a % b).decompose(), eq); }
-
-            SECTION("smul") { assert_content(e_set { a, b }, a.smul(b).decompose(), eq); }
-            SECTION("sdiv") { assert_content(e_set { a, b }, a.sdiv(b).decompose(), eq); }
-            SECTION("smod") { assert_content(e_set { a, b }, a.smod(b).decompose(), eq); }
-
-            SECTION("<<") { assert_content(e_set { a, b }, (a << b).decompose(), eq); }
-            SECTION(">>") { assert_content(e_set { a, b }, (a >> b).decompose(), eq); }
-
-            SECTION("&") { assert_content(e_set { a, b }, (a & b).decompose(), eq); }
-            SECTION("|") { assert_content(e_set { a, b }, (a | b).decompose(), eq); }
-            SECTION("^") { assert_content(name_a == name_b ? e_set { } : e_set { a, b }, (a ^ b).decompose(), eq); }
-
-            SECTION("==") { assert_content(name_a == name_b ? e_set { } : e_set { a, b }, (a == b).decompose(), eq); }
-            SECTION("<")  { assert_content(name_a == name_b ? e_set { } : e_set { a, b }, (a <  b).decompose(), eq); }
-        }
-    }
-}
-
-TEST_CASE("Resolve", "[rev::z3::expression]")
-{
-    static constexpr rev::z3::expression::equal_to eq;
-
-    SECTION("Value")
-    {
-        rev::z3::expression const a(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-        SECTION("A")
-        {
-            rev::z3::expression const x(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-            SECTION("A1")
-            {
-                rev::z3::expression const y(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), a));
-            }
-            SECTION("A2")
-            {
-                rev::z3::expression const y(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), a));
-            }
-        }
-        SECTION("B")
-        {
-            rev::z3::expression const x(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-            SECTION("B1")
-            {
-                rev::z3::expression const y(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), eq(x, a) ? y : a));
-            }
-            SECTION("B2")
-            {
-                rev::z3::expression const y(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), eq(x, a) ? y : a));
-            }
-        }
-    }
-    SECTION("Unknown")
-    {
-        rev::z3::expression const a(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-        SECTION("A")
-        {
-            rev::z3::expression const x(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-            SECTION("A1")
-            {
-                rev::z3::expression const y(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), eq(x, a) ? y : a));
-            }
-            SECTION("A2")
-            {
-                rev::z3::expression const y(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), eq(x, a) ? y : a));
-            }
-        }
-        SECTION("B")
-        {
-            rev::z3::expression const x(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-            SECTION("B1")
-            {
-                rev::z3::expression const y(GENERATE(as<std::string>(), TEST_NAMES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), a));
-            }
-            SECTION("B2")
-            {
-                rev::z3::expression const y(GENERATE(as<std::uint64_t>(), TEST_VALUES)); // NOLINT
-                CHECK(eq(a.resolve(x, y), a));
-            }
         }
     }
 }

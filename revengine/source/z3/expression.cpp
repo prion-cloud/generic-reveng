@@ -33,37 +33,6 @@ namespace rev::z3
         return std::nullopt;
     }
 
-    std::unordered_set<expression, expression::hash, expression::equal_to> expression::decompose() const
-    {
-        static constexpr function::equal_to equal_to;
-
-        if (equal_to(function(*this), dereference_function()))
-            return { *this };
-
-        std::size_t const argument_count = Z3_get_app_num_args(context(), *this);
-
-        if (argument_count == 0)
-        {
-            if (Z3_is_numeral_ast(context(), *this))
-                return { };
-
-            return { *this };
-        }
-
-        std::unordered_set<expression, expression::hash, expression::equal_to> unknowns;
-        for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
-            unknowns.merge(expression(Z3_get_app_arg(context(), *this, argument_index)).decompose());
-
-        return unknowns;
-    }
-
-    expression expression::resolve(expression const& x, expression const& y) const
-    {
-        Z3_ast const& native_x = x;
-        Z3_ast const& native_y = y;
-        return expression(Z3_substitute(context(), *this, 1, &native_x, &native_y));
-    }
-
     expression expression::operator*() const
     {
         Z3_ast const& native = *this;
