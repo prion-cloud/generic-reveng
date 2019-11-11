@@ -1,21 +1,8 @@
+#include <utility>
+
 #ifdef LINT
 #include <revengine/z3/ast.hpp>
 #endif
-
-namespace std
-{
-    template <typename Native>
-    bool equal_to<rev::z3::ast<Native>>::operator()(rev::z3::ast<Native> const& ast_1, rev::z3::ast<Native> const& ast_2) const
-    {
-        constexpr typename rev::z3::ast<Native>::hash hash;
-        return hash(ast_1) == hash(ast_2);
-    }
-    template <typename Native>
-    std::size_t hash<rev::z3::ast<Native>>::operator()(rev::z3::ast<Native> const& ast) const
-    {
-        return Z3_get_ast_hash(ast.context(), ast);
-    }
-}
 
 namespace rev::z3
 {
@@ -89,17 +76,7 @@ namespace rev::z3
 }
 
 #ifdef LINT
-
-template struct std::equal_to<rev::z3::ast<Z3_ast>>;
-template struct std::equal_to<rev::z3::ast<Z3_func_decl>>;
-template struct std::equal_to<rev::z3::ast<Z3_sort>>;
-
-template struct std::hash<rev::z3::ast<Z3_ast>>;
-template struct std::hash<rev::z3::ast<Z3_func_decl>>;
-template struct std::hash<rev::z3::ast<Z3_sort>>;
-
 template class rev::z3::ast<Z3_ast>;
 template class rev::z3::ast<Z3_func_decl>;
 template class rev::z3::ast<Z3_sort>;
-
 #endif

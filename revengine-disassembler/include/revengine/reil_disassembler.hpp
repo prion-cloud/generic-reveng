@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_set>
 
 #include <revengine/data_section.hpp>
 #include <revengine/machine_architecture.hpp>
@@ -18,7 +19,7 @@ namespace rev::dis
         explicit reil_disassembler(machine_architecture architecture);
         ~reil_disassembler();
 
-        std::optional<std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to>>
-            operator()(data_section* data_section, machine_impact* impact) const;
+        std::pair<machine_impact, std::optional<std::unordered_set<rev::z3::expression>>>
+            operator()(data_section* data_section, machine_impact impact) const;
     };
 }

@@ -5,7 +5,7 @@
 namespace rev
 {
     class machine_impact :
-        std::unordered_map<z3::expression, z3::expression, z3::expression::hash, z3::expression::equal_to>
+        std::unordered_map<z3::expression, z3::expression>
     {
     public:
 

@@ -8,12 +8,6 @@ namespace rev::z3
     function::function(std::string const& name, std::vector<sort> const& domain, sort const& range) :
         ast(make(name, domain, range)) { }
 
-    template <>
-    ast<Z3_func_decl>::operator Z3_ast() const
-    {
-        return Z3_func_decl_to_ast(context(), native_);
-    }
-
     Z3_func_decl function::make(std::string const& name, std::vector<sort> const& domain, sort const& range)
     {
         std::vector<Z3_sort> native_domain(domain.size());

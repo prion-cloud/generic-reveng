@@ -222,16 +222,14 @@ TEST_CASE("Path inspection", "[rev::z3::machine_monitor]")
     // TODO x86_64, etc.
 
     auto process = std::make_unique<rev::process const>(data, architecture);
-    auto disassembler = std::make_unique<rev::dis::reil_disassembler const>(process->architecture());
 
-    rev::machine_monitor const machine_monitor(*disassembler, *process);
+    rev::machine_monitor<rev::dis::reil_disassembler> const machine_monitor(*process);
 
     process.reset();
-    disassembler.reset();
 
     auto const& actual_paths = machine_monitor.paths();
 
-    assert_content(expected_paths, actual_paths,
+    assert_content(expected_paths, std::vector(actual_paths.begin(), actual_paths.end()),
         [](auto const& expected_path, auto const& actual_path)
         {
             return expected_path == *reinterpret_cast<std::vector<std::uint64_t> const*>(&actual_path); // TODO

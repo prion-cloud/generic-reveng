@@ -10,8 +10,8 @@ namespace rev
 
     public:
 
-        void step(std::uint64_t address);
+        void update(std::uint64_t address, machine_impact impact);
 
-        machine_impact& impact();
+        machine_impact const& impact() const;
     };
 }

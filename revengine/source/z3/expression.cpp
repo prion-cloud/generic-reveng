@@ -4,6 +4,19 @@
 
 #include "function.hpp"
 
+namespace std // NOLINT [cert-dcl58-cpp]
+{
+    bool equal_to<rev::z3::expression>::operator()(rev::z3::expression const& expression_1, rev::z3::expression const& expression_2) const
+    {
+        static constexpr std::hash<rev::z3::expression> hash;
+        return hash(expression_1) == hash(expression_2);
+    }
+    std::size_t hash<rev::z3::expression>::operator()(rev::z3::expression const& expression) const
+    {
+        return Z3_get_ast_hash(rev::z3::expression::context(), expression);
+    }
+}
+
 namespace rev::z3
 {
     expression::expression(Z3_ast const& native) :
@@ -13,12 +26,6 @@ namespace rev::z3
         ast(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), unique_sort())) { }
     expression::expression(std::uint64_t const value) :
         ast(Z3_mk_unsigned_int64(context(), value, unique_sort())) { }
-
-    template <>
-    ast<Z3_ast>::operator Z3_ast() const
-    {
-        return native_;
-    }
 
     expression::operator Z3_app() const
     {

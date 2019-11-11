@@ -1,8 +1,27 @@
 #pragma once
 
-#include <unordered_set>
+#include <functional>
 
 #include <revengine/z3/ast.hpp>
+
+namespace rev::z3
+{
+    class expression;
+}
+
+namespace std
+{
+    template <>
+    struct equal_to<rev::z3::expression>
+    {
+        bool operator()(rev::z3::expression const& expression_1, rev::z3::expression const& expression_2) const;
+    };
+    template <>
+    struct hash<rev::z3::expression>
+    {
+        std::size_t operator()(rev::z3::expression const& expresssion) const;
+    };
+}
 
 namespace rev::z3
 {

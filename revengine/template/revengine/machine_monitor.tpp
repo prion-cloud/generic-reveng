@@ -7,71 +7,54 @@
 namespace rev
 {
     template <typename Disassembler>
-    machine_monitor::machine_monitor(Disassembler const& disass, process const& process)
+    machine_monitor<Disassembler>::machine_monitor(process const& process) :
+        disass_(process.architecture())
     {
-        paths_.emplace_back();
-
-        std::queue<std::pair<std::uint64_t, std::size_t>> pending_forks;
-        pending_forks.emplace(process.start_address(), paths_.size() - 1);
+        std::queue<std::pair<std::uint64_t, execution_path&>> pending_forks;
+        pending_forks.emplace(process.start_address(), paths_.emplace_front());
         do
         {
-            auto const [address, path_index] = std::move(pending_forks.front());
+            auto const [address, path] = std::move(pending_forks.front());
             pending_forks.pop();
 
-            // TODO Loop detection
-
-            auto data_section = process[address]; // TODO Cap and reuse (?)
-
-            auto& path = paths_[path_index];
-
-            std::optional<std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to>> jumps;
-            do
+            for (auto fork = false; auto const& jump : inspect_block(process[address], &path))
             {
-                if (data_section.data.empty())
-                {
-                    // TODO "Ran out of code"
-                    jumps = { };
-                    break;
-                }
-
-                path.step(data_section.address);
-
-                jumps = disass(&data_section, &path.impact());
-            }
-            while (!jumps);
-
-            if (jumps->empty())
-            {
-                // TODO "Interruption"
-                continue;
-            }
-
-            for (auto fork = false; auto const& jump : *jumps)
-            {
-                std::size_t pending_path_index;
-                if (fork)
-                {
-                    paths_.push_back(path);
-                    pending_path_index = paths_.size() - 1;
-                }
-                else
-                    pending_path_index = path_index;
-
                 if (auto const jump_value = jump.evaluate(); jump_value)
-                    pending_forks.emplace(*jump_value, pending_path_index);
-                else
-                {
-                    // TODO "Ambiguous jump"
-                }
+                    pending_forks.emplace(*jump_value, fork ? paths_.emplace_front(path) : path);
 
                 fork = true;
             }
         }
         while (!pending_forks.empty());
     }
+
+    template <typename Disassembler>
+    std::forward_list<execution_path> const& machine_monitor<Disassembler>::paths() const
+    {
+        return paths_;
+    }
+
+    template <typename Disassembler>
+    std::unordered_set<z3::expression>
+        machine_monitor<Disassembler>::inspect_block(data_section data_section, execution_path* const path)
+    {
+        while (true)
+        {
+            if (data_section.data.empty())
+                return { };
+
+            auto const address = data_section.address;
+
+            auto [impact, jumps] = disass_(&data_section, path->impact());
+            path->update(address, std::move(impact));
+
+            if (jumps)
+                return std::move(*jumps);
+        }
+    }
 }
 
 #ifdef LINT
 #include <revengine/reil_disassembler.hpp>
-template rev::machine_monitor::machine_monitor(rev::dis::reil_disassembler const&, rev::process const&);
+template class rev::machine_monitor<rev::dis::reil_disassembler>;
 #endif

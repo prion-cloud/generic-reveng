@@ -6,8 +6,8 @@ namespace rev::dis
         handle_(std::make_unique<handle>(architecture)) { }
     reil_disassembler::~reil_disassembler() = default;
 
-    std::optional<std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to>>
-        reil_disassembler::operator()(data_section* const data_section, machine_impact* const impact) const
+    std::pair<machine_impact, std::optional<std::unordered_set<rev::z3::expression>>>
+        reil_disassembler::operator()(data_section* const data_section, machine_impact impact) const
     {
         auto const& reil_instructions = handle_->disassemble(data_section);
 
@@ -18,7 +18,7 @@ namespace rev::dis
             switch (source.type)
             {
             case A_REG:
-                return (*impact)[z3::expression(source.name)];
+                return impact[z3::expression(source.name)];
             case A_TEMP:
                 return temporary_impact[z3::expression(source.name)];
             case A_CONST:
@@ -34,7 +34,7 @@ namespace rev::dis
             switch (destination.type)
             {
             case A_REG:
-                impact->revise(z3::expression(destination.name), value);
+                impact.revise(z3::expression(destination.name), value);
                 break;
             case A_TEMP:
                 temporary_impact.revise(z3::expression(destination.name), value);
@@ -44,7 +44,7 @@ namespace rev::dis
             }
         };
 
-        std::unordered_set<z3::expression, z3::expression::hash, z3::expression::equal_to> jumps;
+        std::unordered_set<z3::expression> jumps;
 
         auto step = true;
         for (auto const& ins : reil_instructions)
@@ -66,10 +66,10 @@ namespace rev::dis
                 set(ins.c, get(ins.a));
                 break;
             case I_STM:
-                impact->revise(*get(ins.c), get(ins.a));
+                impact.revise(*get(ins.c), get(ins.a));
                 break;
             case I_LDM:
-                set(ins.c, (*impact)[*get(ins.a)]);
+                set(ins.c, impact[*get(ins.a)]);
                 break;
             case I_ADD:
                 set(ins.c, get(ins.a) + get(ins.b));
@@ -133,19 +133,19 @@ namespace rev::dis
         if (step)
         {
             if (jumps.empty())
-                return std::nullopt;
+                return { impact, std::nullopt };
 
             jumps.insert(z3::expression(data_section->address));
         }
 
-        return jumps;
+        return { impact, jumps };
     }
 
     static_assert(std::is_destructible_v<reil_disassembler>);
 
-    static_assert(!std::is_move_constructible_v<reil_disassembler>); // TODO
-    static_assert(!std::is_move_assignable_v<reil_disassembler>); // TODO
-
     static_assert(!std::is_copy_constructible_v<reil_disassembler>); // TODO
     static_assert(!std::is_copy_assignable_v<reil_disassembler>); // TODO
+
+    static_assert(!std::is_move_constructible_v<reil_disassembler>); // TODO
+    static_assert(!std::is_move_assignable_v<reil_disassembler>); // TODO
 }
