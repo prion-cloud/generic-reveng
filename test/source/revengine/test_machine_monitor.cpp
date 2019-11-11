@@ -249,7 +249,7 @@ TEST_CASE("Path inspection", "[rev::z3::machine_monitor]")
 
     auto process = std::make_unique<rev::process const>(data, architecture);
 
-    rev::machine_monitor<rev::dis::reil_disassembler> const machine_monitor(*process);
+    rev::machine_monitor<rev::dis::reil_disassembler> const machine_monitor(*process); // TODO mockup
 
     process.reset();
 
