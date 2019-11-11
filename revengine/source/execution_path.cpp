@@ -2,13 +2,16 @@
 
 namespace rev
 {
-    void execution_path::update(std::uint64_t const address, machine_impact impact)
+    bool execution_path::update(std::uint64_t const address, machine_impact impact)
     {
-        // TODO Loop detection
+        if (!address_registry_.insert(address).second)
+            return false;
 
         push_back(address);
 
         impact_ = std::move(impact);
+
+        return true;
     }
 
     machine_impact const& execution_path::impact() const

@@ -106,6 +106,32 @@ TEST_CASE("Path inspection", "[rev::z3::machine_monitor]")
                 { 0, 5, 3 }
             };
         }
+        SECTION("G")
+        {
+            data =
+            {
+                JMP(-2) // <- WHILE
+            };
+
+            expected_paths =
+            {
+                { 0 }
+            };
+        }
+        SECTION("H")
+        {
+            data =
+            {
+                JE(-2), // <- WHILE
+                RET
+            };
+
+            expected_paths =
+            {
+                { 0 },
+                { 0, 2 }
+            };
+        }
         SECTION("I")
         {
             data =

@@ -46,7 +46,8 @@ namespace rev
             auto const address = data_section.address;
 
             auto [impact, jumps] = disass_(&data_section, path->impact());
-            path->update(address, std::move(impact));
+            if (!path->update(address, std::move(impact)))
+                return { };
 
             if (jumps)
                 return std::move(*jumps);
