@@ -4,7 +4,7 @@ namespace rev
 {
     // TODO Real loading mechanism
 
-    process::process(std::vector<std::uint8_t> data, machine_architecture const architecture) :
+    process::process(std::u8string data, machine_architecture const architecture) :
         data_(std::move(data)),
         architecture_(architecture),
         start_address_(0)
@@ -13,7 +13,7 @@ namespace rev
             data_section
             {
                 .address = start_address_,
-                .data = std::basic_string_view<std::uint8_t>(data_.data(), data_.size())
+                .data = data_
             });
     }
 

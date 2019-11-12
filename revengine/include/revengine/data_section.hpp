@@ -17,6 +17,6 @@ namespace rev
         };
 
         std::uint64_t address;
-        std::basic_string_view<std::uint8_t> data; // TODO std::span<std::uint8_t>
+        std::u8string_view data;
     };
 }

@@ -28,7 +28,7 @@ namespace rev::dis
     {
         constexpr std::size_t max_code_size = MAX_INST_LEN;
 
-        std::vector code(
+        std::vector<unsigned char> code(
             data_section->data.begin(),
             std::next(
                 data_section->data.begin(),

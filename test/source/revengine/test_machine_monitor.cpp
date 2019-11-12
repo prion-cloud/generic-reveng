@@ -6,21 +6,21 @@
 #include "test.hpp"
 
 #define ADD_EAX_EBX 0x01, 0xD8
-#define ADD_EAX(v) 0x83, 0xC0, std::uint8_t(v)
+#define ADD_EAX(v) 0x83, 0xC0, char8_t(v)
 #define INT3 0xCC
-#define JE(v) 0x74, std::uint8_t(v)
-#define JMP(v) 0xEB, std::uint8_t(v)
+#define JE(v) 0x74, char8_t(v)
+#define JMP(v) 0xEB, char8_t(v)
 #define JMP_EAX 0xFF, 0xE0
-#define JNE(v) 0x75, std::uint8_t(v)
-#define MOV_EAX(v) 0xB8, std::uint8_t(v), 0x00, 0x00, 0x00
-#define MOV_EBX(v) 0xBB, std::uint8_t(v), 0x00, 0x00, 0x00
+#define JNE(v) 0x75, char8_t(v)
+#define MOV_EAX(v) 0xB8, char8_t(v), 0x00, 0x00, 0x00
+#define MOV_EBX(v) 0xBB, char8_t(v), 0x00, 0x00, 0x00
 #define NOP 0x90
 #define RET 0xC3
 
 TEST_CASE("Path inspection", "[rev::z3::machine_monitor]")
 {
     rev::machine_architecture architecture;
-    std::vector<std::uint8_t> data;
+    std::u8string data;
 
     std::vector<std::vector<std::uint64_t>> expected_paths;
 
