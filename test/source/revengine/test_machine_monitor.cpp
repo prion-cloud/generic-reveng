@@ -3,6 +3,8 @@
 #include <revengine/machine_monitor.hpp>
 #include <revengine/reil_disassembler.hpp>
 
+#include "revengine/mock_process.hpp"
+
 #include "test.hpp"
 
 #define ADD_EAX_EBX 0x01, 0xD8
@@ -247,11 +249,9 @@ TEST_CASE("Path inspection", "[rev::z3::machine_monitor]")
     }
     // TODO x86_64, etc.
 
-    auto process = std::make_unique<rev::process const>(data, architecture);
+    mock_process const process(data, architecture);
 
-    rev::machine_monitor<rev::dis::reil_disassembler> const machine_monitor(*process); // TODO mockup
-
-    process.reset();
+    rev::machine_monitor<rev::dis::reil_disassembler> const machine_monitor(process); // TODO Disassembler mockup
 
     auto const& actual_paths = machine_monitor.paths();
 

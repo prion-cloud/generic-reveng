@@ -1,51 +1,38 @@
 #include <revengine/process.hpp>
 
+#include "binary/pe/pe_process.hpp"
+
 namespace rev
 {
-    // TODO Real loading mechanism
+    process::process(std::u8string data) :
+        data_(std::move(data)) { }
 
-    process::process(std::u8string data, machine_architecture const architecture) :
-        data_(std::move(data)),
-        architecture_(architecture),
-        start_address_(0)
+    process::~process() = default;
+
+    data_section process::operator[](std::uint64_t address) const
     {
-        data_sections_.insert(
-            data_section
-            {
-                .address = start_address_,
-                .data = data_
-            });
-    }
+        auto const segment = segments().lower_bound(address);
 
-    machine_architecture process::architecture() const
-    {
-        return architecture_;
-    }
-
-    std::uint64_t process::start_address() const
-    {
-        return start_address_;
-    }
-
-    data_section process::operator[](std::uint64_t const address) const
-    {
-        auto const data_section = data_sections_.lower_bound(address);
-
-        if (data_section == data_sections_.upper_bound(address))
+        if (segment == segments().upper_bound(address))
             throw std::invalid_argument("Invalid address");
 
-        return
-        {
-            .address = address,
-            .data = data_section->data.substr(address - data_section->address)
-        };
+        return segment->dissect(data_, address);
     }
 
-    static_assert(std::is_destructible_v<process>);
+    std::u8string_view process::data_view() const
+    {
+        return data_;
+    }
+    std::size_t process::data_size() const
+    {
+        return data_.size();
+    }
 
-    static_assert(std::is_move_constructible_v<process>);
-    static_assert(std::is_move_assignable_v<process>);
+    std::unique_ptr<process> process::load(std::u8string data)
+    {
+        if (data.starts_with(u8"MZ"))
+            return std::make_unique<bin::pe::pe_process>(std::move(data));
 
-    static_assert(std::is_copy_constructible_v<process>);
-    static_assert(std::is_copy_assignable_v<process>);
+        throw std::invalid_argument("Unknown binary format");
+    }
 }

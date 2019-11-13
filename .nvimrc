@@ -17,6 +17,7 @@ let options = '
 \ -I revengine-disassembler/submodule/openreil/libopenreil/include
 \
 \ -I test/source
+\ -I test/mockup
 \'
 
 let g:ale_cpp_gcc_options = options
