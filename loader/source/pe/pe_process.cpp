@@ -1,7 +1,7 @@
 #include "pe_file.hpp"
 #include "pe_process.hpp"
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     pe_process::pe_process(std::u8string data) :
         process(std::move(data))

@@ -1,6 +1,6 @@
 #include <revengine/process.hpp>
 
-#include "binary/pe/pe_process.hpp"
+#include "pe/pe_process.hpp"
 
 namespace rev
 {
@@ -31,7 +31,7 @@ namespace rev
     std::unique_ptr<process> process::load(std::u8string data)
     {
         if (data.starts_with(u8"MZ"))
-            return std::make_unique<bin::pe::pe_process>(std::move(data));
+            return std::make_unique<pe::pe_process>(std::move(data));
 
         throw std::invalid_argument("Unknown binary format");
     }

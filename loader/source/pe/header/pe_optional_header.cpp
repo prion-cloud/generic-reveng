@@ -1,7 +1,7 @@
 #include "pe_optional_header.hpp"
 #include "reinterpret_copy.hpp"
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     pe_optional_header pe_optional_header::inspect_32(std::u8string_view* const data_view)
     {

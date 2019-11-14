@@ -2,7 +2,7 @@
 
 #include <revengine/process.hpp>
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     class pe_process : public process
     {

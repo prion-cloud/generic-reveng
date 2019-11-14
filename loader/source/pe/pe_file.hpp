@@ -7,7 +7,7 @@
 #include "header/pe_optional_header.hpp"
 #include "header/pe_section_header.hpp"
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     struct pe_file
     {

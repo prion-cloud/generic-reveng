@@ -15,4 +15,5 @@ target_link_libraries(revengine-disassembler
 target_include_directories(revengine-disassembler
     PUBLIC
         include
+        $<TARGET_PROPERTY:loader,INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:revengine,INCLUDE_DIRECTORIES>)

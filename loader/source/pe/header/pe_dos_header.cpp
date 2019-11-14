@@ -1,7 +1,7 @@
 #include "pe_dos_header.hpp"
 #include "reinterpret_copy.hpp"
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     pe_dos_header pe_dos_header::inspect(std::u8string_view* const data_view)
     {

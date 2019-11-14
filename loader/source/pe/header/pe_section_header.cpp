@@ -1,7 +1,7 @@
 #include "pe_section_header.hpp"
 #include "reinterpret_copy.hpp"
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     pe_section_header pe_section_header::inspect(std::u8string_view* const data_view)
     {

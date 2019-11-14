@@ -10,6 +10,9 @@ let options = '
 \
 \ -D LINT
 \
+\ -I loader/include
+\ -I loader/source
+\
 \ -I revengine/include
 \ -I revengine/submodule/z3/src/api
 \

@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     struct pe_optional_header
     {

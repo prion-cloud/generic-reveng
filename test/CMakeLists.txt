@@ -12,6 +12,7 @@ add_executable(test
         ${SOURCE_FILES})
 target_link_libraries(test
     PRIVATE
+        loader
         revengine
         revengine-disassembler)
 target_include_directories(test

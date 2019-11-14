@@ -1,6 +1,6 @@
 #include "pe_file.hpp"
 
-namespace rev::bin::pe
+namespace rev::pe
 {
     pe_file pe_file::inspect(std::u8string_view* const data_view)
     {
