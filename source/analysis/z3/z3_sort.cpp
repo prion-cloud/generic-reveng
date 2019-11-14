@@ -1,9 +1,9 @@
-#include "sort.hpp"
+#include "z3_sort.hpp"
 
 namespace grev
 {
     sort::sort(std::size_t const size) :
-        ast(Z3_mk_bv_sort(context(), size)) { }
+        z3_ast(Z3_mk_bv_sort(context(), size)) { }
 }
 
 static_assert(std::is_destructible_v<grev::sort>);

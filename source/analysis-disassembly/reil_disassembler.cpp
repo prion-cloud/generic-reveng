@@ -6,50 +6,50 @@ namespace grev
         handle_(std::make_unique<handle>(architecture)) { }
     reil_disassembler::~reil_disassembler() = default;
 
-    std::pair<machine_impact, std::optional<std::unordered_set<expression>>>
+    std::pair<machine_impact, std::optional<std::unordered_set<z3_expression>>>
         reil_disassembler::operator()(data_section* const data_section, machine_impact impact) const
     {
         auto const& reil_instructions = handle_->disassemble(data_section);
 
         machine_impact temporary_impact;
 
-        auto const get = [this, &impact, &temporary_impact](reil_arg_t const& source) -> expression
+        auto const get = [this, &impact, &temporary_impact](reil_arg_t const& source) -> z3_expression
         {
             switch (source.type)
             {
             case A_REG:
-                return impact[expression(source.name)];
+                return impact[z3_expression(source.name)];
             case A_TEMP:
-                return temporary_impact[expression(source.name)];
+                return temporary_impact[z3_expression(source.name)];
             case A_CONST:
             case A_LOC:
                 // TODO prohibit inum
-                return expression(source.val);
+                return z3_expression(source.val);
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
-        auto const set = [this, &impact, &temporary_impact](reil_arg_t const& destination, expression const& value) -> void
+        auto const set = [this, &impact, &temporary_impact](reil_arg_t const& destination, z3_expression const& value) -> void
         {
             switch (destination.type)
             {
             case A_REG:
-                impact.revise(expression(destination.name), value);
+                impact.revise(z3_expression(destination.name), value);
                 break;
             case A_TEMP:
-                temporary_impact.revise(expression(destination.name), value);
+                temporary_impact.revise(z3_expression(destination.name), value);
                 break;
             default:
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
 
-        std::unordered_set<expression> jumps;
+        std::unordered_set<z3_expression> jumps;
 
         auto step = true;
         for (auto const& ins : reil_instructions)
         {
-            // TODO switch for source (expression const&) and dest (expression&)
+            // TODO switch for source (z3_expression const&) and dest (z3_expression&)
             switch (ins.op)
             {
             case I_NONE:
@@ -135,7 +135,7 @@ namespace grev
             if (jumps.empty())
                 return { impact, std::nullopt };
 
-            jumps.insert(expression(data_section->address));
+            jumps.insert(z3_expression(data_section->address));
         }
 
         return { impact, jumps };

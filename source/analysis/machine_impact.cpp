@@ -2,12 +2,12 @@
 
 namespace grev
 {
-    void machine_impact::revise(expression const& key, expression const& value)
+    void machine_impact::revise(z3_expression const& key, z3_expression const& value)
     {
         insert_or_assign(key, value);
     }
 
-    expression const& machine_impact::operator[](expression const& key) const
+    z3_expression const& machine_impact::operator[](z3_expression const& key) const
     {
         if (auto const entry = find(key); entry != end())
             return entry->second;

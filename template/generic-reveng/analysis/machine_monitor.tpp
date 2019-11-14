@@ -35,7 +35,7 @@ namespace grev
     }
 
     template <typename Disassembler>
-    std::unordered_set<expression>
+    std::unordered_set<z3_expression>
         machine_monitor<Disassembler>::inspect_block(data_section data_section, execution_path* const path)
     {
         while (true)

@@ -1,12 +1,12 @@
 #include <type_traits>
 
-#include <generic-reveng/analysis/z3/ast_base.hpp>
+#include <generic-reveng/analysis/z3/z3_ast_base.hpp>
 
 namespace grev
 {
-    ast_base::ast_base() = default;
+    z3_ast_base::z3_ast_base() = default;
 
-    Z3_context const& ast_base::context()
+    Z3_context const& z3_ast_base::context()
     {
         struct context
         {
@@ -38,12 +38,12 @@ namespace grev
     }
 }
 
-static_assert(!std::is_constructible_v<grev::ast_base>);
+static_assert(!std::is_constructible_v<grev::z3_ast_base>);
 
-static_assert(std::is_destructible_v<grev::ast_base>);
+static_assert(std::is_destructible_v<grev::z3_ast_base>);
 
-static_assert(std::is_copy_constructible_v<grev::ast_base>);
-static_assert(std::is_copy_assignable_v<grev::ast_base>);
+static_assert(std::is_copy_constructible_v<grev::z3_ast_base>);
+static_assert(std::is_copy_assignable_v<grev::z3_ast_base>);
 
-static_assert(std::is_move_constructible_v<grev::ast_base>);
-static_assert(std::is_move_assignable_v<grev::ast_base>);
+static_assert(std::is_move_constructible_v<grev::z3_ast_base>);
+static_assert(std::is_move_assignable_v<grev::z3_ast_base>);

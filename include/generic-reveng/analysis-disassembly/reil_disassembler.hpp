@@ -19,7 +19,7 @@ namespace grev
         explicit reil_disassembler(machine_architecture architecture);
         ~reil_disassembler();
 
-        std::pair<machine_impact, std::optional<std::unordered_set<expression>>>
+        std::pair<machine_impact, std::optional<std::unordered_set<z3_expression>>>
             operator()(data_section* data_section, machine_impact impact) const;
     };
 }

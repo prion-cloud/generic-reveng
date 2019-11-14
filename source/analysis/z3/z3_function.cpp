@@ -1,12 +1,12 @@
-#include "function.hpp"
+#include "z3_function.hpp"
 
 namespace grev
 {
-    function::function(expression const& expression) :
-        ast(Z3_get_app_decl(context(), expression)) { }
+    function::function(z3_expression const& expression) :
+        z3_ast(Z3_get_app_decl(context(), expression)) { }
 
     function::function(std::string const& name, std::vector<sort> const& domain, sort const& range) :
-        ast(make(name, domain, range)) { }
+        z3_ast(make(name, domain, range)) { }
 
     Z3_func_decl function::make(std::string const& name, std::vector<sort> const& domain, sort const& range)
     {

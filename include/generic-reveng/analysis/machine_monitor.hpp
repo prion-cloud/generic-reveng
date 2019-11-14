@@ -23,7 +23,7 @@ namespace grev
 
     private:
 
-        std::unordered_set<expression> inspect_block(data_section data_section, execution_path* path);
+        std::unordered_set<z3_expression> inspect_block(data_section data_section, execution_path* path);
     };
 }
 

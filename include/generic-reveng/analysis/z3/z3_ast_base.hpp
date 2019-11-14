@@ -4,11 +4,11 @@
 
 namespace grev
 {
-    class ast_base
+    class z3_ast_base
     {
     protected:
 
-        ast_base();
+        z3_ast_base();
 
     public:
 

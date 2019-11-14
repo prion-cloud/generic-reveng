@@ -1,16 +1,16 @@
 #pragma once
 
-#include <generic-reveng/analysis/z3/expression.hpp>
+#include <generic-reveng/analysis/z3/z3_expression.hpp>
 
 namespace grev
 {
     class machine_impact :
-        std::unordered_map<expression, expression>
+        std::unordered_map<z3_expression, z3_expression>
     {
     public:
 
-        void revise(expression const& key, expression const& value);
+        void revise(z3_expression const& key, z3_expression const& value);
 
-        expression const& operator[](expression const& key) const;
+        z3_expression const& operator[](z3_expression const& key) const;
     };
 }

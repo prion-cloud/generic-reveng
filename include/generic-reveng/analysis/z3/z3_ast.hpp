@@ -2,12 +2,12 @@
 
 #include <type_traits>
 
-#include <generic-reveng/analysis/z3/ast_base.hpp>
+#include <generic-reveng/analysis/z3/z3_ast_base.hpp>
 
 namespace grev
 {
     template <typename Native>
-    class ast : public ast_base
+    class z3_ast : public z3_ast_base
     {
         static constexpr bool is_native_ast = std::is_same_v<Native, Z3_ast>;
 
@@ -15,17 +15,17 @@ namespace grev
 
     protected:
 
-        explicit ast(Native const& native);
+        explicit z3_ast(Native const& native);
 
     public:
 
-        virtual ~ast();
+        virtual ~z3_ast();
 
-        ast(ast const& other);
-        ast& operator=(ast const& other);
+        z3_ast(z3_ast const& other);
+        z3_ast& operator=(z3_ast const& other);
 
-        ast(ast&& other) noexcept;
-        ast& operator=(ast&& other) noexcept;
+        z3_ast(z3_ast&& other) noexcept;
+        z3_ast& operator=(z3_ast&& other) noexcept;
 
         operator std::conditional_t<is_native_ast, void, Native>() const; // NOLINT [hicpp-explicit-conversions]
 
@@ -39,5 +39,5 @@ namespace grev
 }
 
 #ifndef LINT
-#include <generic-reveng/analysis/z3/ast.tpp>
+#include <generic-reveng/analysis/z3/z3_ast.tpp>
 #endif
