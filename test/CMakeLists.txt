@@ -1,21 +1,16 @@
 cmake_minimum_required(VERSION 3.15)
 
-file(
-    GLOB_RECURSE MOCKUP_FILES
-        mockup/*.cpp)
-file(
-    GLOB_RECURSE SOURCE_FILES
-        source/*.cpp)
+file(GLOB_RECURSE SOURCE_FILES
+        *.cpp)
 
 add_executable(test
-        ${MOCKUP_FILES}
         ${SOURCE_FILES})
-target_link_libraries(test
-    PRIVATE
-        loader
-        revengine
-        revengine-disassembler)
+
 target_include_directories(test
     PRIVATE
-        mockup
-        source)
+        ${PROJECT_SOURCE_DIR}/test)
+target_link_libraries(test
+    PRIVATE
+        grev-analysis
+        grev-analysis-disassembly
+        grev-loading)

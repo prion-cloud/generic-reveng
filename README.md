@@ -6,13 +6,17 @@ Adaptive C++ APIs for solving fundamental challenges in reversing compiled softw
 
 Independently compilable shared libraries providing various functionalities for each other.
 
-### Revengine
+### Analysis
 
 Static program analyzer
 
-### Revengine-Disassembler
+### Analysis-Disassembly
 
-Collection of machine code disassemblers
+Collection of machine code disassemblers for analysis
+
+### Loading
+
+Executable file format reader
 
 ## License
 

@@ -10,17 +10,12 @@ let options = '
 \
 \ -D LINT
 \
-\ -I loader/include
-\ -I loader/source
+\ -I include
+\ -I source
+\ -I test
 \
-\ -I revengine/include
-\ -I revengine/submodule/z3/src/api
-\
-\ -I revengine-disassembler/include
-\ -I revengine-disassembler/submodule/openreil/libopenreil/include
-\
-\ -I test/source
-\ -I test/mockup
+\ -I submodule/openreil/libopenreil/include
+\ -I submodule/z3/src/api
 \'
 
 let g:ale_cpp_gcc_options = options
