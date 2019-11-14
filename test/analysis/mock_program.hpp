@@ -1,8 +1,8 @@
 #pragma once
 
-#include <generic-reveng/loading/process.hpp>
+#include <generic-reveng/loading/program.hpp>
 
-class mock_process : public grev::process
+class mock_program : public grev::program
 {
     grev::machine_architecture architecture_;
 
@@ -10,7 +10,7 @@ class mock_process : public grev::process
 
 public:
 
-    mock_process(std::u8string data, grev::machine_architecture architecture);
+    mock_program(std::u8string data, grev::machine_architecture architecture);
 
     grev::machine_architecture architecture() const override;
     std::uint64_t start_address() const override;

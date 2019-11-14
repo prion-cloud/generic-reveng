@@ -9,17 +9,17 @@
 
 namespace grev
 {
-    class process
+    class program
     {
         std::u8string data_;
 
     protected:
 
-        explicit process(std::u8string data);
+        explicit program(std::u8string data);
 
     public:
 
-        virtual ~process();
+        virtual ~program();
 
         virtual machine_architecture architecture() const = 0;
         virtual std::uint64_t start_address() const = 0;
@@ -36,6 +36,6 @@ namespace grev
 
     public:
 
-        static std::unique_ptr<process> load(std::u8string data);
+        static std::unique_ptr<program> load(std::u8string data);
     };
 }

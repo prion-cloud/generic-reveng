@@ -1,15 +1,15 @@
-#include <generic-reveng/loading/process.hpp>
+#include <generic-reveng/loading/program.hpp>
 
-#include "pe/pe_process.hpp"
+#include "pe/pe_program.hpp"
 
 namespace grev
 {
-    process::process(std::u8string data) :
+    program::program(std::u8string data) :
         data_(std::move(data)) { }
 
-    process::~process() = default;
+    program::~program() = default;
 
-    data_section process::operator[](std::uint64_t address) const
+    data_section program::operator[](std::uint64_t address) const
     {
         auto const segment = segments().lower_bound(address);
 
@@ -19,19 +19,19 @@ namespace grev
         return segment->dissect(data_, address);
     }
 
-    std::u8string_view process::data_view() const
+    std::u8string_view program::data_view() const
     {
         return data_;
     }
-    std::size_t process::data_size() const
+    std::size_t program::data_size() const
     {
         return data_.size();
     }
 
-    std::unique_ptr<process> process::load(std::u8string data)
+    std::unique_ptr<program> program::load(std::u8string data)
     {
         if (data.starts_with(u8"MZ"))
-            return std::make_unique<pe_process>(std::move(data));
+            return std::make_unique<pe_program>(std::move(data));
 
         throw std::invalid_argument("Unknown binary format");
     }

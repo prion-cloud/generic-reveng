@@ -7,17 +7,17 @@
 namespace grev
 {
     template <typename Disassembler>
-    machine_monitor<Disassembler>::machine_monitor(process const& process) :
-        disass_(process.architecture())
+    machine_monitor<Disassembler>::machine_monitor(program const& program) :
+        disass_(program.architecture())
     {
         std::queue<std::pair<std::uint64_t, execution_path*>> pending_forks;
-        pending_forks.emplace(process.start_address(), &paths_.emplace_front());
+        pending_forks.emplace(program.start_address(), &paths_.emplace_front());
         do
         {
             auto const [address, path] = std::move(pending_forks.front());
             pending_forks.pop();
 
-            for (auto fork = false; auto const& jump : inspect_block(process[address], path))
+            for (auto fork = false; auto const& jump : inspect_block(program[address], path))
             {
                 if (auto const jump_value = jump.evaluate(); jump_value)
                     pending_forks.emplace(*jump_value, fork ? &paths_.emplace_front(*path) : path);

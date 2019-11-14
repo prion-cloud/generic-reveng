@@ -4,7 +4,7 @@
 #include <unordered_set>
 
 #include <generic-reveng/analysis/execution_path.hpp>
-#include <generic-reveng/loading/process.hpp>
+#include <generic-reveng/loading/program.hpp>
 
 namespace grev
 {
@@ -17,7 +17,7 @@ namespace grev
 
     public:
 
-        explicit machine_monitor(process const& process);
+        explicit machine_monitor(program const& program);
 
         std::forward_list<execution_path> const& paths() const; // Testing seam TODO
 

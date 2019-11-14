@@ -1,10 +1,10 @@
 #pragma once
 
-#include <generic-reveng/loading/process.hpp>
+#include <generic-reveng/loading/program.hpp>
 
 namespace grev
 {
-    class pe_process : public process
+    class pe_program : public program
     {
         machine_architecture architecture_;
         std::uint64_t start_address_;
@@ -13,7 +13,7 @@ namespace grev
 
     public:
 
-        explicit pe_process(std::u8string data);
+        explicit pe_program(std::u8string data);
 
         machine_architecture architecture() const override;
         std::uint64_t start_address() const override;

@@ -3,7 +3,7 @@
 #include <generic-reveng/analysis/machine_monitor.hpp>
 #include <generic-reveng/analysis-disassembly/reil_disassembler.hpp> // TODO Mockup
 
-#include "mock_process.hpp"
+#include "mock_program.hpp"
 #include "test.hpp"
 
 #define ADD_EAX_EBX 0x01, 0xD8
@@ -248,9 +248,9 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
     }
     // TODO x86_64, etc.
 
-    mock_process const process(data, architecture);
+    mock_program const program(data, architecture);
 
-    grev::machine_monitor<grev::reil_disassembler> const machine_monitor(process);
+    grev::machine_monitor<grev::reil_disassembler> const machine_monitor(program);
 
     auto const& actual_paths = machine_monitor.paths();
 

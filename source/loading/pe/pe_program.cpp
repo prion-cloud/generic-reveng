@@ -1,12 +1,12 @@
 #include "pe_file.hpp"
-#include "pe_process.hpp"
+#include "pe_program.hpp"
 
 namespace grev
 {
-    pe_process::pe_process(std::u8string data) :
-        process(std::move(data))
+    pe_program::pe_program(std::u8string data) :
+        program(std::move(data))
     {
-        auto data_view = process::data_view();
+        auto data_view = program::data_view();
 
         auto const file = pe_file::inspect(&data_view); // TODO member field (?)
 
@@ -34,16 +34,16 @@ namespace grev
         // TODO imports
     }
 
-    machine_architecture pe_process::architecture() const
+    machine_architecture pe_program::architecture() const
     {
         return architecture_;
     }
-    std::uint64_t pe_process::start_address() const
+    std::uint64_t pe_program::start_address() const
     {
         return start_address_;
     }
 
-    std::set<address_space_segment, address_space_segment::exclusive_address_order> const& pe_process::segments() const
+    std::set<address_space_segment, address_space_segment::exclusive_address_order> const& pe_program::segments() const
     {
         return segments_;
     }
