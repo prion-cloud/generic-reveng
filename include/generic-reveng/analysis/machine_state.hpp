@@ -4,7 +4,7 @@
 
 namespace grev
 {
-    class machine_impact :
+    class machine_state :
         std::unordered_map<z3_expression, z3_expression>
     {
     public:

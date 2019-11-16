@@ -2,21 +2,21 @@
 
 namespace grev
 {
-    bool execution_path::update(std::uint64_t const address, machine_impact impact)
+    bool execution_path::update(std::uint64_t const address, machine_state state)
     {
         if (!address_registry_.insert(address).second)
             return false;
 
         push_back(address);
 
-        impact_ = std::move(impact);
+        state_ = std::move(state);
 
         return true;
     }
 
-    machine_impact const& execution_path::impact() const
+    machine_state const& execution_path::state() const
     {
-        return impact_;
+        return state_;
     }
 }
 

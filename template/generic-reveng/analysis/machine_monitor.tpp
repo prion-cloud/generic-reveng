@@ -45,8 +45,8 @@ namespace grev
 
             auto const address = data_section.address;
 
-            auto [impact, jumps] = disass_(&data_section, path->impact());
-            if (!path->update(address, std::move(impact)))
+            auto [state, jumps] = disass_(&data_section, path->state());
+            if (!path->update(address, std::move(state)))
                 return { };
 
             if (jumps)

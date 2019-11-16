@@ -6,21 +6,21 @@ namespace grev
         handle_(std::make_unique<handle>(architecture)) { }
     reil_disassembler::~reil_disassembler() = default;
 
-    std::pair<machine_impact, std::optional<std::unordered_set<z3_expression>>>
-        reil_disassembler::operator()(data_section* const data_section, machine_impact impact) const
+    std::pair<machine_state, std::optional<std::unordered_set<z3_expression>>>
+        reil_disassembler::operator()(data_section* const data_section, machine_state state) const
     {
         auto const& reil_instructions = handle_->disassemble(data_section);
 
-        machine_impact temporary_impact;
+        machine_state temporary_state;
 
-        auto const get = [this, &impact, &temporary_impact](reil_arg_t const& source) -> z3_expression
+        auto const get = [this, &state, &temporary_state](reil_arg_t const& source) -> z3_expression
         {
             switch (source.type)
             {
             case A_REG:
-                return impact[z3_expression(source.name)];
+                return state[z3_expression(source.name)];
             case A_TEMP:
-                return temporary_impact[z3_expression(source.name)];
+                return temporary_state[z3_expression(source.name)];
             case A_CONST:
             case A_LOC:
                 // TODO prohibit inum
@@ -29,15 +29,15 @@ namespace grev
                 throw std::invalid_argument("Unexpected argument type");
             }
         };
-        auto const set = [this, &impact, &temporary_impact](reil_arg_t const& destination, z3_expression const& value) -> void
+        auto const set = [this, &state, &temporary_state](reil_arg_t const& destination, z3_expression const& value) -> void
         {
             switch (destination.type)
             {
             case A_REG:
-                impact.revise(z3_expression(destination.name), value);
+                state.revise(z3_expression(destination.name), value);
                 break;
             case A_TEMP:
-                temporary_impact.revise(z3_expression(destination.name), value);
+                temporary_state.revise(z3_expression(destination.name), value);
                 break;
             default:
                 throw std::invalid_argument("Unexpected argument type");
@@ -66,10 +66,10 @@ namespace grev
                 set(ins.c, get(ins.a));
                 break;
             case I_STM:
-                impact.revise(*get(ins.c), get(ins.a));
+                state.revise(*get(ins.c), get(ins.a));
                 break;
             case I_LDM:
-                set(ins.c, impact[*get(ins.a)]);
+                set(ins.c, state[*get(ins.a)]);
                 break;
             case I_ADD:
                 set(ins.c, get(ins.a) + get(ins.b));
@@ -133,19 +133,19 @@ namespace grev
         if (step)
         {
             if (jumps.empty())
-                return { impact, std::nullopt };
+                return { state, std::nullopt };
 
             jumps.insert(z3_expression(data_section->address));
         }
 
-        return { impact, jumps };
+        return { state, jumps };
     }
-
-    static_assert(std::is_destructible_v<reil_disassembler>);
-
-    static_assert(!std::is_copy_constructible_v<reil_disassembler>); // TODO
-    static_assert(!std::is_copy_assignable_v<reil_disassembler>); // TODO
-
-    static_assert(!std::is_move_constructible_v<reil_disassembler>); // TODO
-    static_assert(!std::is_move_assignable_v<reil_disassembler>); // TODO
 }
+
+static_assert(std::is_destructible_v<grev::reil_disassembler>);
+
+static_assert(!std::is_copy_constructible_v<grev::reil_disassembler>); // TODO
+static_assert(!std::is_copy_assignable_v<grev::reil_disassembler>); // TODO
+
+static_assert(!std::is_move_constructible_v<grev::reil_disassembler>); // TODO
+static_assert(!std::is_move_assignable_v<grev::reil_disassembler>); // TODO
