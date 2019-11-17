@@ -17,6 +17,6 @@ namespace grev
 
         std::vector<pe_section_header> section_headers;
 
-        static pe_file inspect(std::u8string_view* data_view);
+        static pe_file inspect(std::u8string_view data_view);
     };
 }
