@@ -1,6 +1,6 @@
 #pragma once
 
-#include <generic-reveng/loading/data_section.hpp>
+#include <generic-reveng/analysis/data_section.hpp>
 
 namespace grev
 {

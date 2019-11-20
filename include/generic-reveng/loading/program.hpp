@@ -3,9 +3,8 @@
 #include <memory>
 #include <set>
 
+#include <generic-reveng/analysis/machine_architecture.hpp>
 #include <generic-reveng/loading/address_space_segment.hpp>
-#include <generic-reveng/loading/data_section.hpp>
-#include <generic-reveng/loading/machine_architecture.hpp>
 
 namespace grev
 {

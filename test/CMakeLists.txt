@@ -12,5 +12,5 @@ target_include_directories(test
 target_link_libraries(test
     PRIVATE
         grev-analysis
-        grev-analysis-disassembly
+        grev-disassembly
         grev-loading)

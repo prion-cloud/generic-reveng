@@ -1,4 +1,4 @@
-#include <generic-reveng/loading/data_section.hpp>
+#include <generic-reveng/analysis/data_section.hpp>
 
 static_assert(std::is_destructible_v<grev::data_section>);
 

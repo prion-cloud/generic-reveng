@@ -9,7 +9,7 @@ namespace grev
     {
     public:
 
-        void revise(z3_expression const& key, z3_expression const& value);
+        void revise(z3_expression key, z3_expression value);
 
         z3_expression const& operator[](z3_expression const& key) const;
     };

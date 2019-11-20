@@ -1,4 +1,4 @@
-#include <queue>
+#include <generic-reveng/analysis/data_section.hpp>
 
 #ifdef LINT
 #include <generic-reveng/analysis/machine_monitor.hpp>
@@ -6,56 +6,48 @@
 
 namespace grev
 {
-    template <typename Disassembler>
-    machine_monitor<Disassembler>::machine_monitor(program const& program) :
-        disass_(program.architecture())
+    template <typename Disassembler, typename Program>
+    machine_monitor::machine_monitor(Disassembler const& disassembler, Program const& program)
     {
-        std::queue<std::pair<std::uint64_t, execution_path*>> pending_forks;
-        pending_forks.emplace(program.start_address(), &paths_.emplace_front());
+        auto& initial_path = paths_.emplace_front(program.start_address());
+
+        std::forward_list<execution_path*> pending_paths;
+        pending_paths.push_front(&initial_path);
         do
         {
-            auto const [address, path] = std::move(pending_forks.front());
-            pending_forks.pop();
+            auto* const path = pending_paths.front();
+            pending_paths.pop_front();
 
-            for (auto fork = false; auto const& jump : inspect_block(program[address], path))
+            std::optional<data_section> previous_data_section;
+            while (true)
             {
-                if (auto const jump_value = jump.evaluate(); jump_value)
-                    pending_forks.emplace(*jump_value, fork ? &paths_.emplace_front(*path) : path);
+                auto const current_address = path->current_address();
 
-                fork = true;
+                if (!current_address)
+                    break; // TODO patching (?)
+
+                auto current_data_section = previous_data_section && *current_address == previous_data_section->address
+                    ? std::move(*previous_data_section)
+                    : program[*current_address];
+
+                if (current_data_section.data.empty())
+                    break;
+
+                for (auto& new_path : path->update(disassembler(&current_data_section)))
+                {
+                    paths_.push_front(std::move(new_path));
+                    pending_paths.push_front(&paths_.front());
+                }
+
+                previous_data_section = std::move(current_data_section);
             }
         }
-        while (!pending_forks.empty());
-    }
-
-    template <typename Disassembler>
-    std::forward_list<execution_path> const& machine_monitor<Disassembler>::paths() const
-    {
-        return paths_;
-    }
-
-    template <typename Disassembler>
-    std::unordered_set<z3_expression>
-        machine_monitor<Disassembler>::inspect_block(data_section data_section, execution_path* const path)
-    {
-        while (true)
-        {
-            if (data_section.data.empty())
-                return { };
-
-            auto const address = data_section.address;
-
-            auto [state, jumps] = disass_(&data_section, path->state());
-            if (!path->update(address, std::move(state)))
-                return { };
-
-            if (jumps)
-                return std::move(*jumps);
-        }
+        while (!pending_paths.empty());
     }
 }
 
 #ifdef LINT
-#include <generic-reveng/analysis-disassembly/reil_disassembler.hpp>
-template class grev::machine_monitor<grev::reil_disassembler>;
+#include <generic-reveng/disassembly/reil_disassembler.hpp>
+#include <generic-reveng/loading/program.hpp>
+template grev::machine_monitor::machine_monitor(grev::reil_disassembler const&, grev::program const&);
 #endif

@@ -1,21 +1,39 @@
 #pragma once
 
-#include <unordered_set>
+#include <forward_list>
 
-#include <generic-reveng/analysis/machine_state.hpp>
+#include <generic-reveng/analysis/machine_state_update.hpp>
 
 namespace grev
 {
-    class execution_path : std::vector<std::uint64_t>
+    class execution_path : std::unordered_map<z3_expression, z3_expression const*>
     {
-        std::unordered_set<std::uint64_t> address_registry_;
+        machine_state current_state_; // TODO Collect updates
 
-        machine_state state_;
+        const_iterator start_jump_;
+        iterator current_jump_;
 
     public:
 
-        bool update(std::uint64_t address, machine_state state);
+        explicit execution_path(std::uint64_t start_address);
+        ~execution_path();
 
-        machine_state const& state() const;
+        execution_path(execution_path const& other);
+        execution_path(execution_path&& other) noexcept;
+
+        execution_path& operator=(execution_path other) noexcept;
+
+        std::forward_list<execution_path> update(machine_state_update const& update);
+
+        std::optional<std::uint64_t> current_address() const;
+
+        // >>-----
+        std::vector<std::uint64_t> addresses() const; // Testing seam TODO
+        // -----<<
+
+    private:
+
+        void seal();
+        void step(z3_expression jump);
     };
 }

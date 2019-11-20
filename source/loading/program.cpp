@@ -11,12 +11,16 @@ namespace grev
 
     data_section program::operator[](std::uint64_t address) const
     {
-        auto const segment = segments().lower_bound(address);
+        auto const& seg = segments(); // TODO rename
 
-        if (segment == segments().upper_bound(address))
-            throw std::invalid_argument("Invalid address");
+        if (auto const segment = seg.lower_bound(address); segment != seg.upper_bound(address))
+            return segment->dissect(data_, address);
 
-        return segment->dissect(data_, address);
+        return
+        {
+            .address = address,
+            .data = std::u8string_view(nullptr, 0)
+        };
     }
 
     std::u8string_view program::data_view() const

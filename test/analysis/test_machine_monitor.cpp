@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include <generic-reveng/analysis/machine_monitor.hpp>
-#include <generic-reveng/analysis-disassembly/reil_disassembler.hpp> // TODO Mockup
+#include <generic-reveng/disassembly/reil_disassembler.hpp> // TODO Mockup
 
 #include "mock_program.hpp"
 #include "test.hpp"
@@ -18,12 +18,12 @@
 #define NOP 0x90
 #define RET 0xC3
 
-TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
+TEST_CASE("Path inspection", "[grev::machine_monitor]")
 {
     grev::machine_architecture architecture;
     std::u8string data;
 
-    std::vector<std::vector<std::uint64_t>> expected_paths;
+    std::vector<std::vector<std::uint64_t>> expected_path_addresses;
 
     SECTION("x86_32")
     {
@@ -38,7 +38,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET     // <-'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 3 }
             };
@@ -52,7 +52,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET     // <-'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 2, 3 },
                 { 0,    3 }
@@ -67,7 +67,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET     // <-' ELSE
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 2 },
                 { 0, 3 }
@@ -84,7 +84,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET     // <-'  6
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 2, 6 },
                 { 0, 5, 6 }
@@ -101,7 +101,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 JMP(-4) // <-'' 5 ELSE
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 2, 3 },
                 { 0, 5, 3 }
@@ -114,7 +114,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 JMP(-2) // <- WHILE
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0 }
             };
@@ -127,7 +127,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0 },
                 { 0, 2 }
@@ -143,7 +143,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET      // <-'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 5, 8 }
             };
@@ -160,7 +160,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET      // <--'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 5, 8, 11 }
             };
@@ -180,7 +180,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET          // <--'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 5, 8, 13, 16, 19 }
             };
@@ -200,7 +200,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET         // <--'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 5, 8, 11, 14, 17 }
             };
@@ -219,7 +219,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET          // <-'
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0, 5, 10, 13, 15, 18 }
             };
@@ -239,7 +239,7 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
                 RET          // <--' 19
             };
 
-            expected_paths =
+            expected_path_addresses =
             {
                 { 0,  2, 7, 15, 18 },
                 { 0, 10,    15, 19 }
@@ -248,15 +248,14 @@ TEST_CASE("Path inspection", "[grev::z3::machine_monitor]")
     }
     // TODO x86_64, etc.
 
+    grev::reil_disassembler const disassembler(architecture);
     mock_program const program(data, architecture);
 
-    grev::machine_monitor<grev::reil_disassembler> const machine_monitor(program);
+    grev::machine_monitor const machine_monitor(disassembler, program);
 
-    auto const& actual_paths = machine_monitor.paths();
-
-    assert_content(expected_paths, std::vector(actual_paths.begin(), actual_paths.end()),
+    assert_content(expected_path_addresses, machine_monitor.path_addresses(),
         [](auto const& expected_path, auto const& actual_path)
         {
-            return expected_path == *reinterpret_cast<std::vector<std::uint64_t> const*>(&actual_path); // TODO
+            return expected_path == actual_path;
         });
 }

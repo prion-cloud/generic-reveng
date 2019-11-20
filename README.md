@@ -10,7 +10,7 @@ Independently compilable shared libraries providing various functionalities for 
 
 Static program analyzer
 
-### Analysis-Disassembly
+### Disassembly
 
 Collection of machine code disassemblers for analysis
 

@@ -4,7 +4,7 @@
 
 #include <libopenreil.h>
 
-#include <generic-reveng/analysis-disassembly/reil_disassembler.hpp>
+#include <generic-reveng/disassembly/reil_disassembler.hpp>
 
 namespace grev
 {
