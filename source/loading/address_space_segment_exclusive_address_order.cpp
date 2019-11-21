@@ -15,12 +15,12 @@ namespace grev
     {
         return address < segment.address_;
     }
-
-    static_assert(std::is_destructible_v<address_space_segment::exclusive_address_order>);
-
-    static_assert(std::is_copy_constructible_v<address_space_segment::exclusive_address_order>);
-    static_assert(std::is_copy_assignable_v<address_space_segment::exclusive_address_order>);
-
-    static_assert(std::is_move_constructible_v<address_space_segment::exclusive_address_order>);
-    static_assert(std::is_move_assignable_v<address_space_segment::exclusive_address_order>);
 }
+
+static_assert(std::is_destructible_v<grev::address_space_segment::exclusive_address_order>);
+
+static_assert(std::is_copy_constructible_v<grev::address_space_segment::exclusive_address_order>);
+static_assert(std::is_nothrow_move_constructible_v<grev::address_space_segment::exclusive_address_order>);
+
+static_assert(std::is_copy_assignable_v<grev::address_space_segment::exclusive_address_order>);
+static_assert(std::is_nothrow_move_assignable_v<grev::address_space_segment::exclusive_address_order>);

@@ -37,7 +37,7 @@ namespace grev
         explicit z3_expression(std::string const& name);
         explicit z3_expression(std::uint64_t value);
 
-        operator Z3_app() const; // NOLINT [hicpp-explicit-conversions]
+        operator Z3_app() const;
 
         std::optional<std::uint64_t> evaluate() const;
 

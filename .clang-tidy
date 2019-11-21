@@ -1,9 +1,13 @@
 Checks:
 >
     *,
+    -cppcoreguidelines-special-member-functions,
     -fuchsia-default-arguments-calls,
     -fuchsia-overloaded-operator,
     -hicpp-braces-around-statements,
+    -hicpp-explicit-conversions,
+    -hicpp-special-member-functions,
+    -google-explicit-constructor,
     -google-readability-braces-around-statements,
     -google-readability-namespace-comments,
     -google-readability-todo,

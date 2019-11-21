@@ -141,10 +141,12 @@ namespace grev
         return translation;
     }
 
-    reil_disassembler::reil_disassembler(machine_architecture const architecture)
+    reil_disassembler::reil_disassembler(machine_architecture architecture) :
+        architecture_(std::move(architecture)),
+        current_reil_instructions_(std::make_unique<std::vector<reil_inst_t>>())
     {
         reil_arch_t reil_architecture;
-        switch (architecture)
+        switch (architecture_)
         {
             case machine_architecture::x86_32:
             case machine_architecture::x86_64:
@@ -161,11 +163,28 @@ namespace grev
                 static_cast<std::vector<reil_inst_t>*>(reil_instructions)->push_back(*reil_instruction);
                 return 0;
             },
-            &current_reil_instructions_);
+            current_reil_instructions_.get());
     }
     reil_disassembler::~reil_disassembler()
     {
         reil_close(reil_);
+    }
+
+    reil_disassembler::reil_disassembler(reil_disassembler const& other) :
+        reil_disassembler(other.architecture_) { }
+    reil_disassembler::reil_disassembler(reil_disassembler&& other) noexcept :
+        architecture_(std::move(other.architecture_)),
+        reil_(std::exchange(other.reil_, nullptr)),
+        current_reil_instructions_(std::make_unique<std::vector<reil_inst_t>>()) { }
+
+    reil_disassembler& reil_disassembler::operator=(reil_disassembler other) noexcept
+    {
+        std::swap(architecture_, other.architecture_);
+
+        std::swap(reil_, other.reil_);
+        current_reil_instructions_ = std::make_unique<std::vector<reil_inst_t>>();
+
+        return *this;
     }
 
     machine_state_update reil_disassembler::operator()(data_section* const data_section) const
@@ -243,14 +262,14 @@ namespace grev
                 std::min(data_section.data.size(), std::size_t{MAX_INST_LEN})));
 
         reil_translate_insn(reil_, data_section.address, code.data(), code.size());
-        return std::move(current_reil_instructions_);
+        return std::move(*current_reil_instructions_);
     }
 }
 
 static_assert(std::is_destructible_v<grev::reil_disassembler>);
 
 static_assert(std::is_copy_constructible_v<grev::reil_disassembler>);
-static_assert(std::is_move_constructible_v<grev::reil_disassembler>);
+static_assert(std::is_nothrow_move_constructible_v<grev::reil_disassembler>);
 
 static_assert(std::is_copy_assignable_v<grev::reil_disassembler>);
-static_assert(std::is_move_assignable_v<grev::reil_disassembler>);
+static_assert(std::is_nothrow_move_assignable_v<grev::reil_disassembler>);

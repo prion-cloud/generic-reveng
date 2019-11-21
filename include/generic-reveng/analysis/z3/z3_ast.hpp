@@ -15,26 +15,20 @@ namespace grev
 
     protected:
 
-        explicit z3_ast(Native const& native);
+        explicit z3_ast(Native native);
 
     public:
 
         virtual ~z3_ast();
 
         z3_ast(z3_ast const& other);
-        z3_ast& operator=(z3_ast const& other);
-
         z3_ast(z3_ast&& other) noexcept;
-        z3_ast& operator=(z3_ast&& other) noexcept;
 
-        operator std::conditional_t<is_native_ast, void, Native>() const; // NOLINT [hicpp-explicit-conversions]
+        z3_ast& operator=(z3_ast other) noexcept;
 
-        operator Z3_ast() const; // NOLINT [hicpp-explicit-conversions]
+        operator std::conditional_t<is_native_ast, void, Native>() const;
 
-    private:
-
-        void increase_reference() const;
-        void decrease_reference() const;
+        operator Z3_ast() const;
     };
 }
 

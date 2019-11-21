@@ -7,51 +7,29 @@
 namespace grev
 {
     template <typename Native>
-    z3_ast<Native>::z3_ast(Native const& native) :
-        native_(native)
+    z3_ast<Native>::z3_ast(Native native) :
+        native_(std::move(native))
     {
-        increase_reference();
+        Z3_inc_ref(context(), *this);
     }
 
     template <typename Native>
     z3_ast<Native>::~z3_ast()
     {
-        decrease_reference();
+        Z3_dec_ref(context(), *this);
     }
 
     template <typename Native>
     z3_ast<Native>::z3_ast(z3_ast const& other) :
-        native_(other.native_)
-    {
-        increase_reference();
-    }
-    template <typename Native>
-    z3_ast<Native>& z3_ast<Native>::operator=(z3_ast const& other)
-    {
-        if (&other != this)
-        {
-            decrease_reference();
-
-            native_ = other.native_;
-
-            increase_reference();
-        }
-
-        return *this;
-    }
-
+        z3_ast<Native>(other.native_) { }
     template <typename Native>
     z3_ast<Native>::z3_ast(z3_ast&& other) noexcept :
         native_(std::exchange(other.native_, nullptr)) { }
-    template <typename Native>
-    z3_ast<Native>& z3_ast<Native>::operator=(z3_ast&& other) noexcept
-    {
-        if (&other != this)
-        {
-            decrease_reference();
 
-            native_ = std::exchange(other.native_, nullptr);
-        }
+    template <typename Native>
+    z3_ast<Native>& z3_ast<Native>::operator=(z3_ast other) noexcept
+    {
+        std::swap(native_, other.native_);
 
         return *this;
     }
@@ -61,17 +39,6 @@ namespace grev
     {
         if constexpr (!is_native_ast)
             return native_;
-    }
-
-    template <typename Native>
-    void z3_ast<Native>::increase_reference() const
-    {
-        Z3_inc_ref(context(), *this);
-    }
-    template <typename Native>
-    void z3_ast<Native>::decrease_reference() const
-    {
-        Z3_dec_ref(context(), *this);
     }
 }
 

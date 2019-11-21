@@ -24,7 +24,7 @@ namespace grev
 static_assert(std::is_destructible_v<grev::function>);
 
 static_assert(std::is_copy_constructible_v<grev::function>);
-static_assert(std::is_copy_assignable_v<grev::function>);
+static_assert(std::is_nothrow_move_constructible_v<grev::function>);
 
-static_assert(std::is_move_constructible_v<grev::function>);
-static_assert(std::is_move_assignable_v<grev::function>);
+static_assert(std::is_copy_assignable_v<grev::function>);
+static_assert(std::is_nothrow_move_assignable_v<grev::function>);

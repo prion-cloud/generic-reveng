@@ -12,14 +12,20 @@ namespace grev
 {
     class reil_disassembler
     {
-        void* reil_;
+        machine_architecture architecture_;
 
-        mutable std::vector<_reil_inst_t> current_reil_instructions_;
+        void* reil_;
+        std::unique_ptr<std::vector<_reil_inst_t>> current_reil_instructions_;
 
     public:
 
         explicit reil_disassembler(machine_architecture architecture);
         ~reil_disassembler();
+
+        reil_disassembler(reil_disassembler const& other);
+        reil_disassembler(reil_disassembler&& other) noexcept;
+
+        reil_disassembler& operator=(reil_disassembler other) noexcept;
 
         machine_state_update operator()(data_section* data_section) const;
 
