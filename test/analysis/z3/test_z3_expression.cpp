@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include <generic-reveng/analysis/z3/z3_expression.hpp>
+#include <generic-reveng/analysis/z3/expression.hpp>
 
 #include "test.hpp"
 
@@ -22,15 +22,15 @@ namespace Catch
     };
 }
 
-TEST_CASE("Copy", "[rev::z3::z3_expression]")
+TEST_CASE("Copy", "[rev::z3::expression]")
 {
     auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
-    auto a = std::make_unique<grev::z3_expression const>(value);
+    auto a = std::make_unique<grev::z3::expression const>(value);
 
     SECTION("Construction")
     {
-        grev::z3_expression const b = *a;
+        grev::z3::expression const b = *a;
 
         CHECK(b.evaluate() == value);
 
@@ -40,7 +40,7 @@ TEST_CASE("Copy", "[rev::z3::z3_expression]")
     }
     SECTION("Assignment")
     {
-        grev::z3_expression b(value + 1);
+        grev::z3::expression b(value + 1);
         b = *a;
 
         CHECK(b.evaluate() == value);
@@ -50,15 +50,15 @@ TEST_CASE("Copy", "[rev::z3::z3_expression]")
         CHECK(b.evaluate() == value);
     }
 }
-TEST_CASE("Move", "[rev::z3::z3_expression]")
+TEST_CASE("Move", "[rev::z3::expression]")
 {
     auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
-    auto a = std::make_unique<grev::z3_expression>(value);
+    auto a = std::make_unique<grev::z3::expression>(value);
 
     SECTION("Construction")
     {
-        grev::z3_expression const b = std::move(*a);
+        grev::z3::expression const b = std::move(*a);
 
         CHECK(b.evaluate() == value);
 
@@ -68,7 +68,7 @@ TEST_CASE("Move", "[rev::z3::z3_expression]")
     }
     SECTION("Assignment")
     {
-        grev::z3_expression b(value + 1);
+        grev::z3::expression b(value + 1);
         b = std::move(*a);
 
         CHECK(b.evaluate() == value);
@@ -79,13 +79,13 @@ TEST_CASE("Move", "[rev::z3::z3_expression]")
     }
 }
 
-TEST_CASE("Evaluate", "[rev::z3::z3_expression]")
+TEST_CASE("Evaluate", "[rev::z3::expression]")
 {
     SECTION("Unknown")
     {
         auto const name_a = GENERATE(as<std::string>(), TEST_NAMES);
 
-        grev::z3_expression const a(name_a);
+        grev::z3::expression const a(name_a);
 
         CHECK(a.evaluate() == std::nullopt);
     }
@@ -93,7 +93,7 @@ TEST_CASE("Evaluate", "[rev::z3::z3_expression]")
     {
         auto const value_a = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
-        grev::z3_expression const a(value_a);
+        grev::z3::expression const a(value_a);
 
         SECTION("Nullary")
         {
@@ -110,7 +110,7 @@ TEST_CASE("Evaluate", "[rev::z3::z3_expression]")
         {
             auto const value_b = GENERATE(as<std::uint64_t>(), TEST_VALUES);
 
-            grev::z3_expression const b(value_b);
+            grev::z3::expression const b(value_b);
 
             SECTION("+") { CHECK((a + b).evaluate() == value_a + value_b); }
             SECTION("-") { CHECK((a - b).evaluate() == value_a - value_b); }

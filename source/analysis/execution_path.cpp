@@ -8,7 +8,7 @@ namespace grev
     execution_path::~execution_path() = default;
 
     execution_path::execution_path(execution_path const& other) :
-        std::unordered_map<z3_expression, z3_expression const*>(other),
+        std::unordered_map<z3::expression, z3::expression const*>(other),
         start_jump_(find(other.start_jump_->first)),
         current_state_(other.current_state_),
         current_jump_(find(other.current_jump_->first))
@@ -94,7 +94,7 @@ namespace grev
     }
     // -----<<
 
-    void execution_path::step(z3_expression jump)
+    void execution_path::step(z3::expression jump)
     {
         auto new_jump = try_emplace(std::move(jump)).first;
 

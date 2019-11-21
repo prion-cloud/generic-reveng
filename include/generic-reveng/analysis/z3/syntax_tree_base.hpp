@@ -2,13 +2,13 @@
 
 #include <z3.h>
 
-namespace grev
+namespace grev::z3
 {
-    class z3_ast_base
+    class syntax_tree_base
     {
     protected:
 
-        z3_ast_base();
+        syntax_tree_base();
 
     public:
 

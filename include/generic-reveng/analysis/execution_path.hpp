@@ -6,7 +6,7 @@
 
 namespace grev
 {
-    class execution_path : std::unordered_map<z3_expression, z3_expression const*>
+    class execution_path : std::unordered_map<z3::expression, z3::expression const*>
     {
         const_iterator start_jump_;
 
@@ -33,6 +33,6 @@ namespace grev
 
     private:
 
-        void step(z3_expression jump);
+        void step(z3::expression jump);
     };
 }

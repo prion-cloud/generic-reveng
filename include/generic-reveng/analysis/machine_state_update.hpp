@@ -9,12 +9,12 @@ namespace grev
 {
     struct machine_state_update_part
     {
-        std::optional<z3_expression> key;
-        std::function<z3_expression (z3_expression)> key_operation;
+        std::optional<z3::expression> key;
+        std::function<z3::expression (z3::expression)> key_operation;
 
-        std::vector<z3_expression> operands;
+        std::vector<z3::expression> operands;
 
-        std::function<z3_expression (std::vector<z3_expression>)> value_operation;
+        std::function<z3::expression (std::vector<z3::expression>)> value_operation;
     };
 
     class machine_state_update : std::list<machine_state_update_part>
@@ -24,6 +24,6 @@ namespace grev
 
         void set(machine_state_update_part part);
 
-        std::unordered_set<z3_expression> resolve(machine_state* state) const;
+        std::unordered_set<z3::expression> resolve(machine_state* state) const;
     };
 }

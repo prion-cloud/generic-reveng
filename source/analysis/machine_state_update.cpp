@@ -7,13 +7,13 @@ namespace grev
         push_back(std::move(part));
     }
 
-    std::unordered_set<z3_expression> machine_state_update::resolve(machine_state* const state) const
+    std::unordered_set<z3::expression> machine_state_update::resolve(machine_state* const state) const
     {
-        std::unordered_set<z3_expression> jumps;
+        std::unordered_set<z3::expression> jumps;
 
         for (auto const& part : *this)
         {
-            std::vector<z3_expression> resolved_operands;
+            std::vector<z3::expression> resolved_operands;
             resolved_operands.reserve(part.operands.size());
 
             for (auto const& operand : part.operands)

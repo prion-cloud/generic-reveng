@@ -1,16 +1,16 @@
 #pragma once
 
-#include <generic-reveng/analysis/z3/z3_expression.hpp>
+#include <generic-reveng/analysis/z3/expression.hpp>
 
-#include "z3_sort.hpp"
+#include "sort.hpp"
 
-namespace grev
+namespace grev::z3
 {
-    class function : public z3_ast<Z3_func_decl>
+    class function : public syntax_tree<Z3_func_decl>
     {
     public:
 
-        explicit function(z3_expression const& expression);
+        explicit function(expression const& expression);
 
         function(std::string const& name, std::vector<sort> const& domain, sort const& range);
 

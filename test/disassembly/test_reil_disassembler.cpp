@@ -14,8 +14,8 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 
     grev::machine_state initial_state;
 
-    std::unordered_map<grev::z3_expression, grev::z3_expression> expected_state;
-    std::unordered_set<grev::z3_expression> expected_jumps;
+    std::unordered_map<grev::z3::expression, grev::z3::expression> expected_state;
+    std::unordered_set<grev::z3::expression> expected_jumps;
 
     SECTION("x86_32")
     {
@@ -27,14 +27,14 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
             {
                 data = { 0xCC };
 
-                expected_jumps = std::unordered_set<grev::z3_expression> { };
+                expected_jumps = std::unordered_set<grev::z3::expression> { };
             }
             SECTION("ret")
             {
                 data = { 0xC3 };
 
-                expected_state.emplace(grev::z3_expression("R_ESP"), grev::z3_expression("R_ESP") + grev::z3_expression(4));
-                expected_jumps = { *grev::z3_expression("R_ESP") };
+                expected_state.emplace(grev::z3::expression("R_ESP"), grev::z3::expression("R_ESP") + grev::z3::expression(4));
+                expected_jumps = { *grev::z3::expression("R_ESP") };
             }
         }
         SECTION("B")
@@ -49,40 +49,40 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 {
                     data = { 0xA1, 0x1B, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(grev::z3_expression("R_EAX"), *grev::z3_expression(27));
+                    expected_state.emplace(grev::z3::expression("R_EAX"), *grev::z3::expression(27));
                 }
                 SECTION("mov [27], eax")
                 {
                     data = { 0xA3, 0x1B, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(*grev::z3_expression(27), grev::z3_expression("R_EAX"));
+                    expected_state.emplace(*grev::z3::expression(27), grev::z3::expression("R_EAX"));
                 }
                 SECTION("mov ebx, [eax]")
                 {
                     data = { 0x8b, 0x18 };
 
-                    expected_state.emplace(grev::z3_expression("R_EBX"), *grev::z3_expression("R_EAX"));
+                    expected_state.emplace(grev::z3::expression("R_EBX"), *grev::z3::expression("R_EAX"));
                 }
                 SECTION("mov [eax], ebx")
                 {
                     data = { 0x89, 0x18 };
 
-                    expected_state.emplace(*grev::z3_expression("R_EAX"), grev::z3_expression("R_EBX"));
+                    expected_state.emplace(*grev::z3::expression("R_EAX"), grev::z3::expression("R_EBX"));
                 }
             }
             SECTION("B2")
             {
-                initial_state.revise(grev::z3_expression("R_EAX"), grev::z3_expression(26));
+                initial_state.revise(grev::z3::expression("R_EAX"), grev::z3::expression(26));
 
                 SECTION("mov eax, 27")
                 {
                     data = { 0xb8, 0x1b, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(grev::z3_expression("R_EAX"), grev::z3_expression(27));
+                    expected_state.emplace(grev::z3::expression("R_EAX"), grev::z3::expression(27));
                 }
             }
 
-            expected_jumps = { grev::z3_expression(address + data.size()) };
+            expected_jumps = { grev::z3::expression(address + data.size()) };
         }
     }
     // TODO x86_64, etc.
@@ -104,11 +104,11 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 
     CHECK(
         includes(
-            *reinterpret_cast<std::unordered_map<grev::z3_expression, grev::z3_expression> const*>(&actual_state), // TODO
+            *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_state), // TODO
             expected_state,
             [](auto const& a, auto const& b)
             {
-                static constexpr std::equal_to<grev::z3_expression> eq;
+                static constexpr std::equal_to<grev::z3::expression> eq;
                 return eq(a.first, b.first) && eq(a.second, b.second);
             }));
 

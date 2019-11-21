@@ -1,12 +1,12 @@
-#include "z3_function.hpp"
+#include "function.hpp"
 
-namespace grev
+namespace grev::z3
 {
-    function::function(z3_expression const& expression) :
-        z3_ast(Z3_get_app_decl(context(), expression)) { }
+    function::function(expression const& expression) :
+        syntax_tree(Z3_get_app_decl(context(), expression)) { }
 
     function::function(std::string const& name, std::vector<sort> const& domain, sort const& range) :
-        z3_ast(make(name, domain, range)) { }
+        syntax_tree(make(name, domain, range)) { }
 
     Z3_func_decl function::make(std::string const& name, std::vector<sort> const& domain, sort const& range)
     {
@@ -21,10 +21,10 @@ namespace grev
     }
 }
 
-static_assert(std::is_destructible_v<grev::function>);
+static_assert(std::is_destructible_v<grev::z3::function>);
 
-static_assert(std::is_copy_constructible_v<grev::function>);
-static_assert(std::is_nothrow_move_constructible_v<grev::function>);
+static_assert(std::is_copy_constructible_v<grev::z3::function>);
+static_assert(std::is_nothrow_move_constructible_v<grev::z3::function>);
 
-static_assert(std::is_copy_assignable_v<grev::function>);
-static_assert(std::is_nothrow_move_assignable_v<grev::function>);
+static_assert(std::is_copy_assignable_v<grev::z3::function>);
+static_assert(std::is_nothrow_move_assignable_v<grev::z3::function>);

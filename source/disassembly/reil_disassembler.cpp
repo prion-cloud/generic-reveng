@@ -6,34 +6,34 @@
 
 namespace grev
 {
-    static z3_expression to_expression(reil_arg_t const& reil_argument)
+    static z3::expression to_expression(reil_arg_t const& reil_argument)
     {
         switch (reil_argument.type)
         {
         case A_REG:
         case A_TEMP:
-            return z3_expression(reil_argument.name);
+            return z3::expression(reil_argument.name);
         case A_CONST:
         case A_LOC:
-            return z3_expression(reil_argument.val);
+            return z3::expression(reil_argument.val);
         default:
             throw std::logic_error("Unexpected argument type"); // TODO
         }
     }
 
-    static std::function<z3_expression (z3_expression)>
+    static std::function<z3::expression (z3::expression)>
         get_key_operation(reil_op_t const& reil_operation)
     {
         switch (reil_operation)
         {
         case I_STM:
-            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator*));
+            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator*));
         default:
             return { };
         }
     }
 
-    static std::function<z3_expression (z3_expression)>
+    static std::function<z3::expression (z3::expression)>
         get_unary_operation(reil_op_t const& reil_operation)
     {
         switch (reil_operation)
@@ -42,52 +42,52 @@ namespace grev
         case I_STM:
             return [](auto operand) { return std::move(operand); };
         case I_LDM:
-            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator*));
+            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator*));
         case I_NEG:
-            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator-));
+            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator-));
         case I_NOT:
-            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator~));
+            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator~));
         default:
             throw std::logic_error("Unexpected operation");
         }
     }
-    static std::function<z3_expression (z3_expression const&, z3_expression const&)>
+    static std::function<z3::expression (z3::expression const&, z3::expression const&)>
         get_binary_operation(reil_op_t const& reil_operation)
     {
         switch (reil_operation)
         {
         case I_ADD:
-            return std::mem_fn(&z3_expression::operator+);
+            return std::mem_fn(&z3::expression::operator+);
         case I_SUB:
             return std::mem_fn(
-                static_cast<z3_expression (z3_expression::*)(z3_expression const&) const>(&z3_expression::operator-));
+                static_cast<z3::expression (z3::expression::*)(z3::expression const&) const>(&z3::expression::operator-));
         case I_MUL:
             return std::mem_fn(
-                static_cast<z3_expression (z3_expression::*)(z3_expression const&) const>(&z3_expression::operator*));
+                static_cast<z3::expression (z3::expression::*)(z3::expression const&) const>(&z3::expression::operator*));
         case I_DIV:
-            return std::mem_fn(&z3_expression::operator/);
+            return std::mem_fn(&z3::expression::operator/);
         case I_MOD:
-            return std::mem_fn(&z3_expression::operator%);
+            return std::mem_fn(&z3::expression::operator%);
         case I_SMUL:
-            return std::mem_fn(&z3_expression::smul);
+            return std::mem_fn(&z3::expression::smul);
         case I_SDIV:
-            return std::mem_fn(&z3_expression::sdiv);
+            return std::mem_fn(&z3::expression::sdiv);
         case I_SMOD:
-            return std::mem_fn(&z3_expression::smod);
+            return std::mem_fn(&z3::expression::smod);
         case I_SHL:
-            return std::mem_fn(&z3_expression::operator<<);
+            return std::mem_fn(&z3::expression::operator<<);
         case I_SHR:
-            return std::mem_fn(&z3_expression::operator>>);
+            return std::mem_fn(&z3::expression::operator>>);
         case I_AND:
-            return std::mem_fn(&z3_expression::operator&);
+            return std::mem_fn(&z3::expression::operator&);
         case I_OR:
-            return std::mem_fn(&z3_expression::operator|);
+            return std::mem_fn(&z3::expression::operator|);
         case I_XOR:
-            return std::mem_fn(&z3_expression::operator^);
+            return std::mem_fn(&z3::expression::operator^);
         case I_EQ:
-            return std::mem_fn(&z3_expression::operator==);
+            return std::mem_fn(&z3::expression::operator==);
         case I_LT:
-            return std::mem_fn(&z3_expression::operator<);
+            return std::mem_fn(&z3::expression::operator<);
         default:
             throw std::logic_error("Unexpected operation");
         }

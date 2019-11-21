@@ -2,7 +2,7 @@
 
 namespace grev
 {
-    void machine_state::revise(z3_expression const& key, z3_expression value)
+    void machine_state::revise(z3::expression const& key, z3::expression value)
     {
         insert_or_assign(key, std::move(value));
     }
@@ -11,7 +11,7 @@ namespace grev
         clear();
     }
 
-    z3_expression const& machine_state::operator[](z3_expression const& key) const
+    z3::expression const& machine_state::operator[](z3::expression const& key) const
     {
         if (auto const entry = find(key); entry != end())
             return entry->second;

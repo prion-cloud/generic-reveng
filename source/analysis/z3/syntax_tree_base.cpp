@@ -1,12 +1,12 @@
 #include <type_traits>
 
-#include <generic-reveng/analysis/z3/z3_ast_base.hpp>
+#include <generic-reveng/analysis/z3/syntax_tree_base.hpp>
 
-namespace grev
+namespace grev::z3
 {
-    z3_ast_base::z3_ast_base() = default;
+    syntax_tree_base::syntax_tree_base() = default;
 
-    Z3_context const& z3_ast_base::context()
+    Z3_context const& syntax_tree_base::context()
     {
         struct context
         {
@@ -38,10 +38,10 @@ namespace grev
     }
 }
 
-static_assert(std::is_destructible_v<grev::z3_ast_base>);
+static_assert(std::is_destructible_v<grev::z3::syntax_tree_base>);
 
-static_assert(std::is_copy_constructible_v<grev::z3_ast_base>);
-static_assert(std::is_nothrow_move_constructible_v<grev::z3_ast_base>);
+static_assert(std::is_copy_constructible_v<grev::z3::syntax_tree_base>);
+static_assert(std::is_nothrow_move_constructible_v<grev::z3::syntax_tree_base>);
 
-static_assert(std::is_copy_assignable_v<grev::z3_ast_base>);
-static_assert(std::is_nothrow_move_assignable_v<grev::z3_ast_base>);
+static_assert(std::is_copy_assignable_v<grev::z3::syntax_tree_base>);
+static_assert(std::is_nothrow_move_assignable_v<grev::z3::syntax_tree_base>);
