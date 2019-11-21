@@ -8,9 +8,9 @@ namespace grev
 {
     class execution_path : std::unordered_map<z3_expression, z3_expression const*>
     {
-        machine_state current_state_; // TODO Collect updates
-
         const_iterator start_jump_;
+
+        machine_state current_state_; // TODO Collect updates
         iterator current_jump_;
 
     public:
@@ -33,7 +33,6 @@ namespace grev
 
     private:
 
-        void seal();
         void step(z3_expression jump);
     };
 }

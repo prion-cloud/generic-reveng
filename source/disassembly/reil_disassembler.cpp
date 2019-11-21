@@ -1,30 +1,54 @@
-#include "reil_disassembler_handle.hpp"
+#include <cstdint>
+
+#include <libopenreil.h>
+
+#include <generic-reveng/disassembly/reil_disassembler.hpp>
 
 namespace grev
 {
-    reil_disassembler::reil_disassembler(machine_architecture const architecture) :
-        handle_(std::make_unique<handle>(architecture)) { }
-    reil_disassembler::~reil_disassembler() = default;
+    static z3_expression to_expression(reil_arg_t const& reil_argument)
+    {
+        switch (reil_argument.type)
+        {
+        case A_REG:
+        case A_TEMP:
+            return z3_expression(reil_argument.name);
+        case A_CONST:
+        case A_LOC:
+            return z3_expression(reil_argument.val);
+        default:
+            throw std::logic_error("Unexpected argument type"); // TODO
+        }
+    }
 
-    static std::function<z3_expression (z3_expression const&)>
+    static std::function<z3_expression (z3_expression)>
+        get_key_operation(reil_op_t const& reil_operation)
+    {
+        switch (reil_operation)
+        {
+        case I_STM:
+            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator*));
+        default:
+            return { };
+        }
+    }
+
+    static std::function<z3_expression (z3_expression)>
         get_unary_operation(reil_op_t const& reil_operation)
     {
         switch (reil_operation)
         {
         case I_STR:
-            return [](auto const& expression) { return expression; };
+        case I_STM:
+            return [](auto operand) { return std::move(operand); };
         case I_LDM:
-//set(ins.c, state[*get(ins.a)]);
-            return std::mem_fn(
-                static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator*));
+            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator*));
         case I_NEG:
-            return std::mem_fn(
-                static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator-));
+            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator-));
         case I_NOT:
-            return std::mem_fn(
-                static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator~));
+            return std::mem_fn(static_cast<z3_expression (z3_expression::*)() const>(&z3_expression::operator~));
         default:
-            throw std::logic_error("Bad 1"); // TODO
+            throw std::logic_error("Unexpected operation");
         }
     }
     static std::function<z3_expression (z3_expression const&, z3_expression const&)>
@@ -65,117 +89,168 @@ namespace grev
         case I_LT:
             return std::mem_fn(&z3_expression::operator<);
         default:
-            throw std::logic_error("Bad 2"); // TODO
+            throw std::logic_error("Unexpected operation");
         }
     }
 
-    static z3_expression to_expression(reil_arg_t const& reil_argument)
+    static std::pair<machine_state_update_part, bool> translate(reil_inst_t const& reil_instruction)
     {
-        switch (reil_argument.type)
+        std::pair<machine_state_update_part, bool> translation;
+        auto& [part, step] = translation;
+
+        part.key_operation = get_key_operation(reil_instruction.op);
+
+        if (reil_instruction.op == I_JCC)
         {
-        case A_REG:
-        case A_TEMP:
-            return z3_expression(reil_argument.name);
-        case A_CONST:
-        case A_LOC:
-            return z3_expression(reil_argument.val);
-        default:
-            throw std::logic_error("Bad 3"); // TODO
+            part.key = std::nullopt;
+            part.operands.push_back(to_expression(reil_instruction.c));
+            part.value_operation = [](auto operands)
+            {
+                return std::move(operands[0]);
+            };
+
+            step = reil_instruction.a.type != A_CONST;
+
+            return translation;
         }
+
+        part.key = to_expression(reil_instruction.c),
+        part.operands.push_back(to_expression(reil_instruction.a));
+
+        step = true;
+
+        if (reil_instruction.b.type == A_NONE)
+        {
+            auto const unary_operation = get_unary_operation(reil_instruction.op);
+            part.value_operation = [unary_operation](auto operands)
+            {
+                return unary_operation(std::move(operands[0]));
+            };
+
+            return translation;
+        }
+
+        part.operands.push_back(to_expression(reil_instruction.b));
+
+        auto const binary_operation = get_binary_operation(reil_instruction.op);
+        part.value_operation = [binary_operation](auto operands)
+        {
+            return binary_operation(std::move(operands[0]), std::move(operands[1]));
+        };
+
+        return translation;
+    }
+
+    reil_disassembler::reil_disassembler(machine_architecture const architecture)
+    {
+        reil_arch_t reil_architecture;
+        switch (architecture)
+        {
+            case machine_architecture::x86_32:
+            case machine_architecture::x86_64:
+                reil_architecture = ARCH_X86;
+                break;
+            default:
+                throw std::runtime_error("Unknown architecture");
+        }
+
+        reil_ = reil_init(
+            reil_architecture,
+            [](auto* const reil_instruction, auto* const reil_instructions)
+            {
+                static_cast<std::vector<reil_inst_t>*>(reil_instructions)->push_back(*reil_instruction);
+                return 0;
+            },
+            &current_reil_instructions_);
+    }
+    reil_disassembler::~reil_disassembler()
+    {
+        reil_close(reil_);
     }
 
     machine_state_update reil_disassembler::operator()(data_section* const data_section) const
     {
-        auto const& reil_instructions = handle_->disassemble(data_section);
+        auto reil_instructions = disassemble(*data_section);
+
+        auto const size = reil_instructions.front().raw_info.size;
+        data_section->address += size;
+        data_section->data.remove_prefix(size);
 
         machine_state_update update;
 
-        auto step = true;
-        for (auto const& reil_instruction : reil_instructions)
+        while (true)
         {
-            if (reil_instruction.op == I_NONE)
-                continue;
+            auto step = true;
 
-            if (reil_instruction.op == I_UNK)
+            for (auto const& reil_instruction : reil_instructions)
             {
-                step = false;
-                break;
-            }
+                if (reil_instruction.op == I_NONE)
+                    continue;
+                if (reil_instruction.op == I_JCC && reil_instruction.a.type == A_CONST && reil_instruction.a.val == 0)
+                    continue;
 
-            if (reil_instruction.op == I_JCC && (reil_instruction.a.type != A_CONST || reil_instruction.a.val != 0))
-            {
-                update.set_jump(to_expression(reil_instruction.c));
-
-                if (reil_instruction.a.type == A_CONST)
+                if (reil_instruction.op == I_UNK)
                 {
                     step = false;
                     break;
                 }
 
-                continue;
+                machine_state_update_part part;
+                std::tie(part, step) = translate(reil_instruction);
+
+                update.set(std::move(part));
+
+                if (!step)
+                    break;
             }
 
-            if (reil_instruction.op == I_STM)
+            if (!step)
+                break;
+
+            reil_inum_t const inum = reil_instructions.back().inum + 1;
+
+            reil_instructions =
             {
-                update.set(
-                    *z3_expression(reil_instruction.c.val),
-                    std::vector
+                reil_inst_t
+                {
+                    .inum = inum,
+                    .op = I_JCC,
+                    .a =
                     {
-                        to_expression(reil_instruction.a)
+                        .type = A_CONST,
+                        .size = U1, // TODO
+                        .val = 1
                     },
-                    [](auto operands)
+                    .c =
                     {
-                        return std::move(operands[0]);
-                    });
-                continue;
-            }
-
-            z3_expression key(reil_instruction.c.name);
-
-            std::vector<z3_expression> operands;
-            std::function<z3_expression (std::vector<z3_expression> const&)> operation;
-            if (reil_instruction.b.type == A_NONE)
-            {
-                operands =
-                {
-                    to_expression(reil_instruction.a)
-                };
-
-                auto const unary_operation = get_unary_operation(reil_instruction.op);
-                operation = [unary_operation](auto const& operands)
-                {
-                    return unary_operation(operands[0]);
-                };
-            }
-            else
-            {
-                operands =
-                {
-                    to_expression(reil_instruction.a),
-                    to_expression(reil_instruction.b)
-                };
-
-                auto const binary_operation = get_binary_operation(reil_instruction.op);
-                operation = [binary_operation](auto const& operands)
-                {
-                    return binary_operation(operands[0], operands[1]);
-                };
-            }
-
-            update.set(std::move(key), std::move(operands), std::move(operation));
+                        .type = A_CONST,
+                        .size = U64, // TODO
+                        .val = data_section->address
+                    }
+                }
+            };
         }
 
-        if (step)
-            update.set_jump(z3_expression(data_section->address));
-
         return update;
+    }
+
+    std::vector<reil_inst_t> reil_disassembler::disassemble(data_section const& data_section) const
+    {
+        std::vector<unsigned char> code(
+            data_section.data.begin(),
+            std::next(
+                data_section.data.begin(),
+                std::min(data_section.data.size(), std::size_t{MAX_INST_LEN})));
+
+        reil_translate_insn(reil_, data_section.address, code.data(), code.size());
+        return std::move(current_reil_instructions_);
     }
 }
 
 static_assert(std::is_destructible_v<grev::reil_disassembler>);
 
-static_assert(!std::is_copy_constructible_v<grev::reil_disassembler>); // TODO
-static_assert(!std::is_copy_assignable_v<grev::reil_disassembler>); // TODO
+static_assert(std::is_copy_constructible_v<grev::reil_disassembler>);
+static_assert(std::is_move_constructible_v<grev::reil_disassembler>);
 
-static_assert(!std::is_move_constructible_v<grev::reil_disassembler>); // TODO
-static_assert(!std::is_move_assignable_v<grev::reil_disassembler>); // TODO
+static_assert(std::is_copy_assignable_v<grev::reil_disassembler>);
+static_assert(std::is_move_assignable_v<grev::reil_disassembler>);

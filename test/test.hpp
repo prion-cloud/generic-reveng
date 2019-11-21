@@ -1,26 +1,29 @@
 #pragma once
 
-template <typename ExpectedContainer, typename ActualContainer, typename Compare>
-void assert_content(ExpectedContainer const& expected, ActualContainer actual, Compare const& compare)
+#include <algorithm>
+
+template <typename SuperContainer, typename SubContainer, typename Equal>
+bool includes(SuperContainer super_container, SubContainer const& sub_container, Equal const& equal)
 {
-    // TODO Tidy up
-
-    for (auto const& e : expected)
+    for (auto const& sub_element : sub_container)
     {
-        auto a = actual.begin();
-        for (; a != actual.end(); ++a)
-        {
-            if (compare(e, *a))
-                break;
-        }
+        auto const find_result = std::find_if(super_container.begin(), super_container.end(),
+            [&equal, &sub_element](auto const& super_element)
+            {
+                return equal(super_element, sub_element);
+            });
 
-        CHECK(a != actual.end());
+        if (find_result == super_container.end())
+            return false;
 
-        if (a == actual.end())
-            continue;
-
-        actual.erase(a);
+        super_container.erase(find_result);
     }
 
-    CHECK(actual.empty());
+    return true;
+}
+template <typename SuperContainer, typename SubContainer>
+bool includes(SuperContainer const& super_container, SubContainer const& sub_container)
+{
+    static constexpr std::equal_to<std::remove_cvref_t<decltype(*super_container.begin())>> equal;
+    return includes(super_container, sub_container, equal);
 }

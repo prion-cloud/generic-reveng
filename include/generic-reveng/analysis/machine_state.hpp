@@ -4,12 +4,12 @@
 
 namespace grev
 {
-    class machine_state :
-        std::unordered_map<z3_expression, z3_expression>
+    class machine_state : std::unordered_map<z3_expression, z3_expression>
     {
     public:
 
-        void revise(z3_expression key, z3_expression value);
+        void revise(z3_expression const& key, z3_expression value);
+        void reset();
 
         z3_expression const& operator[](z3_expression const& key) const;
     };

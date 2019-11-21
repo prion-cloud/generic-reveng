@@ -29,6 +29,33 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     {
         architecture = grev::machine_architecture::x86_32;
 
+        SECTION("A")
+        {
+            data = GENERATE(
+                std::u8string
+                {
+                    INT3
+                },
+                std::u8string
+                {
+                    INT3,
+                    INT3
+                },
+                std::u8string
+                {
+                    RET
+                },
+                std::u8string
+                {
+                    RET,
+                    INT3
+                });
+
+            expected_path_addresses =
+            {
+                { 0 }
+            };
+        }
         SECTION("B")
         {
             data =
@@ -248,14 +275,12 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     }
     // TODO x86_64, etc.
 
-    grev::reil_disassembler const disassembler(architecture);
+    grev::reil_disassembler const disassembler(architecture); // TODO Mockup
     mock_program const program(data, architecture);
 
-    grev::machine_monitor const machine_monitor(disassembler, program);
+    auto const actual_path_addresses =
+        grev::machine_monitor(disassembler, program).path_addresses();
 
-    assert_content(expected_path_addresses, machine_monitor.path_addresses(),
-        [](auto const& expected_path, auto const& actual_path)
-        {
-            return expected_path == actual_path;
-        });
+    CHECK(includes(expected_path_addresses, actual_path_addresses));
+    CHECK(includes(actual_path_addresses, expected_path_addresses));
 }

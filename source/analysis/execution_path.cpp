@@ -9,8 +9,8 @@ namespace grev
 
     execution_path::execution_path(execution_path const& other) :
         std::unordered_map<z3_expression, z3_expression const*>(other),
-        current_state_(other.current_state_),
         start_jump_(find(other.start_jump_->first)),
+        current_state_(other.current_state_),
         current_jump_(find(other.current_jump_->first))
     {
         for (auto& [jump, succeeding_jump] : *this)
@@ -27,9 +27,9 @@ namespace grev
     {
         swap(other);
 
-        std::swap(current_state_, other.current_state_);
-
         std::swap(start_jump_, other.start_jump_);
+
+        std::swap(current_state_, other.current_state_);
         std::swap(current_jump_, other.current_jump_);
 
         return *this;
@@ -37,21 +37,15 @@ namespace grev
 
     std::forward_list<execution_path> execution_path::update(machine_state_update const& update)
     {
-        // TODO check for seal/current_address (?) -> support patching (?)
-
-        if (current_jump_->second != nullptr)
-        {
-            // TODO Support loops with changing states
-
-            seal();
-            return { };
-        }
+        // TODO Support patching (?)
 
         auto jumps = update.resolve(&current_state_);
 
         if (jumps.empty())
         {
-            seal();
+            current_state_.reset();
+            current_jump_ = end();
+
             return { };
         }
 
@@ -65,12 +59,13 @@ namespace grev
         }
 
         step(std::move(jumps.extract(current_jump).value()));
+
         return new_paths;
     }
 
     std::optional<std::uint64_t> execution_path::current_address() const
     {
-        if (current_jump_ == end())
+        if (current_jump_ == end() || current_jump_->second != nullptr) // TODO Support loops with changing states
             return std::nullopt;
 
         return current_jump_->first.evaluate();
@@ -80,29 +75,25 @@ namespace grev
     std::vector<std::uint64_t> execution_path::addresses() const
     {
         std::vector<std::uint64_t> addresses;
-        std::unordered_set<std::uint64_t> address_register;
 
-        for (auto it = start_jump_; it != current_jump_; it = find(*it->second))
+        auto it = start_jump_;
+        while (true)
         {
-            auto const address = it->first.evaluate().value();
-
-            if (address_register.contains(address))
+            if (auto const address = it->first.evaluate(); address)
+                addresses.push_back(*address);
+            else
                 break;
 
-            addresses.push_back(address);
-            address_register.insert(address);
+            if (it == current_jump_ || it->second == nullptr)
+                break;
+
+            it = find(*it->second);
         }
 
         return addresses;
     }
     // -----<<
 
-    void execution_path::seal()
-    {
-        // TODO Clear/optional current_state (?)
-
-        current_jump_ = end();
-    }
     void execution_path::step(z3_expression jump)
     {
         auto new_jump = try_emplace(std::move(jump)).first;
