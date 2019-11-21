@@ -143,7 +143,7 @@ namespace grev
 
     reil_disassembler::reil_disassembler(machine_architecture architecture) :
         architecture_(std::move(architecture)),
-        current_reil_instructions_(std::make_unique<std::vector<reil_inst_t>>())
+        current_reil_instructions_(std::make_unique<std::list<reil_inst_t>>())
     {
         reil_arch_t reil_architecture;
         switch (architecture_)
@@ -160,7 +160,7 @@ namespace grev
             reil_architecture,
             [](auto* const reil_instruction, auto* const reil_instructions)
             {
-                static_cast<std::vector<reil_inst_t>*>(reil_instructions)->push_back(*reil_instruction);
+                static_cast<std::list<reil_inst_t>*>(reil_instructions)->push_back(*reil_instruction);
                 return 0;
             },
             current_reil_instructions_.get());
@@ -175,14 +175,14 @@ namespace grev
     reil_disassembler::reil_disassembler(reil_disassembler&& other) noexcept :
         architecture_(std::move(other.architecture_)),
         reil_(std::exchange(other.reil_, nullptr)),
-        current_reil_instructions_(std::make_unique<std::vector<reil_inst_t>>()) { }
+        current_reil_instructions_(std::make_unique<std::list<reil_inst_t>>()) { }
 
     reil_disassembler& reil_disassembler::operator=(reil_disassembler other) noexcept
     {
         std::swap(architecture_, other.architecture_);
 
         std::swap(reil_, other.reil_);
-        current_reil_instructions_ = std::make_unique<std::vector<reil_inst_t>>();
+        current_reil_instructions_ = std::make_unique<std::list<reil_inst_t>>();
 
         return *this;
     }
@@ -216,6 +216,8 @@ namespace grev
 
                 machine_state_update_part part;
                 std::tie(part, step) = translate(reil_instruction);
+
+                part.operands.shrink_to_fit();
 
                 update.set(std::move(part));
 
@@ -253,7 +255,7 @@ namespace grev
         return update;
     }
 
-    std::vector<reil_inst_t> reil_disassembler::disassemble(data_section const& data_section) const
+    std::list<reil_inst_t> reil_disassembler::disassemble(data_section const& data_section) const
     {
         std::vector<unsigned char> code(
             data_section.data.begin(),

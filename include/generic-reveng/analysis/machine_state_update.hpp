@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <unordered_set>
 
 #include <generic-reveng/analysis/machine_state.hpp>
@@ -16,7 +17,7 @@ namespace grev
         std::function<z3_expression (std::vector<z3_expression>)> value_operation;
     };
 
-    class machine_state_update : std::vector<machine_state_update_part>
+    class machine_state_update : std::list<machine_state_update_part>
     {
 
     public:

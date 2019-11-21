@@ -15,7 +15,7 @@ namespace grev
         machine_architecture architecture_;
 
         void* reil_;
-        std::unique_ptr<std::vector<_reil_inst_t>> current_reil_instructions_;
+        std::unique_ptr<std::list<_reil_inst_t>> current_reil_instructions_;
 
     public:
 
@@ -31,6 +31,6 @@ namespace grev
 
     private:
 
-        std::vector<_reil_inst_t> disassemble(data_section const& data_section) const;
+        std::list<_reil_inst_t> disassemble(data_section const& data_section) const;
     };
 }
