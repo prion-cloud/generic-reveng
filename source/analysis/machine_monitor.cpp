@@ -3,9 +3,9 @@
 namespace grev
 {
     // >>-----
-    std::vector<std::vector<std::uint64_t>> machine_monitor::path_addresses() const
+    std::vector<std::vector<std::uint32_t>> machine_monitor::path_addresses() const
     {
-        std::vector<std::vector<std::uint64_t>> path_addresses;
+        std::vector<std::vector<std::uint32_t>> path_addresses;
 
         for (auto const& path : paths_)
             path_addresses.push_back(path.addresses());

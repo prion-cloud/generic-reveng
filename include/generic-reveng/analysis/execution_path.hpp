@@ -15,7 +15,7 @@ namespace grev
 
     public:
 
-        explicit execution_path(std::uint64_t start_address);
+        explicit execution_path(std::uint32_t start_address);
         ~execution_path();
 
         execution_path(execution_path const& other);
@@ -25,10 +25,10 @@ namespace grev
 
         std::forward_list<execution_path> update(machine_state_update const& update);
 
-        std::optional<std::uint64_t> current_address() const;
+        std::optional<std::uint32_t> current_address() const;
 
         // >>-----
-        std::vector<std::uint64_t> addresses() const; // Testing seam TODO
+        std::vector<std::uint32_t> addresses() const; // Testing seam TODO
         // -----<<
 
     private:

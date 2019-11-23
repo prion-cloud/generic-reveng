@@ -13,9 +13,6 @@ namespace grev
         case 332:
             architecture_ = machine_architecture::x86_32;
             break;
-        case 34404:
-            architecture_ = machine_architecture::x86_64;
-            break;
         }
 
         start_address_ = file.optional_header.base_address + file.optional_header.relative_start_address;
@@ -35,7 +32,7 @@ namespace grev
     {
         return architecture_;
     }
-    std::uint64_t pe_program::start_address() const
+    std::uint32_t pe_program::start_address() const
     {
         return start_address_;
     }

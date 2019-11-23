@@ -2,12 +2,12 @@
 
 namespace grev
 {
-    address_space_segment::address_space_segment(std::uint64_t address, std::size_t raw_offset, std::size_t raw_size) :
+    address_space_segment::address_space_segment(std::uint32_t address, std::size_t raw_offset, std::size_t raw_size) :
         address_(address),
         raw_offset_(raw_offset),
         raw_size_(raw_size) { }
 
-    data_section address_space_segment::dissect(std::u8string_view const& data_view, std::uint64_t const address) const
+    data_section address_space_segment::dissect(std::u8string_view const& data_view, std::uint32_t const address) const
     {
         auto const shift = address - address_;
 

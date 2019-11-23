@@ -8,7 +8,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 {
     grev::machine_architecture architecture;
 
-    auto const address = GENERATE(as<std::uint64_t>(),
+    auto const address = GENERATE(as<std::uint32_t>(),
         0, 1, 17, 1639);
     std::u8string data;
 

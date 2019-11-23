@@ -10,12 +10,12 @@
 namespace Catch
 {
     template<>
-    struct StringMaker<std::optional<std::uint64_t>>
+    struct StringMaker<std::optional<std::uint32_t>>
     {
-        static std::string convert(std::optional<std::uint64_t> const& value)
+        static std::string convert(std::optional<std::uint32_t> const& value)
         {
             if (value)
-                return StringMaker<std::uint64_t>::convert(*value);
+                return StringMaker<std::uint32_t>::convert(*value);
 
             return "(No value)";
         }
@@ -24,7 +24,7 @@ namespace Catch
 
 TEST_CASE("Copy", "[rev::z3::expression]")
 {
-    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES);
+    auto const value = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
     auto a = std::make_unique<grev::z3::expression const>(value);
 
@@ -52,7 +52,7 @@ TEST_CASE("Copy", "[rev::z3::expression]")
 }
 TEST_CASE("Move", "[rev::z3::expression]")
 {
-    auto const value = GENERATE(as<std::uint64_t>(), TEST_VALUES);
+    auto const value = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
     auto a = std::make_unique<grev::z3::expression>(value);
 
@@ -91,7 +91,7 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
     }
     SECTION("Value")
     {
-        auto const value_a = GENERATE(as<std::uint64_t>(), TEST_VALUES);
+        auto const value_a = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
         grev::z3::expression const a(value_a);
 
@@ -108,7 +108,7 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
         }
         SECTION("Binary")
         {
-            auto const value_b = GENERATE(as<std::uint64_t>(), TEST_VALUES);
+            auto const value_b = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
             grev::z3::expression const b(value_b);
 

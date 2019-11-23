@@ -18,7 +18,7 @@ namespace grev
         switch (file.coff_header.optional_header_size)
         {
         case 224:
-            file.optional_header = pe_optional_header::inspect_32(&data_view);
+            file.optional_header = pe_optional_header::inspect(&data_view);
             break;
         // TODO error (?)
         }

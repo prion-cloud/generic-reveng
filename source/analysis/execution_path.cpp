@@ -2,7 +2,7 @@
 
 namespace grev
 {
-    execution_path::execution_path(std::uint64_t const start_address) :
+    execution_path::execution_path(std::uint32_t const start_address) :
         start_jump_(emplace(start_address, nullptr).first),
         current_jump_(begin()) { }
     execution_path::~execution_path() = default;
@@ -63,7 +63,7 @@ namespace grev
         return new_paths;
     }
 
-    std::optional<std::uint64_t> execution_path::current_address() const
+    std::optional<std::uint32_t> execution_path::current_address() const
     {
         if (current_jump_ == end() || current_jump_->second != nullptr) // TODO Support loops with changing states
             return std::nullopt;
@@ -72,9 +72,9 @@ namespace grev
     }
 
     // >>-----
-    std::vector<std::uint64_t> execution_path::addresses() const
+    std::vector<std::uint32_t> execution_path::addresses() const
     {
-        std::vector<std::uint64_t> addresses;
+        std::vector<std::uint32_t> addresses;
 
         auto it = start_jump_;
         while (true)

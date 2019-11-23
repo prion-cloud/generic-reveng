@@ -14,13 +14,13 @@ namespace grev
 
             bool operator()(address_space_segment const& segment_1, address_space_segment const& segment_2) const;
 
-            bool operator()(address_space_segment const& segment, std::uint64_t address) const;
-            bool operator()(std::uint64_t address, address_space_segment const& segment) const;
+            bool operator()(address_space_segment const& segment, std::uint32_t address) const;
+            bool operator()(std::uint32_t address, address_space_segment const& segment) const;
         };
 
     private:
 
-        std::uint64_t address_;
+        std::uint32_t address_;
 
         std::size_t raw_offset_;
         std::size_t raw_size_;
@@ -29,8 +29,8 @@ namespace grev
 
     public:
 
-        address_space_segment(std::uint64_t address, std::size_t raw_offset, std::size_t raw_size);
+        address_space_segment(std::uint32_t address, std::size_t raw_offset, std::size_t raw_size);
 
-        data_section dissect(std::u8string_view const& data_view, std::uint64_t address) const;
+        data_section dissect(std::u8string_view const& data_view, std::uint32_t address) const;
     };
 }

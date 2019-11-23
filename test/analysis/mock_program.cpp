@@ -11,7 +11,7 @@ grev::machine_architecture mock_program::architecture() const
 {
     return architecture_;
 }
-std::uint64_t mock_program::start_address() const
+std::uint32_t mock_program::start_address() const
 {
     return 0;
 }

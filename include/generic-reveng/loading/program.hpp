@@ -21,9 +21,9 @@ namespace grev
         virtual ~program();
 
         virtual machine_architecture architecture() const = 0;
-        virtual std::uint64_t start_address() const = 0;
+        virtual std::uint32_t start_address() const = 0;
 
-        data_section operator[](std::uint64_t address) const;
+        data_section operator[](std::uint32_t address) const;
 
     protected:
 

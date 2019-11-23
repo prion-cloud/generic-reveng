@@ -9,7 +9,7 @@ namespace grev
 
     program::~program() = default;
 
-    data_section program::operator[](std::uint64_t address) const
+    data_section program::operator[](std::uint32_t address) const
     {
         auto const& seg = segments(); // TODO rename
 

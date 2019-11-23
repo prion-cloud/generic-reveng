@@ -24,7 +24,7 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     grev::machine_architecture architecture;
     std::u8string data;
 
-    std::vector<std::vector<std::uint64_t>> expected_path_addresses;
+    std::vector<std::vector<std::uint32_t>> expected_path_addresses;
 
     SECTION("x86_32")
     {

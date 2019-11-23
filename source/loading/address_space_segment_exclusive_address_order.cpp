@@ -7,11 +7,11 @@ namespace grev
         return segment_1.address_ + segment_1.raw_size_ <= segment_2.address_; // TODO virtual_size
     }
 
-    bool address_space_segment::exclusive_address_order::operator()(address_space_segment const& segment, std::uint64_t const address) const
+    bool address_space_segment::exclusive_address_order::operator()(address_space_segment const& segment, std::uint32_t const address) const
     {
         return segment.address_ + segment.raw_size_ <= address;
     }
-    bool address_space_segment::exclusive_address_order::operator()(std::uint64_t const address, address_space_segment const& segment) const
+    bool address_space_segment::exclusive_address_order::operator()(std::uint32_t const address, address_space_segment const& segment) const
     {
         return address < segment.address_;
     }

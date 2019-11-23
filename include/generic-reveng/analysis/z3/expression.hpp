@@ -35,11 +35,11 @@ namespace grev::z3
     public:
 
         explicit expression(std::string const& name);
-        explicit expression(std::uint64_t value);
+        explicit expression(std::uint32_t value);
 
         operator Z3_app() const;
 
-        std::optional<std::uint64_t> evaluate() const;
+        std::optional<std::uint32_t> evaluate() const;
 
         expression operator*() const;
 

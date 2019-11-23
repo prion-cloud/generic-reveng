@@ -149,7 +149,6 @@ namespace grev
         switch (architecture_)
         {
             case machine_architecture::x86_32:
-            case machine_architecture::x86_64:
                 reil_architecture = ARCH_X86;
                 break;
             default:
@@ -199,7 +198,7 @@ namespace grev
 
         while (true)
         {
-            std::optional<std::uint64_t> step_value{data_section->address};
+            std::optional<std::uint32_t> step_value{data_section->address};
 
             for (auto const& reil_instruction : reil_instructions)
             {

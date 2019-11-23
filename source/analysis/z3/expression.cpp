@@ -24,17 +24,17 @@ namespace grev::z3
 
     expression::expression(std::string const& name) :
         syntax_tree(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), unique_sort())) { }
-    expression::expression(std::uint64_t const value) :
-        syntax_tree(Z3_mk_unsigned_int64(context(), value, unique_sort())) { }
+    expression::expression(std::uint32_t const value) :
+        syntax_tree(Z3_mk_unsigned_int(context(), value, unique_sort())) { }
 
     expression::operator Z3_app() const
     {
         return Z3_to_app(context(), *this);
     }
 
-    std::optional<std::uint64_t> expression::evaluate() const
+    std::optional<std::uint32_t> expression::evaluate() const
     {
-        if (std::uint64_t value; Z3_get_numeral_uint64(context(), *this, &value))
+        if (std::uint32_t value; Z3_get_numeral_uint(context(), *this, &value))
             return value;
 
         return std::nullopt;
@@ -116,22 +116,22 @@ namespace grev::z3
         return expression(
             Z3_mk_ite(context(),
                 Z3_mk_eq(context(), *this, other),
-                expression(std::uint64_t{1}),
-                expression(std::uint64_t{0})));
+                expression(std::uint32_t{1}),
+                expression(std::uint32_t{0})));
     }
     expression expression::operator<(expression const& other) const
     {
         return expression(
             Z3_mk_ite(context(),
                 Z3_mk_bvult(context(), *this, other),
-                expression(std::uint64_t{1}),
-                expression(std::uint64_t{0})));
+                expression(std::uint32_t{1}),
+                expression(std::uint32_t{0})));
     }
 
     sort expression::unique_sort()
     {
         // TODO static ?
-        return sort(sizeof(std::uint64_t) * CHAR_BIT);
+        return sort(sizeof(std::uint32_t) * CHAR_BIT);
     }
 
     function expression::dereference_function()
