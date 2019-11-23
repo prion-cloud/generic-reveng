@@ -23,12 +23,6 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 
         SECTION("A")
         {
-            SECTION("int3")
-            {
-                data = { 0xCC };
-
-                expected_jumps = std::unordered_set<grev::z3::expression> { };
-            }
             SECTION("ret")
             {
                 data = { 0xC3 };
@@ -41,6 +35,10 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
         {
             SECTION("B1")
             {
+                SECTION("int3")
+                {
+                    data = { 0xCC };
+                }
                 SECTION("nop")
                 {
                     data = { 0x90 };

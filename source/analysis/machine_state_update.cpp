@@ -17,7 +17,20 @@ namespace grev
             resolved_operands.reserve(part.operands.size());
 
             for (auto const& operand : part.operands)
-                resolved_operands.push_back((*state)[operand]);
+            {
+                auto& resolved_operand = resolved_operands.emplace_back((*state)[operand]);
+
+                while (true)
+                {
+                    auto const& resolved_resolved_operand = (*state)[resolved_operand];
+
+                    static constexpr std::equal_to<z3::expression> equal;
+                    if (equal(resolved_resolved_operand, resolved_operand))
+                        break;
+
+                    resolved_operand = resolved_resolved_operand;
+                }
+            }
 
             auto value = part.value_operation(std::move(resolved_operands)); // TODO part.resolve_value(*state)
 

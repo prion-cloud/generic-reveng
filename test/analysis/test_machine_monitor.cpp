@@ -8,6 +8,7 @@
 
 #define ADD_EAX_EBX 0x01, 0xD8
 #define ADD_EAX(v) 0x83, 0xC0, char8_t(v)
+#define CALL(v) 0xE8, char8_t{v}, 0x00, 0x00, 0x00
 #define INT3 0xCC
 #define JE(v) 0x74, char8_t(v)
 #define JMP(v) 0xEB, char8_t(v)
@@ -32,15 +33,6 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
         SECTION("A")
         {
             data = GENERATE(
-                std::u8string
-                {
-                    INT3
-                },
-                std::u8string
-                {
-                    INT3,
-                    INT3
-                },
                 std::u8string
                 {
                     RET
@@ -270,6 +262,20 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
             {
                 { 0,  2, 7, 15, 18 },
                 { 0, 10,    15, 19 }
+            };
+        }
+        SECTION("O")
+        {
+            data =
+            {
+                CALL(1), // 0
+                RET,     // 5
+                RET      // 6
+            };
+
+            expected_path_addresses =
+            {
+                { 0, 6, 5 }
             };
         }
     }

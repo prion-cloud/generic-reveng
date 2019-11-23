@@ -199,7 +199,7 @@ namespace grev
 
         while (true)
         {
-            auto step = true;
+            std::optional<std::uint64_t> step_value{data_section->address};
 
             for (auto const& reil_instruction : reil_instructions)
             {
@@ -210,22 +210,23 @@ namespace grev
 
                 if (reil_instruction.op == I_UNK)
                 {
-                    step = false;
+                    step_value = data_section->address - size + 1;
                     break;
                 }
 
-                machine_state_update_part part;
-                std::tie(part, step) = translate(reil_instruction);
+                auto [part, step] = translate(reil_instruction);
+                if (!step)
+                    step_value = std::nullopt;
 
                 part.operands.shrink_to_fit();
 
                 update.set(std::move(part));
 
-                if (!step)
+                if (!step_value)
                     break;
             }
 
-            if (!step)
+            if (!step_value)
                 break;
 
             reil_inum_t const inum = reil_instructions.back().inum + 1;
@@ -246,7 +247,7 @@ namespace grev
                     {
                         .type = A_CONST,
                         .size = U64, // TODO
-                        .val = data_section->address
+                        .val = *step_value
                     }
                 }
             };
