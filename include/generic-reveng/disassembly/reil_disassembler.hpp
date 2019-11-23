@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include <generic-reveng/analysis/data_section.hpp>
 #include <generic-reveng/analysis/machine_architecture.hpp>
 #include <generic-reveng/analysis/machine_state_update.hpp>
 
@@ -27,10 +26,10 @@ namespace grev
 
         reil_disassembler& operator=(reil_disassembler other) noexcept;
 
-        machine_state_update operator()(data_section* data_section) const;
+        machine_state_update operator()(std::uint32_t* address, std::u8string_view* data) const;
 
     private:
 
-        std::list<_reil_inst_t> disassemble(data_section const& data_section) const;
+        std::list<_reil_inst_t> disassemble(std::uint32_t address, std::u8string_view const& data) const;
     };
 }

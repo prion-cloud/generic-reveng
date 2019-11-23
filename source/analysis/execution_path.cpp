@@ -63,7 +63,7 @@ namespace grev
         return new_paths;
     }
 
-    std::optional<std::uint32_t> execution_path::current_address() const
+    std::optional<std::uint32_t> execution_path::next_address() const
     {
         if (current_jump_ == end() || current_jump_->second != nullptr) // TODO Support loops with changing states
             return std::nullopt;

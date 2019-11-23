@@ -23,7 +23,7 @@ namespace grev
         virtual machine_architecture architecture() const = 0;
         virtual std::uint32_t start_address() const = 0;
 
-        data_section operator[](std::uint32_t address) const;
+        std::u8string_view operator[](std::uint32_t address) const;
 
     protected:
 

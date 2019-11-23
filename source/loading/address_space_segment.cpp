@@ -7,15 +7,10 @@ namespace grev
         raw_offset_(raw_offset),
         raw_size_(raw_size) { }
 
-    data_section address_space_segment::dissect(std::u8string_view const& data_view, std::uint32_t const address) const
+    std::u8string_view address_space_segment::dissect(std::u8string_view const& data, std::uint32_t const address) const
     {
         auto const shift = address - address_;
-
-        return
-        {
-            .address = address,
-            .data = data_view.substr(raw_offset_ + shift, raw_size_ - shift)
-        };
+        return data.substr(raw_offset_ + shift, raw_size_ - shift);
     }
 }
 

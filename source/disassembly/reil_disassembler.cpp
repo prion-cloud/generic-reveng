@@ -186,19 +186,19 @@ namespace grev
         return *this;
     }
 
-    machine_state_update reil_disassembler::operator()(data_section* const data_section) const
+    machine_state_update reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const data) const
     {
-        auto reil_instructions = disassemble(*data_section);
+        auto reil_instructions = disassemble(*address, *data);
 
         auto const size = reil_instructions.front().raw_info.size;
-        data_section->address += size;
-        data_section->data.remove_prefix(size);
+        *address += size;
+        data->remove_prefix(size);
 
         machine_state_update update;
 
         while (true)
         {
-            std::optional<std::uint32_t> step_value{data_section->address};
+            std::optional<std::uint32_t> step_value{*address};
 
             for (auto const& reil_instruction : reil_instructions)
             {
@@ -209,7 +209,7 @@ namespace grev
 
                 if (reil_instruction.op == I_UNK)
                 {
-                    step_value = data_section->address - size + 1;
+                    step_value = *address - size + 1;
                     break;
                 }
 
@@ -255,15 +255,15 @@ namespace grev
         return update;
     }
 
-    std::list<reil_inst_t> reil_disassembler::disassemble(data_section const& data_section) const
+    std::list<reil_inst_t> reil_disassembler::disassemble(std::uint32_t const address, std::u8string_view const& data) const
     {
         std::vector<unsigned char> code(
-            data_section.data.begin(),
+            data.begin(),
             std::next(
-                data_section.data.begin(),
-                std::min(data_section.data.size(), std::size_t{MAX_INST_LEN})));
+                data.begin(),
+                std::min(data.size(), std::size_t{MAX_INST_LEN})));
 
-        reil_translate_insn(reil_, data_section.address, code.data(), code.size());
+        reil_translate_insn(reil_, address, code.data(), code.size());
         return std::move(*current_reil_instructions_);
     }
 }

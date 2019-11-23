@@ -1,6 +1,6 @@
 #pragma once
 
-#include <generic-reveng/analysis/data_section.hpp>
+#include <string_view>
 
 namespace grev
 {
@@ -31,6 +31,6 @@ namespace grev
 
         address_space_segment(std::uint32_t address, std::size_t raw_offset, std::size_t raw_size);
 
-        data_section dissect(std::u8string_view const& data_view, std::uint32_t address) const;
+        std::u8string_view dissect(std::u8string_view const& data, std::uint32_t address) const;
     };
 }

@@ -1,5 +1,3 @@
-#include <generic-reveng/analysis/data_section.hpp>
-
 #ifdef LINT
 #include <generic-reveng/analysis/machine_monitor.hpp>
 #endif
@@ -18,28 +16,29 @@ namespace grev
             auto* const path = pending_paths.front();
             pending_paths.pop_front();
 
-            std::optional<data_section> previous_data_section;
+            std::optional<std::uint32_t> address;
+            std::u8string_view data;
             while (true)
             {
-                auto const current_address = path->current_address();
+                auto const next_address = path->next_address();
 
-                if (!current_address)
+                if (!next_address)
                     break; // TODO patching (?)
 
-                auto current_data_section = previous_data_section && *current_address == previous_data_section->address
-                    ? std::move(*previous_data_section)
-                    : program[*current_address];
+                if (address != next_address)
+                {
+                    address = *next_address;
+                    data = program[*address];
+                }
 
-                if (current_data_section.data.empty())
+                if (data.empty())
                     break;
 
-                for (auto& new_path : path->update(disassembler(&current_data_section)))
+                for (auto& new_path : path->update(disassembler(&*address, &data)))
                 {
                     paths_.push_front(std::move(new_path));
                     pending_paths.push_front(&paths_.front());
                 }
-
-                previous_data_section = std::move(current_data_section);
             }
         }
         while (!pending_paths.empty());

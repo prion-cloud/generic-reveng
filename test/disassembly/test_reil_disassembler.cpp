@@ -87,15 +87,12 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 
     grev::reil_disassembler const reil_disassembler(architecture);
 
-    grev::data_section data_section
-    {
-        .address = address,
-        .data = data
-    };
-    auto const actual_update = reil_disassembler(&data_section);
+    auto updated_address = address;
+    std::u8string_view updated_data{data};
+    auto const actual_update = reil_disassembler(&updated_address, &updated_data);
 
-    CHECK(data_section.address == address + data.size());
-    CHECK(data_section.data.empty());
+    CHECK(updated_address == address + data.size());
+    CHECK(updated_data.empty());
 
     grev::machine_state actual_state = std::move(initial_state);
     auto const actual_jumps = actual_update.resolve(&actual_state);

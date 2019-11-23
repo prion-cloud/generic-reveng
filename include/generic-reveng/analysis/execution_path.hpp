@@ -25,7 +25,7 @@ namespace grev
 
         std::forward_list<execution_path> update(machine_state_update const& update);
 
-        std::optional<std::uint32_t> current_address() const;
+        std::optional<std::uint32_t> next_address() const;
 
         // >>-----
         std::vector<std::uint32_t> addresses() const; // Testing seam TODO
