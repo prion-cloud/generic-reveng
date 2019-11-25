@@ -40,10 +40,90 @@ namespace grev::z3
         return std::nullopt;
     }
 
-    expression expression::operator*() const
+    std::unordered_set<expression> expression::dependencies() const
+    {
+        if (dereferenced())
+            return { *this };
+
+        std::size_t const argument_count = Z3_get_app_num_args(context(), *this);
+
+        if (argument_count == 0)
+        {
+            if (Z3_is_numeral_ast(context(), *this))
+                return { };
+
+            return { *this };
+        }
+
+        std::unordered_set<expression> dependencies;
+        for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
+            dependencies.merge(expression(Z3_get_app_arg(context(), *this, argument_index)).dependencies());
+
+        return dependencies;
+    }
+    expression expression::resolve_dependency(expression const& dependency, expression const& value) const
+    {
+        Z3_ast const& native_dependency = dependency;
+        Z3_ast const& native_value = value;
+        return expression(Z3_substitute(context(), *this, 1, &native_dependency, &native_value));
+    }
+
+    std::optional<expression> expression::reference() const
+    {
+        if (dereferenced())
+            return expression(Z3_get_app_arg(context(), *this, 0));
+
+        return std::nullopt;
+    }
+    expression expression::dereference() const
     {
         Z3_ast const& native = *this;
         return expression(Z3_mk_app(context(), dereference_function(), 1, &native));
+    }
+
+    expression& expression::operator+=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvadd(context(), *this, other));
+    }
+    expression& expression::operator-=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvsub(context(), *this, other));
+    }
+    expression& expression::operator*=(expression const& other)
+    {
+        // TODO Signed/unsigned?
+        return *this = expression(Z3_mk_bvmul(context(), *this, other));
+    }
+    expression& expression::operator/=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvudiv(context(), *this, other));
+    }
+    expression& expression::operator%=(expression const& other)
+    {
+        // TODO Signed/unsigned?
+        return *this = expression(Z3_mk_bvsmod(context(), *this, other));
+    }
+
+    expression& expression::operator&=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvand(context(), *this, other));
+    }
+    expression& expression::operator|=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvor(context(), *this, other));
+    }
+    expression& expression::operator^=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvxor(context(), *this, other));
+    }
+
+    expression& expression::operator<<=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvshl(context(), *this, other));
+    }
+    expression& expression::operator>>=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvlshr(context(), *this, other));
     }
 
     expression expression::operator-() const
@@ -53,62 +133,6 @@ namespace grev::z3
     expression expression::operator~() const
     {
         return expression(Z3_mk_bvnot(context(), *this));
-    }
-
-    expression expression::operator+(expression const& other) const
-    {
-        return expression(Z3_mk_bvadd(context(), *this, other));
-    }
-    expression expression::operator-(expression const& other) const
-    {
-        return expression(Z3_mk_bvsub(context(), *this, other));
-    }
-    expression expression::operator*(expression const&) const
-    {
-        throw std::logic_error("Not implemented"); // TODO
-    }
-    expression expression::operator/(expression const& other) const
-    {
-        return expression(Z3_mk_bvudiv(context(), *this, other));
-    }
-    expression expression::operator%(expression const&) const
-    {
-        throw std::logic_error("Not implemented"); // TODO
-    }
-
-    expression expression::smul(expression const& other) const
-    {
-        return expression(Z3_mk_bvmul(context(), *this, other));
-    }
-    expression expression::sdiv(expression const& other) const
-    {
-        return expression(Z3_mk_bvsdiv(context(), *this, other));
-    }
-    expression expression::smod(expression const& other) const
-    {
-        return expression(Z3_mk_bvsmod(context(), *this, other));
-    }
-
-    expression expression::operator<<(expression const& other) const
-    {
-        return expression(Z3_mk_bvshl(context(), *this, other));
-    }
-    expression expression::operator>>(expression const& other) const
-    {
-        return expression(Z3_mk_bvlshr(context(), *this, other));
-    }
-
-    expression expression::operator&(expression const& other) const
-    {
-        return expression(Z3_mk_bvand(context(), *this, other));
-    }
-    expression expression::operator|(expression const& other) const
-    {
-        return expression(Z3_mk_bvor(context(), *this, other));
-    }
-    expression expression::operator^(expression const& other) const
-    {
-        return expression(Z3_mk_bvxor(context(), *this, other));
     }
 
     expression expression::operator==(expression const& other) const
@@ -128,6 +152,11 @@ namespace grev::z3
                 expression(std::uint32_t{0})));
     }
 
+    bool expression::dereferenced() const
+    {
+        return function(Z3_get_app_decl(context(), *this)).equals(dereference_function());
+    }
+
     sort expression::unique_sort()
     {
         // TODO static ?
@@ -138,6 +167,49 @@ namespace grev::z3
     {
         // TODO static ?
         return function("deref", { unique_sort() }, unique_sort());
+    }
+
+    expression operator+(expression a, expression const& b)
+    {
+        return a += b;
+    }
+    expression operator-(expression a, expression const& b)
+    {
+        return a -= b;
+    }
+    expression operator*(expression a, expression const& b)
+    {
+        return a *= b;
+    }
+    expression operator/(expression a, expression const& b)
+    {
+        return a /= b;
+    }
+    expression operator%(expression a, expression const& b)
+    {
+        return a %= b;
+    }
+
+    expression operator&(expression a, expression const& b)
+    {
+        return a &= b;
+    }
+    expression operator|(expression a, expression const& b)
+    {
+        return a |= b;
+    }
+    expression operator^(expression a, expression const& b)
+    {
+        return a ^= b;
+    }
+
+    expression operator<<(expression a, expression const& b)
+    {
+        return a <<= b;
+    }
+    expression operator>>(expression a, expression const& b)
+    {
+        return a >>= b;
     }
 }
 

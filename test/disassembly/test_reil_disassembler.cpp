@@ -12,7 +12,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
         0, 1, 17, 1639);
     std::u8string data;
 
-    grev::machine_state initial_state;
+    grev::execution_state initial_state;
 
     std::unordered_map<grev::z3::expression, grev::z3::expression> expected_state;
     std::unordered_set<grev::z3::expression> expected_jumps;
@@ -28,7 +28,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 data = { 0xC3 };
 
                 expected_state.emplace(grev::z3::expression("R_ESP"), grev::z3::expression("R_ESP") + grev::z3::expression(4));
-                expected_jumps = { *grev::z3::expression("R_ESP") };
+                expected_jumps = { grev::z3::expression("R_ESP").dereference() };
             }
         }
         SECTION("B")
@@ -47,30 +47,30 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 {
                     data = { 0xA1, 0x1B, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(grev::z3::expression("R_EAX"), *grev::z3::expression(27));
+                    expected_state.emplace(grev::z3::expression("R_EAX"), grev::z3::expression(27).dereference());
                 }
                 SECTION("mov [27], eax")
                 {
                     data = { 0xA3, 0x1B, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(*grev::z3::expression(27), grev::z3::expression("R_EAX"));
+                    expected_state.emplace(grev::z3::expression(27).dereference(), grev::z3::expression("R_EAX"));
                 }
                 SECTION("mov ebx, [eax]")
                 {
                     data = { 0x8b, 0x18 };
 
-                    expected_state.emplace(grev::z3::expression("R_EBX"), *grev::z3::expression("R_EAX"));
+                    expected_state.emplace(grev::z3::expression("R_EBX"), grev::z3::expression("R_EAX").dereference());
                 }
                 SECTION("mov [eax], ebx")
                 {
                     data = { 0x89, 0x18 };
 
-                    expected_state.emplace(*grev::z3::expression("R_EAX"), grev::z3::expression("R_EBX"));
+                    expected_state.emplace(grev::z3::expression("R_EAX").dereference(), grev::z3::expression("R_EBX"));
                 }
             }
             SECTION("B2")
             {
-                initial_state.revise(grev::z3::expression("R_EAX"), grev::z3::expression(26));
+                initial_state.update(grev::z3::expression("R_EAX"), grev::z3::expression(26));
 
                 SECTION("mov eax, 27")
                 {
@@ -89,13 +89,13 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 
     auto updated_address = address;
     std::u8string_view updated_data{data};
-    auto const actual_update = reil_disassembler(&updated_address, &updated_data);
+
+    auto const [update_state, actual_jumps] = reil_disassembler(&updated_address, &updated_data);
 
     CHECK(updated_address == address + data.size());
     CHECK(updated_data.empty());
 
-    grev::machine_state actual_state = std::move(initial_state);
-    auto const actual_jumps = actual_update.resolve(&actual_state);
+    auto const actual_state = initial_state.resolve(update_state); // TODO Check only returned actual_state
 
     CHECK(
         includes(

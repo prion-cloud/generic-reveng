@@ -1,10 +1,13 @@
 #pragma once
 
+#include <list>
 #include <memory>
 
+#include <generic-reveng/analysis/execution_fork.hpp>
+#include <generic-reveng/analysis/execution_state.hpp>
 #include <generic-reveng/analysis/machine_architecture.hpp>
-#include <generic-reveng/analysis/machine_state_update.hpp>
 
+struct _reil_arg_t;
 struct _reil_inst_t;
 
 namespace grev
@@ -12,9 +15,14 @@ namespace grev
     class reil_disassembler
     {
         machine_architecture architecture_;
+        void* handle_;
 
-        void* reil_;
-        std::unique_ptr<std::list<_reil_inst_t>> current_reil_instructions_;
+        mutable std::list<_reil_inst_t> instructions_;
+
+        mutable execution_fork jumps_;
+
+        mutable execution_state state_;
+        mutable execution_state temporary_state_;
 
     public:
 
@@ -26,10 +34,11 @@ namespace grev
 
         reil_disassembler& operator=(reil_disassembler other) noexcept;
 
-        machine_state_update operator()(std::uint32_t* address, std::u8string_view* data) const;
+        std::pair<execution_state, execution_fork> operator()(std::uint32_t* address, std::u8string_view* data) const;
 
     private:
 
-        std::list<_reil_inst_t> disassemble(std::uint32_t address, std::u8string_view const& data) const;
+        z3::expression get_value(_reil_arg_t const& argument) const;
+        void set_value(_reil_arg_t const& argument, z3::expression value) const;
     };
 }

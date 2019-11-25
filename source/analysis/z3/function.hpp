@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <generic-reveng/analysis/z3/expression.hpp>
 
 #include "sort.hpp"
@@ -10,9 +12,11 @@ namespace grev::z3
     {
     public:
 
-        explicit function(expression const& expression);
+        explicit function(Z3_func_decl const& native);
 
         function(std::string const& name, std::vector<sort> const& domain, sort const& range);
+
+        bool equals(function const& other) const;
 
     private:
 

@@ -1,4 +1,4 @@
-#include <cstdint>
+#include <functional>
 
 #include <libopenreil.h>
 
@@ -6,84 +6,56 @@
 
 namespace grev
 {
-    static z3::expression to_expression(reil_arg_t const& reil_argument)
+    static z3::expression get_key(reil_arg_t const& reil_key)
     {
-        switch (reil_argument.type)
+        switch (reil_key.type)
         {
         case A_REG:
         case A_TEMP:
-            return z3::expression(reil_argument.name);
-        case A_CONST:
-        case A_LOC:
-            return z3::expression(reil_argument.val);
+            return z3::expression(std::begin(reil_key.name));
         default:
-            throw std::logic_error("Unexpected argument type"); // TODO
+            throw std::logic_error("Unexpected argument type");
         }
     }
 
     static std::function<z3::expression (z3::expression)>
-        get_key_operation(reil_op_t const& reil_operation)
+        get_unary_operation(reil_op_t const& operation)
     {
-        switch (reil_operation)
+        switch (operation)
         {
-        case I_STM:
-            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator*));
-        default:
-            return { };
-        }
-    }
-
-    static std::function<z3::expression (z3::expression)>
-        get_unary_operation(reil_op_t const& reil_operation)
-    {
-        switch (reil_operation)
-        {
-        case I_STR:
-        case I_STM:
-            return [](auto operand) { return std::move(operand); };
-        case I_LDM:
-            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator*));
         case I_NEG:
-            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator-));
+            return std::mem_fn(&z3::expression::operator-);
         case I_NOT:
-            return std::mem_fn(static_cast<z3::expression (z3::expression::*)() const>(&z3::expression::operator~));
+            return std::mem_fn(&z3::expression::operator~);
         default:
             throw std::logic_error("Unexpected operation");
         }
     }
-    static std::function<z3::expression (z3::expression const&, z3::expression const&)>
-        get_binary_operation(reil_op_t const& reil_operation)
+    static std::function<z3::expression (z3::expression, z3::expression)>
+        get_binary_operation(reil_op_t const& operation)
     {
-        switch (reil_operation)
+        switch (operation)
         {
         case I_ADD:
-            return std::mem_fn(&z3::expression::operator+);
+            return z3::operator+;
         case I_SUB:
-            return std::mem_fn(
-                static_cast<z3::expression (z3::expression::*)(z3::expression const&) const>(&z3::expression::operator-));
+            return z3::operator-;
         case I_MUL:
-            return std::mem_fn(
-                static_cast<z3::expression (z3::expression::*)(z3::expression const&) const>(&z3::expression::operator*));
+            return z3::operator*;
         case I_DIV:
-            return std::mem_fn(&z3::expression::operator/);
+            return z3::operator/;
         case I_MOD:
-            return std::mem_fn(&z3::expression::operator%);
-        case I_SMUL:
-            return std::mem_fn(&z3::expression::smul);
-        case I_SDIV:
-            return std::mem_fn(&z3::expression::sdiv);
-        case I_SMOD:
-            return std::mem_fn(&z3::expression::smod);
+            return z3::operator%;
         case I_SHL:
-            return std::mem_fn(&z3::expression::operator<<);
+            return z3::operator<<;
         case I_SHR:
-            return std::mem_fn(&z3::expression::operator>>);
+            return z3::operator>>;
         case I_AND:
-            return std::mem_fn(&z3::expression::operator&);
+            return z3::operator&;
         case I_OR:
-            return std::mem_fn(&z3::expression::operator|);
+            return z3::operator|;
         case I_XOR:
-            return std::mem_fn(&z3::expression::operator^);
+            return z3::operator^;
         case I_EQ:
             return std::mem_fn(&z3::expression::operator==);
         case I_LT:
@@ -93,178 +65,144 @@ namespace grev
         }
     }
 
-    static std::pair<machine_state_update_part, bool> translate(reil_inst_t const& reil_instruction)
-    {
-        std::pair<machine_state_update_part, bool> translation;
-        auto& [part, step] = translation;
-
-        part.key_operation = get_key_operation(reil_instruction.op);
-
-        if (reil_instruction.op == I_JCC)
-        {
-            part.key = std::nullopt;
-            part.operands.push_back(to_expression(reil_instruction.c));
-            part.value_operation = [](auto operands)
-            {
-                return std::move(operands[0]);
-            };
-
-            step = reil_instruction.a.type != A_CONST;
-
-            return translation;
-        }
-
-        part.key = to_expression(reil_instruction.c),
-        part.operands.push_back(to_expression(reil_instruction.a));
-
-        step = true;
-
-        if (reil_instruction.b.type == A_NONE)
-        {
-            auto const unary_operation = get_unary_operation(reil_instruction.op);
-            part.value_operation = [unary_operation](auto operands)
-            {
-                return unary_operation(std::move(operands[0]));
-            };
-
-            return translation;
-        }
-
-        part.operands.push_back(to_expression(reil_instruction.b));
-
-        auto const binary_operation = get_binary_operation(reil_instruction.op);
-        part.value_operation = [binary_operation](auto operands)
-        {
-            return binary_operation(std::move(operands[0]), std::move(operands[1]));
-        };
-
-        return translation;
-    }
-
     reil_disassembler::reil_disassembler(machine_architecture architecture) :
-        architecture_(std::move(architecture)),
-        current_reil_instructions_(std::make_unique<std::list<reil_inst_t>>())
+        architecture_(std::move(architecture))
     {
-        reil_arch_t reil_architecture;
+        reil_arch_t converted_architecture;
         switch (architecture_)
         {
             case machine_architecture::x86_32:
-                reil_architecture = ARCH_X86;
+                converted_architecture = ARCH_X86;
                 break;
             default:
-                throw std::runtime_error("Unknown architecture");
+                throw std::runtime_error("Unexpected architecture");
         }
-
-        reil_ = reil_init(
-            reil_architecture,
-            [](auto* const reil_instruction, auto* const reil_instructions)
+        handle_ = reil_init(
+            converted_architecture,
+            [](auto* const instruction, auto* const instructions)
             {
-                static_cast<std::list<reil_inst_t>*>(reil_instructions)->push_back(*reil_instruction);
+                static_cast<std::list<reil_inst_t>*>(instructions)->push_back(*instruction);
                 return 0;
             },
-            current_reil_instructions_.get());
+            &instructions_);
     }
     reil_disassembler::~reil_disassembler()
     {
-        reil_close(reil_);
+        reil_close(handle_);
     }
 
     reil_disassembler::reil_disassembler(reil_disassembler const& other) :
         reil_disassembler(other.architecture_) { }
     reil_disassembler::reil_disassembler(reil_disassembler&& other) noexcept :
         architecture_(std::move(other.architecture_)),
-        reil_(std::exchange(other.reil_, nullptr)),
-        current_reil_instructions_(std::make_unique<std::list<reil_inst_t>>()) { }
+        handle_(std::exchange(other.handle_, nullptr)) { }
 
     reil_disassembler& reil_disassembler::operator=(reil_disassembler other) noexcept
     {
         std::swap(architecture_, other.architecture_);
-
-        std::swap(reil_, other.reil_);
-        current_reil_instructions_ = std::make_unique<std::list<reil_inst_t>>();
+        std::swap(handle_, other.handle_);
 
         return *this;
     }
 
-    machine_state_update reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const data) const
+    std::pair<execution_state, execution_fork>
+        reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const data) const
     {
-        auto reil_instructions = disassemble(*address, *data);
+        std::vector<unsigned char> code(
+            data->begin(),
+            std::next(
+                data->begin(),
+                std::min(data->size(), std::size_t{MAX_INST_LEN})));
 
-        auto const size = reil_instructions.front().raw_info.size;
+        instructions_.clear();
+        reil_translate_insn(handle_, *address, code.data(), code.size());
+
+        auto const size = instructions_.front().raw_info.size;
+
         *address += size;
         data->remove_prefix(size);
 
-        machine_state_update update;
-
-        while (true)
+        std::optional<std::uint64_t> step_value{*address};
+        for (auto const& instruction : instructions_)
         {
-            std::optional<std::uint32_t> step_value{*address};
-
-            for (auto const& reil_instruction : reil_instructions)
+            switch (instruction.op)
             {
-                if (reil_instruction.op == I_NONE)
-                    continue;
-                if (reil_instruction.op == I_JCC && reil_instruction.a.type == A_CONST && reil_instruction.a.val == 0)
-                    continue;
-
-                if (reil_instruction.op == I_UNK)
+            case I_NONE:
+                break;
+            case I_UNK:
+                step_value = *address - size + 1;
+                break;
+            case I_JCC:
+                if (instruction.a.type == A_CONST)
                 {
-                    step_value = *address - size + 1;
-                    break;
-                }
-
-                auto [part, step] = translate(reil_instruction);
-                if (!step)
+                    if (instruction.a.val == 0)
+                        break;
                     step_value = std::nullopt;
-
-                part.operands.shrink_to_fit();
-
-                update.set(std::move(part));
-
-                if (!step_value)
-                    break;
+                }
+                jumps_.insert(get_value(instruction.c));
+                break;
+            case I_STR:
+                set_value(instruction.c, get_value(instruction.a));
+                break;
+            case I_STM:
+                state_.update(get_value(instruction.c).dereference(), get_value(instruction.a));
+                break;
+            case I_LDM:
+                set_value(instruction.c, state_[get_value(instruction.a)].dereference());
+                break;
+            default:
+                if (instruction.b.type == A_NONE)
+                {
+                    auto const unary_operation = get_unary_operation(instruction.op);
+                    set_value(instruction.c, unary_operation(get_value(instruction.a)));
+                }
+                else
+                {
+                    auto const binary_operation = get_binary_operation(instruction.op);
+                    set_value(instruction.c, binary_operation(get_value(instruction.a), get_value(instruction.b)));
+                }
+                break;
             }
 
             if (!step_value)
                 break;
-
-            reil_inum_t const inum = reil_instructions.back().inum + 1;
-
-            reil_instructions =
-            {
-                reil_inst_t
-                {
-                    .inum = inum,
-                    .op = I_JCC,
-                    .a =
-                    {
-                        .type = A_CONST,
-                        .size = U1, // TODO
-                        .val = 1
-                    },
-                    .c =
-                    {
-                        .type = A_CONST,
-                        .size = U64, // TODO
-                        .val = *step_value
-                    }
-                }
-            };
         }
 
-        return update;
+        if (step_value)
+            jumps_.emplace(*step_value);
+
+        temporary_state_.clear();
+        return { std::move(state_), std::move(jumps_) };
     }
 
-    std::list<reil_inst_t> reil_disassembler::disassemble(std::uint32_t const address, std::u8string_view const& data) const
+    z3::expression reil_disassembler::get_value(reil_arg_t const& argument) const
     {
-        std::vector<unsigned char> code(
-            data.begin(),
-            std::next(
-                data.begin(),
-                std::min(data.size(), std::size_t{MAX_INST_LEN})));
-
-        reil_translate_insn(reil_, address, code.data(), code.size());
-        return std::move(*current_reil_instructions_);
+        switch (argument.type)
+        {
+        case A_REG:
+            return state_[get_key(argument)];
+        case A_TEMP:
+            return temporary_state_[get_key(argument)];
+        case A_CONST:
+        case A_LOC: // TODO Prohibit inum
+            return z3::expression(argument.val);
+        default:
+            throw std::logic_error("Unexpected argument type");
+        }
+    }
+    void reil_disassembler::set_value(reil_arg_t const& argument, z3::expression value) const
+    {
+        switch (argument.type)
+        {
+        case A_REG:
+            state_.update(get_key(argument), std::move(value));
+            break;
+        case A_TEMP:
+            temporary_state_.update(get_key(argument), std::move(value));
+            break;
+        default:
+            throw std::logic_error("Unexpected argument type");
+        }
     }
 }
 

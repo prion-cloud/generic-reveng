@@ -34,7 +34,9 @@ namespace grev
                 if (data.empty())
                     break;
 
-                for (auto& new_path : path->update(disassembler(&*address, &data)))
+                auto [state, jumps] = disassembler(&*address, &data); // TODO Beautify
+
+                for (auto& new_path : path->update(std::move(state), std::move(jumps)))
                 {
                     paths_.push_front(std::move(new_path));
                     pending_paths.push_front(&paths_.front());

@@ -22,7 +22,7 @@ namespace Catch
     };
 }
 
-TEST_CASE("Copy", "[rev::z3::expression]")
+TEST_CASE("Copy", "[grev::z3::expression]")
 {
     auto const value = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
@@ -50,7 +50,7 @@ TEST_CASE("Copy", "[rev::z3::expression]")
         CHECK(b.evaluate() == value);
     }
 }
-TEST_CASE("Move", "[rev::z3::expression]")
+TEST_CASE("Move", "[grev::z3::expression]")
 {
     auto const value = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
@@ -79,7 +79,7 @@ TEST_CASE("Move", "[rev::z3::expression]")
     }
 }
 
-TEST_CASE("Evaluate", "[rev::z3::expression]")
+TEST_CASE("Evaluate", "[grev::z3::expression]")
 {
     SECTION("Unknown")
     {
@@ -101,7 +101,7 @@ TEST_CASE("Evaluate", "[rev::z3::expression]")
         }
         SECTION("Unary")
         {
-            SECTION("*") { CHECK((*a).evaluate() == std::nullopt); }
+            SECTION("*") { CHECK(a.dereference().evaluate() == std::nullopt); }
 
             SECTION("-") { CHECK((-a).evaluate() == -value_a); }
             SECTION("~") { CHECK((~a).evaluate() == ~value_a); }

@@ -2,11 +2,16 @@
 
 namespace grev::z3
 {
-    function::function(expression const& expression) :
-        syntax_tree(Z3_get_app_decl(context(), expression)) { }
+    function::function(Z3_func_decl const& native) :
+        syntax_tree(native) { }
 
     function::function(std::string const& name, std::vector<sort> const& domain, sort const& range) :
         syntax_tree(make(name, domain, range)) { }
+
+    bool function::equals(function const& other) const
+    {
+        return Z3_get_ast_hash(context(), *this) == Z3_get_ast_hash(context(), other);
+    }
 
     Z3_func_decl function::make(std::string const& name, std::vector<sort> const& domain, sort const& range)
     {

@@ -35,17 +35,17 @@ namespace grev
         return *this;
     }
 
-    std::forward_list<execution_path> execution_path::update(machine_state_update const& update)
+    std::forward_list<execution_path> execution_path::update(execution_state state, execution_fork jumps)
     {
         // TODO Support patching (?)
 
-        auto jumps = update.resolve(&current_state_);
+        jumps = current_state_.resolve(std::move(jumps));
+
+        current_state_ = current_state_.resolve(std::move(state));
 
         if (jumps.empty())
         {
-            current_state_.reset();
             current_jump_ = end();
-
             return { };
         }
 
@@ -59,7 +59,6 @@ namespace grev
         }
 
         step(std::move(jumps.extract(current_jump).value()));
-
         return new_paths;
     }
 
@@ -72,15 +71,15 @@ namespace grev
     }
 
     // >>-----
-    std::vector<std::uint32_t> execution_path::addresses() const
+    std::forward_list<std::uint32_t> execution_path::addresses() const
     {
-        std::vector<std::uint32_t> addresses;
+        std::forward_list<std::uint32_t> inverted_addresses;
 
         auto it = start_jump_;
         while (true)
         {
             if (auto const address = it->first.evaluate(); address)
-                addresses.push_back(*address);
+                inverted_addresses.push_front(*address);
             else
                 break;
 
@@ -89,6 +88,10 @@ namespace grev
 
             it = find(*it->second);
         }
+
+        std::forward_list<std::uint32_t> addresses;
+        for (auto const address : inverted_addresses)
+            addresses.push_front(address);
 
         return addresses;
     }

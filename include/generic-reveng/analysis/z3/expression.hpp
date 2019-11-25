@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <unordered_set>
 
 #include <generic-reveng/analysis/z3/syntax_tree.hpp>
 
@@ -30,7 +30,7 @@ namespace grev::z3
 
     class expression : public syntax_tree<Z3_ast>
     {
-        explicit expression(Z3_ast const& base);
+        explicit expression(Z3_ast const& native);
 
     public:
 
@@ -41,35 +41,50 @@ namespace grev::z3
 
         std::optional<std::uint32_t> evaluate() const;
 
-        expression operator*() const;
+        std::unordered_set<expression> dependencies() const;
+        expression resolve_dependency(expression const& dependency, expression const& value) const;
+
+        std::optional<expression> reference() const;
+        expression dereference() const;
+
+        expression& operator+=(expression const& other);
+        expression& operator-=(expression const& other);
+        expression& operator*=(expression const& other);
+        expression& operator/=(expression const& other);
+        expression& operator%=(expression const& other);
+
+        expression& operator&=(expression const& other);
+        expression& operator|=(expression const& other);
+        expression& operator^=(expression const& other);
+
+        expression& operator<<=(expression const& other);
+        expression& operator>>=(expression const& other);
 
         expression operator-() const;
         expression operator~() const;
-
-        expression operator+(expression const& other) const;
-        expression operator-(expression const& other) const;
-        expression operator*(expression const& other) const;
-        expression operator/(expression const& other) const;
-        expression operator%(expression const& other) const;
-
-        expression smul(expression const& other) const;
-        expression sdiv(expression const& other) const;
-        expression smod(expression const& other) const;
-
-        expression operator<<(expression const& other) const;
-        expression operator>>(expression const& other) const;
-
-        expression operator&(expression const& other) const;
-        expression operator|(expression const& other) const;
-        expression operator^(expression const& other) const;
 
         expression operator==(expression const& other) const;
         expression operator<(expression const& other) const;
 
     private:
 
+        bool dereferenced() const;
+
         static sort unique_sort();
 
         static function dereference_function();
     };
+
+    expression operator+(expression, expression const&);
+    expression operator-(expression, expression const&);
+    expression operator*(expression, expression const&);
+    expression operator/(expression, expression const&);
+    expression operator%(expression, expression const&);
+
+    expression operator&(expression, expression const&);
+    expression operator|(expression, expression const&);
+    expression operator^(expression, expression const&);
+
+    expression operator<<(expression, expression const&);
+    expression operator>>(expression, expression const&);
 }

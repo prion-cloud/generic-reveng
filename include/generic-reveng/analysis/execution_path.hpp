@@ -2,7 +2,8 @@
 
 #include <forward_list>
 
-#include <generic-reveng/analysis/machine_state_update.hpp>
+#include <generic-reveng/analysis/execution_fork.hpp>
+#include <generic-reveng/analysis/execution_state.hpp>
 
 namespace grev
 {
@@ -10,7 +11,7 @@ namespace grev
     {
         const_iterator start_jump_;
 
-        machine_state current_state_; // TODO Collect updates
+        execution_state current_state_; // TODO Collect updates
         iterator current_jump_;
 
     public:
@@ -23,12 +24,12 @@ namespace grev
 
         execution_path& operator=(execution_path other) noexcept;
 
-        std::forward_list<execution_path> update(machine_state_update const& update);
+        std::forward_list<execution_path> update(execution_state state, execution_fork jumps);
 
         std::optional<std::uint32_t> next_address() const;
 
         // >>-----
-        std::vector<std::uint32_t> addresses() const; // Testing seam TODO
+        std::forward_list<std::uint32_t> addresses() const; // Testing seam TODO
         // -----<<
 
     private:

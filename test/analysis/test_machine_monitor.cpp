@@ -287,6 +287,10 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     auto const actual_path_addresses =
         grev::machine_monitor(disassembler, program).path_addresses();
 
-    CHECK(includes(expected_path_addresses, actual_path_addresses));
-    CHECK(includes(actual_path_addresses, expected_path_addresses));
+    std::vector<std::vector<std::uint32_t>> actual_path_address_vector;
+    for (auto const a : actual_path_addresses)
+        actual_path_address_vector.emplace_back(a.begin(), a.end());
+
+    CHECK(includes(expected_path_addresses, actual_path_address_vector));
+    CHECK(includes(actual_path_address_vector, expected_path_addresses));
 }
