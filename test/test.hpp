@@ -27,3 +27,9 @@ bool includes(SuperContainer const& super_container, SubContainer const& sub_con
     static constexpr std::equal_to<std::remove_cvref_t<decltype(*super_container.begin())>> equal;
     return includes(super_container, sub_container, equal);
 }
+
+template <typename Container1, typename Container2>
+bool matches(Container1 const& container_1, Container2 const& container_2)
+{
+    return includes(container_1, container_2) && includes(container_2, container_1);
+}

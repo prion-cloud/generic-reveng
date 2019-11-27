@@ -71,27 +71,19 @@ namespace grev
     }
 
     // >>-----
-    std::forward_list<std::uint32_t> execution_path::addresses() const
+    std::vector<std::uint32_t> execution_path::addresses() const
     {
-        std::forward_list<std::uint32_t> inverted_addresses;
-
-        auto it = start_jump_;
-        while (true)
+        std::vector<std::uint32_t> addresses;
+        for (auto jump = start_jump_;; jump = find(*jump->second))
         {
-            if (auto const address = it->first.evaluate(); address)
-                inverted_addresses.push_front(*address);
+            if (auto const address = jump->first.evaluate())
+                addresses.push_back(*address);
             else
                 break;
 
-            if (it == current_jump_ || it->second == nullptr)
+            if (jump == current_jump_ || jump->second == nullptr)
                 break;
-
-            it = find(*it->second);
         }
-
-        std::forward_list<std::uint32_t> addresses;
-        for (auto const address : inverted_addresses)
-            addresses.push_front(address);
 
         return addresses;
     }

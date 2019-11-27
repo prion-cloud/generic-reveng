@@ -1,3 +1,7 @@
+#include <fstream>
+
+#include <libgen.h>
+
 #include <catch2/catch.hpp>
 
 #include <generic-reveng/analysis/machine_monitor.hpp>
@@ -18,6 +22,18 @@
 #define MOV_EBX(v) 0xBB, char8_t(v), 0x00, 0x00, 0x00
 #define NOP 0x90
 #define RET 0xC3
+
+std::u8string read_test_data(std::string const& file_name)
+{
+    std::ifstream file_stream(std::string(dirname(std::string(__FILE__).data())) + "/../" + file_name, std::ios_base::ate);
+
+    std::u8string data(file_stream.tellg(), '\0');
+
+    file_stream.seekg(0);
+    file_stream.read(reinterpret_cast<char*>(data.data()), data.size());
+
+    return data;
+}
 
 TEST_CASE("Path inspection", "[grev::machine_monitor]")
 {
@@ -287,10 +303,46 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     auto const actual_path_addresses =
         grev::machine_monitor(disassembler, program).path_addresses();
 
-    std::vector<std::vector<std::uint32_t>> actual_path_address_vector;
-    for (auto const a : actual_path_addresses)
-        actual_path_address_vector.emplace_back(a.begin(), a.end());
+    grev::machine_monitor const monitor(disassembler, program);
+    CHECK(matches(monitor.path_addresses(), expected_path_addresses));
+}
+TEST_CASE("Real path inspection")
+{
+    SECTION("x86_32")
+    {
+        grev::reil_disassembler const d(grev::machine_architecture::x86_32);
 
-    CHECK(includes(expected_path_addresses, actual_path_address_vector));
-    CHECK(includes(actual_path_address_vector, expected_path_addresses));
+        SECTION("helloworld_32.exe")
+        {
+            auto const p = grev::program::load(read_test_data("helloworld_32.exe"));
+            CHECK(matches(grev::machine_monitor(d, *p).path_addresses(), std::vector<std::vector<std::uint32_t>>
+            {
+                // Incomplete, tailored to current functionality TODO
+                {
+                    0x4012A8, 0x40169D, 0x4016A3, 0x4016A4, 0x4016A5, 0x4016AA, 0x4016AF, 0x4016B1, 0x4016B7, 0x401650,
+                    0x401651, 0x401653, 0x401656, 0x40165A, 0x40165D, 0x401661, 0x401662
+                },
+                {
+                    0x4012A8, 0x40169D, 0x4016A3, 0x4016A4, 0x4016A5, 0x4016AA, 0x4016AF, 0x4016B1, 0x4016B3, 0x4016B5,
+                    0x4016B7, 0x401650, 0x401651, 0x401653, 0x401656, 0x40165A, 0x40165D, 0x401661, 0x401662
+                },
+                {
+                    0x4012A8, 0x40169D, 0x4016A3, 0x4016A4, 0x4016A5, 0x4016AA, 0x4016AF, 0x4016B1, 0x4016B3, 0x4016B5,
+                    0x4016DD, 0x4016DF, 0x4016E0, 0x4016E6, 0x4016E7, 0x4012AD, 0x401126, 0x401128, 0x40112D, 0x401970,
+                    0x401975, 0x40197C, 0x401980, 0x401984, 0x401988, 0x40198A, 0x40198B, 0x40198C, 0x40198D, 0x401992,
+                    0x401995, 0x401997, 0x401998, 0x40199B, 0x40199E, 0x4019A1, 0x4019A8, 0x4019AB, 0x4019AE, 0x4019B4,
+                    0x4019B5, 0x401132, 0x401134, 0x401449, 0x40144A, 0x40144C, 0x401450, 0x401459, 0x4019EE, 0x4019EF,
+                    0x4019F1, 0x4019F8, 0x4019FB, 0x4019FC, 0x4019FE, 0x4019FF, 0x401A05, 0x401A07, 0x401C2D
+                },
+                {
+                    0x4012A8, 0x40169D, 0x4016A3, 0x4016A4, 0x4016A5, 0x4016AA, 0x4016AF, 0x4016B1, 0x4016B3, 0x4016B5,
+                    0x4016DD, 0x4016DF, 0x4016E0, 0x4016E6, 0x4016E7, 0x4012AD, 0x401126, 0x401128, 0x40112D, 0x401970,
+                    0x401975, 0x40197C, 0x401980, 0x401984, 0x401988, 0x40198A, 0x40198B, 0x40198C, 0x40198D, 0x401992,
+                    0x401995, 0x401997, 0x401998, 0x40199B, 0x40199E, 0x4019A1, 0x4019A8, 0x4019AB, 0x4019AE, 0x4019B4,
+                    0x4019B5, 0x401132, 0x401134, 0x401449, 0x40144A, 0x40144C, 0x401450, 0x401452, 0x401459, 0x4019EE,
+                    0x4019EF, 0x4019F1, 0x4019F8, 0x4019FB, 0x4019FC, 0x4019FE, 0x4019FF, 0x401A05, 0x401A07, 0x401C2D
+                }
+            }));
+        }
+    }
 }

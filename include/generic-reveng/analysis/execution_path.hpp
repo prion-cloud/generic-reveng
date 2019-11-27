@@ -29,7 +29,7 @@ namespace grev
         std::optional<std::uint32_t> next_address() const;
 
         // >>-----
-        std::forward_list<std::uint32_t> addresses() const; // Testing seam TODO
+        std::vector<std::uint32_t> addresses() const; // Testing seam TODO
         // -----<<
 
     private:

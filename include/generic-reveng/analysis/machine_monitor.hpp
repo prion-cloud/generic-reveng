@@ -14,7 +14,7 @@ namespace grev
         explicit machine_monitor(Disassembler const& disassembler, Program const& program);
 
         // >>-----
-        std::forward_list<std::forward_list<std::uint32_t>> path_addresses() const; // Testing seam TODO
+        std::vector<std::vector<std::uint32_t>> path_addresses() const; // Testing seam TODO
         // -----<<
     };
 }
