@@ -4,19 +4,6 @@
 
 #include "function.hpp"
 
-namespace std // NOLINT [cert-dcl58-cpp]
-{
-    bool equal_to<grev::z3::expression>::operator()(grev::z3::expression const& a, grev::z3::expression const& b) const
-    {
-        static constexpr std::hash<grev::z3::expression> hash;
-        return hash(a) == hash(b);
-    }
-    std::size_t hash<grev::z3::expression>::operator()(grev::z3::expression const& expression) const
-    {
-        return Z3_get_ast_hash(grev::z3::expression::context(), expression);
-    }
-}
-
 namespace grev::z3
 {
     expression::expression(Z3_ast const& native) :
@@ -63,6 +50,9 @@ namespace grev::z3
     }
     expression expression::resolve_dependency(expression const& dependency, expression const& value) const
     {
+        if (value.equals(dependency))
+            return *this;
+
         Z3_ast const& native_dependency = dependency;
         Z3_ast const& native_value = value;
         return expression(Z3_substitute(context(), *this, 1, &native_dependency, &native_value));

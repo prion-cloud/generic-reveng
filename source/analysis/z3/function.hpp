@@ -16,8 +16,6 @@ namespace grev::z3
 
         function(std::string const& name, std::vector<sort> const& domain, sort const& range);
 
-        bool equals(function const& other) const;
-
     private:
 
         static Z3_func_decl make(std::string const& name, std::vector<sort> const& domain, sort const& range);

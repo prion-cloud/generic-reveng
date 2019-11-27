@@ -12,15 +12,9 @@ namespace grev::z3
 namespace std
 {
     template <>
-    struct equal_to<grev::z3::expression>
-    {
-        bool operator()(grev::z3::expression const& expression_1, grev::z3::expression const& expression_2) const;
-    };
+    struct equal_to<grev::z3::expression> : equal_to<grev::z3::syntax_tree<Z3_ast>> { };
     template <>
-    struct hash<grev::z3::expression>
-    {
-        std::size_t operator()(grev::z3::expression const& expresssion) const;
-    };
+    struct hash<grev::z3::expression> : hash<grev::z3::syntax_tree<Z3_ast>> { };
 }
 
 namespace grev::z3
