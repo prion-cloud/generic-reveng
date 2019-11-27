@@ -22,11 +22,17 @@ namespace grev
             {
                 if (auto next_address = path->next_address())
                 {
-                    address = std::move(*next_address);
-                    data = program[*address];
+                    if (address != *next_address)
+                    {
+                        address = std::move(*next_address);
+                        data = program[*address];
+                    }
                 }
                 else
-                    break; // TODO patching (?)
+                {
+                    // TODO patching (?)
+                    break;
+                }
 
                 if (data.empty())
                     break;
