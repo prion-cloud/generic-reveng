@@ -20,16 +20,13 @@ namespace grev
             std::u8string_view data;
             while (true)
             {
-                auto const next_address = path->next_address();
-
-                if (!next_address)
-                    break; // TODO patching (?)
-
-                if (address != next_address)
+                if (auto next_address = path->next_address())
                 {
-                    address = *next_address;
+                    address = std::move(*next_address);
                     data = program[*address];
                 }
+                else
+                    break; // TODO patching (?)
 
                 if (data.empty())
                     break;

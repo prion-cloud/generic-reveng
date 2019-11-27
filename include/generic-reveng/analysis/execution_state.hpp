@@ -21,6 +21,7 @@ namespace grev
 
     private:
 
-        z3::expression resolve(z3::expression value) const;
+        z3::expression resolve_key(z3::expression key) const;
+        z3::expression resolve_value(z3::expression value) const;
     };
 }
