@@ -1,27 +1,20 @@
-#include <climits>
-
+#include <generic-reveng/analysis/z3/context.hpp>
 #include <generic-reveng/analysis/z3/expression.hpp>
-
-#include "function.hpp"
+#include <generic-reveng/analysis/z3/sort.hpp>
 
 namespace grev::z3
 {
-    expression::expression(Z3_ast const& native) :
-        syntax_tree(Z3_simplify(context(), native)) { }
+    expression::expression(Z3_ast const& base) :
+        syntax_tree(Z3_simplify(context(), base)) { }
 
     expression::expression(std::string const& name) :
-        syntax_tree(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), unique_sort())) { }
+        syntax_tree(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), sort())) { }
     expression::expression(std::uint32_t const value) :
-        syntax_tree(Z3_mk_unsigned_int(context(), value, unique_sort())) { }
-
-    expression::operator Z3_app() const
-    {
-        return Z3_to_app(context(), *this);
-    }
+        syntax_tree(Z3_mk_unsigned_int(context(), value, sort())) { }
 
     std::optional<std::uint32_t> expression::evaluate() const
     {
-        if (std::uint32_t value; Z3_get_numeral_uint(context(), *this, &value))
+        if (std::uint32_t value; Z3_get_numeral_uint(context(), base(), &value))
             return value;
 
         return std::nullopt;
@@ -32,11 +25,11 @@ namespace grev::z3
         if (dereferenced())
             return { *this };
 
-        std::size_t const argument_count = Z3_get_app_num_args(context(), *this);
+        std::size_t const argument_count = Z3_get_app_num_args(context(), application());
 
         if (argument_count == 0)
         {
-            if (Z3_is_numeral_ast(context(), *this))
+            if (Z3_is_numeral_ast(context(), base()))
                 return { };
 
             return { *this };
@@ -44,119 +37,129 @@ namespace grev::z3
 
         std::unordered_set<expression> dependencies;
         for (std::size_t argument_index = 0; argument_index < argument_count; ++argument_index)
-            dependencies.merge(expression(Z3_get_app_arg(context(), *this, argument_index)).dependencies());
+            dependencies.merge(expression(Z3_get_app_arg(context(), application(), argument_index)).dependencies());
 
         return dependencies;
     }
     expression expression::resolve_dependency(expression const& dependency, expression const& value) const
     {
-        if (value.equals(dependency))
+        if (value == dependency)
             return *this;
 
-        Z3_ast const& native_dependency = dependency;
-        Z3_ast const& native_value = value;
-        return expression(Z3_substitute(context(), *this, 1, &native_dependency, &native_value));
+        return expression(Z3_substitute(context(), base(), 1, &dependency.base(), &value.base()));
     }
 
     std::optional<expression> expression::reference() const
     {
         if (dereferenced())
-            return expression(Z3_get_app_arg(context(), *this, 0));
+            return expression(Z3_get_app_arg(context(), application(), 0));
 
         return std::nullopt;
     }
     expression expression::dereference() const
     {
-        Z3_ast const& native = *this;
-        return expression(Z3_mk_app(context(), dereference_function(), 1, &native));
+        return expression(Z3_mk_app(context(), dereference_function(), 1, &base()));
     }
 
-    expression& expression::operator+=(expression const& other)
+    expression expression::equals(expression const& other) const
     {
-        return *this = expression(Z3_mk_bvadd(context(), *this, other));
+        return expression(
+            Z3_mk_ite(context(),
+                Z3_mk_eq(context(), base(), other.base()),
+                expression{1}.base(),
+                expression{+0}.base()));
     }
-    expression& expression::operator-=(expression const& other)
+    expression expression::less_than(expression const& other) const
     {
-        return *this = expression(Z3_mk_bvsub(context(), *this, other));
-    }
-    expression& expression::operator*=(expression const& other)
-    {
-        // TODO Signed/unsigned?
-        return *this = expression(Z3_mk_bvmul(context(), *this, other));
-    }
-    expression& expression::operator/=(expression const& other)
-    {
-        return *this = expression(Z3_mk_bvudiv(context(), *this, other));
-    }
-    expression& expression::operator%=(expression const& other)
-    {
-        // TODO Signed/unsigned?
-        return *this = expression(Z3_mk_bvsmod(context(), *this, other));
-    }
-
-    expression& expression::operator&=(expression const& other)
-    {
-        return *this = expression(Z3_mk_bvand(context(), *this, other));
-    }
-    expression& expression::operator|=(expression const& other)
-    {
-        return *this = expression(Z3_mk_bvor(context(), *this, other));
-    }
-    expression& expression::operator^=(expression const& other)
-    {
-        return *this = expression(Z3_mk_bvxor(context(), *this, other));
-    }
-
-    expression& expression::operator<<=(expression const& other)
-    {
-        return *this = expression(Z3_mk_bvshl(context(), *this, other));
-    }
-    expression& expression::operator>>=(expression const& other)
-    {
-        return *this = expression(Z3_mk_bvlshr(context(), *this, other));
+        return expression(
+            Z3_mk_ite(context(),
+                Z3_mk_bvult(context(), base(), other.base()),
+                expression{1}.base(),
+                expression{+0}.base()));
     }
 
     expression expression::operator-() const
     {
-        return expression(Z3_mk_bvneg(context(), *this));
+        return expression(Z3_mk_bvneg(context(), base()));
     }
     expression expression::operator~() const
     {
-        return expression(Z3_mk_bvnot(context(), *this));
+        return expression(Z3_mk_bvnot(context(), base()));
     }
 
-    expression expression::operator==(expression const& other) const
+    expression& expression::operator+=(expression const& other)
     {
-        return expression(
-            Z3_mk_ite(context(),
-                Z3_mk_eq(context(), *this, other),
-                expression(std::uint32_t{1}),
-                expression(std::uint32_t{0})));
+        return *this = expression(Z3_mk_bvadd(context(), base(), other.base()));
     }
-    expression expression::operator<(expression const& other) const
+    expression& expression::operator-=(expression const& other)
     {
-        return expression(
-            Z3_mk_ite(context(),
-                Z3_mk_bvult(context(), *this, other),
-                expression(std::uint32_t{1}),
-                expression(std::uint32_t{0})));
+        return *this = expression(Z3_mk_bvsub(context(), base(), other.base()));
+    }
+    expression& expression::operator*=(expression const& other)
+    {
+        // TODO Signed/unsigned?
+        return *this = expression(Z3_mk_bvmul(context(), base(), other.base()));
+    }
+    expression& expression::operator/=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvudiv(context(), base(), other.base()));
+    }
+    expression& expression::operator%=(expression const& other)
+    {
+        // TODO Signed/unsigned?
+        return *this = expression(Z3_mk_bvsmod(context(), base(), other.base()));
+    }
+
+    expression& expression::operator&=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvand(context(), base(), other.base()));
+    }
+    expression& expression::operator|=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvor(context(), base(), other.base()));
+    }
+    expression& expression::operator^=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvxor(context(), base(), other.base()));
+    }
+
+    expression& expression::operator<<=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvshl(context(), base(), other.base()));
+    }
+    expression& expression::operator>>=(expression const& other)
+    {
+        return *this = expression(Z3_mk_bvlshr(context(), base(), other.base()));
+    }
+
+    Z3_app expression::application() const
+    {
+        return Z3_to_app(context(), base());
     }
 
     bool expression::dereferenced() const
     {
-        return function(Z3_get_app_decl(context(), *this)).equals(dereference_function());
+        return Z3_is_eq_func_decl(context(), Z3_get_app_decl(context(), application()), dereference_function());
     }
 
-    sort expression::unique_sort()
+    Z3_func_decl const& expression::dereference_function()
     {
-        // TODO static ?
-        return sort(sizeof(std::uint32_t) * CHAR_BIT);
-    }
+        class dereference_function : public syntax_tree<_Z3_func_decl>
+        {
+        public:
 
-    function expression::dereference_function()
-    {
-        // TODO static ?
-        return function("deref", { unique_sort() }, unique_sort());
+            dereference_function() :
+                syntax_tree(Z3_mk_func_decl(context(), Z3_mk_string_symbol(context(), "deref"), 1, &sort(), sort())) { }
+            ~dereference_function() override = default;
+
+            dereference_function(dereference_function const&) = delete;
+            dereference_function(dereference_function&&) = delete;
+
+            dereference_function& operator=(dereference_function const&) = delete;
+            dereference_function& operator=(dereference_function&&) = delete;
+        }
+        static const dereference_function;
+        return dereference_function.base();
     }
 
     expression operator+(expression a, expression const& b)

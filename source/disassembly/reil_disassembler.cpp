@@ -57,9 +57,9 @@ namespace grev
         case I_XOR:
             return z3::operator^;
         case I_EQ:
-            return std::mem_fn(&z3::expression::operator==);
+            return std::mem_fn(&z3::expression::equals);
         case I_LT:
-            return std::mem_fn(&z3::expression::operator<);
+            return std::mem_fn(&z3::expression::less_than);
         default:
             throw std::logic_error("Unexpected operation");
         }

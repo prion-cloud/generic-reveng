@@ -2,54 +2,48 @@
 
 #include <functional>
 
-#include <generic-reveng/analysis/z3/syntax_tree_base.hpp>
+#include <z3.h>
 
 namespace grev::z3
 {
-    template <typename Native>
+    template <typename Base>
     class syntax_tree;
 }
 
 namespace std
 {
-    template <typename Native>
-    struct equal_to<grev::z3::syntax_tree<Native>>
+    template <typename Base>
+    struct hash<grev::z3::syntax_tree<Base>>
     {
-        bool operator()(grev::z3::syntax_tree<Native> const&, grev::z3::syntax_tree<Native> const&) const;
-    };
-    template <typename Native>
-    struct hash<grev::z3::syntax_tree<Native>>
-    {
-        std::size_t operator()(grev::z3::syntax_tree<Native> const&) const;
+        std::size_t operator()(grev::z3::syntax_tree<Base> const&) const;
     };
 }
 
 namespace grev::z3
 {
-    template <typename Native>
-    class syntax_tree : public syntax_tree_base
+    template <typename Base>
+    class syntax_tree
     {
-        static constexpr bool is_native_ast = std::is_same_v<Native, Z3_ast>;
-
-        Native native_;
+        Base* base_;
 
     protected:
 
-        explicit syntax_tree(Native native);
+        explicit syntax_tree(Base* base);
 
     public:
 
+        explicit operator Z3_ast() const;
+
         virtual ~syntax_tree();
 
-        syntax_tree(syntax_tree const& other);
-        syntax_tree(syntax_tree&& other) noexcept;
+        syntax_tree(syntax_tree const&);
+        syntax_tree(syntax_tree&&) noexcept;
 
-        syntax_tree& operator=(syntax_tree other) noexcept;
+        syntax_tree& operator=(syntax_tree) noexcept;
 
-        operator Z3_ast() const;
-        operator std::conditional_t<is_native_ast, void, Native>() const;
+        Base* const& base() const;
 
-        bool equals(syntax_tree const& other) const;
+        bool operator==(syntax_tree const&) const;
     };
 }
 

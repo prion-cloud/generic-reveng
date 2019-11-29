@@ -1,73 +1,66 @@
-#include <utility>
+#include <generic-reveng/analysis/z3/context.hpp>
 
 #ifdef LINT
 #include <generic-reveng/analysis/z3/syntax_tree.hpp>
 #endif
 
-namespace std // NOLINT [cert-dcl58-cpp]
+namespace std
 {
-    template <typename Native>
-    bool equal_to<grev::z3::syntax_tree<Native>>::operator()(
-        grev::z3::syntax_tree<Native> const& a,
-        grev::z3::syntax_tree<Native> const& b) const
+    template <typename Base>
+    std::size_t hash<grev::z3::syntax_tree<Base>>::operator()(grev::z3::syntax_tree<Base> const& syntax_tree) const
     {
-        static constexpr std::hash<grev::z3::syntax_tree<Native>> hash;
-        return hash(a) == hash(b);
-    }
-    template <typename Native>
-    std::size_t hash<grev::z3::syntax_tree<Native>>::operator()(grev::z3::syntax_tree<Native> const& syntax_tree) const
-    {
-        return Z3_get_ast_hash(grev::z3::syntax_tree<Native>::context(), syntax_tree);
+        return Z3_get_ast_hash(grev::z3::context(), static_cast<Z3_ast>(syntax_tree));
     }
 }
 
 namespace grev::z3
 {
-    template <typename Native>
-    syntax_tree<Native>::syntax_tree(Native native) :
-        native_(std::move(native))
+    template <typename Base>
+    syntax_tree<Base>::syntax_tree(Base* const base) :
+        base_(base)
     {
-        Z3_inc_ref(context(), *this);
+        Z3_inc_ref(context(), static_cast<Z3_ast>(*this));
     }
 
-    template <typename Native>
-    syntax_tree<Native>::~syntax_tree()
+    template <typename Base>
+    syntax_tree<Base>::~syntax_tree()
     {
-        Z3_dec_ref(context(), *this);
+        Z3_dec_ref(context(), static_cast<Z3_ast>(*this));
     }
 
-    template <typename Native>
-    syntax_tree<Native>::syntax_tree(syntax_tree const& other) :
-        syntax_tree<Native>(other.native_) { }
-    template <typename Native>
-    syntax_tree<Native>::syntax_tree(syntax_tree&& other) noexcept :
-        native_(std::exchange(other.native_, nullptr)) { } // TODO Generic move vs. z3 pointer semantics
+    template <typename Base>
+    syntax_tree<Base>::syntax_tree(syntax_tree const& other) :
+        syntax_tree<Base>(other.base_) { }
+    template <typename Base>
+    syntax_tree<Base>::syntax_tree(syntax_tree&& other) noexcept :
+        base_(std::exchange(other.base_, nullptr)) { }
 
-    template <typename Native>
-    syntax_tree<Native>& syntax_tree<Native>::operator=(syntax_tree other) noexcept
+    template <typename Base>
+    syntax_tree<Base>& syntax_tree<Base>::operator=(syntax_tree other) noexcept
     {
-        std::swap(native_, other.native_);
+        std::swap(base_, other.base_);
 
         return *this;
     }
 
-    template <typename Native>
-    syntax_tree<Native>::operator std::conditional_t<is_native_ast, void, Native>() const
+    template <typename Base>
+    Base* const& syntax_tree<Base>::base() const
     {
-        if constexpr (!is_native_ast)
-            return native_;
+        return base_;
     }
 
-    template <typename Native>
-    bool syntax_tree<Native>::equals(syntax_tree const& other) const
+    template <typename Base>
+    bool syntax_tree<Base>::operator==(syntax_tree const& other) const
     {
-        static constexpr std::equal_to<syntax_tree<Native>> equal_to;
-        return equal_to(*this, other);
+        return Z3_is_eq_ast(context(), static_cast<Z3_ast>(*this), static_cast<Z3_ast>(other));
     }
 }
 
 #ifdef LINT
-template class grev::z3::syntax_tree<Z3_ast>;
-template class grev::z3::syntax_tree<Z3_func_decl>;
-template class grev::z3::syntax_tree<Z3_sort>;
+template class std::hash<grev::z3::syntax_tree<_Z3_ast>>;
+template class grev::z3::syntax_tree<_Z3_ast>;
+template class std::hash<grev::z3::syntax_tree<_Z3_func_decl>>;
+template class grev::z3::syntax_tree<_Z3_func_decl>;
+template class std::hash<grev::z3::syntax_tree<_Z3_sort>>;
+template class grev::z3::syntax_tree<_Z3_sort>;
 #endif
