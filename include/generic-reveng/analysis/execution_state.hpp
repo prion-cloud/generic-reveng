@@ -12,7 +12,10 @@ namespace grev
 
         using std::unordered_map<z3::expression, z3::expression>::clear;
 
-        void update(z3::expression key, z3::expression value);
+        /*!
+         *  Sets a new unbound value to a certain, possibly existing key.
+         */
+        void define(z3::expression key, z3::expression value);
 
         execution_fork resolve(execution_fork source) const;
         execution_state resolve(execution_state source) const;

@@ -70,7 +70,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
             }
             SECTION("B2")
             {
-                initial_state.update(grev::z3::expression("R_EAX"), grev::z3::expression(26));
+                initial_state.define(grev::z3::expression("R_EAX"), grev::z3::expression(26));
 
                 SECTION("mov eax, 27")
                 {

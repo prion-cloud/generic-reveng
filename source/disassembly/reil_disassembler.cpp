@@ -145,7 +145,7 @@ namespace grev
                 set_value(instruction.c, get_value(instruction.a));
                 break;
             case I_STM:
-                state_.update(get_value(instruction.c).dereference(), get_value(instruction.a));
+                state_.define(get_value(instruction.c).dereference(), get_value(instruction.a));
                 break;
             case I_LDM:
                 set_value(instruction.c, state_[get_value(instruction.a)].dereference());
@@ -195,10 +195,10 @@ namespace grev
         switch (argument.type)
         {
         case A_REG:
-            state_.update(get_key(argument), std::move(value));
+            state_.define(get_key(argument), std::move(value));
             break;
         case A_TEMP:
-            temporary_state_.update(get_key(argument), std::move(value));
+            temporary_state_.define(get_key(argument), std::move(value));
             break;
         default:
             throw std::logic_error("Unexpected argument type");

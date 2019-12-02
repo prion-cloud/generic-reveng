@@ -2,7 +2,7 @@
 
 namespace grev
 {
-    void execution_state::update(z3::expression key, z3::expression value)
+    void execution_state::define(z3::expression key, z3::expression value)
     {
         insert_or_assign(std::move(key), std::move(value));
     }
