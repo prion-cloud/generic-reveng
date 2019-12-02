@@ -24,14 +24,7 @@ namespace grev
         }
 
         for (std::size_t section_index{0}; section_index < file.coff_header.section_count; ++section_index)
-        {
-            auto section_header = pe_section_header::inspect(&data_view);
-
-            if (section_header.section_size < section_header.miscellaneous)
-                continue; // TODO (?)
-
-            file.section_headers.push_back(std::move(section_header));
-        }
+            file.section_headers.push_back(pe_section_header::inspect(&data_view)); // TODO section_header.miscellaneous
 
         return file;
     }
