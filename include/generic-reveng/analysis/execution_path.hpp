@@ -2,8 +2,7 @@
 
 #include <forward_list>
 
-#include <generic-reveng/analysis/execution_fork.hpp>
-#include <generic-reveng/analysis/execution_state.hpp>
+#include <generic-reveng/analysis/execution_update.hpp>
 
 namespace grev
 {
@@ -24,7 +23,7 @@ namespace grev
 
         execution_path& operator=(execution_path other) noexcept;
 
-        std::forward_list<execution_path> update(execution_state state, execution_fork jumps);
+        std::forward_list<execution_path> proceed(execution_update update, execution_state const& memory_patch_state);
 
         std::optional<std::uint32_t> next_address() const;
 

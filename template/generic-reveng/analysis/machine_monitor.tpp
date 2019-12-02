@@ -16,32 +16,48 @@ namespace grev
             auto* const path = pending_paths.front();
             pending_paths.pop_front();
 
-            std::optional<std::uint32_t> address;
-            std::u8string_view data;
-            while (true)
+            // Follow the current path as far as possible (-> depth first search)
+            for (auto [address, code] = std::pair<std::optional<std::uint32_t>, std::u8string_view> { };;)
             {
+                // Go on with the next address if unambiguous
                 if (auto next_address = path->next_address())
                 {
+                    // (Re-)extract code if the next address is the first one or not adjacent to the previous address
                     if (address != *next_address)
                     {
                         address = std::move(*next_address);
-                        data = program[*address];
+                        code = program[*address];
                     }
                 }
-                else
-                {
-                    // TODO patching (?)
+                else break;
+
+                // Stop if no (more) code is available
+                if (code.empty())
                     break;
+
+                // Disassemble next code
+                auto update = disassembler(&*address, &code);
+
+                execution_state memory_patch_state;
+                for (auto const address : update.state.memory_dependencies())
+                {
+                    auto const dependency_data = program[address];
+
+                    if (dependency_data.size() < sizeof(std::uint32_t)) // TODO Distinguish between different sizes
+                        continue;
+
+                    memory_patch_state.define(
+                        z3::expression(address).dereference(),
+                        z3::expression(*reinterpret_cast<std::uint32_t const*>(dependency_data.data())));
                 }
 
-                if (data.empty())
-                    break;
+                // Step forward
+                auto forked_paths = path->proceed(std::move(update), memory_patch_state);
 
-                auto [state, jumps] = disassembler(&*address, &data); // TODO Beautify
-
-                for (auto& new_path : path->update(std::move(state), std::move(jumps)))
+                // Store and enqueue each forked path
+                for (auto& forked_path : forked_paths)
                 {
-                    paths_.push_front(std::move(new_path));
+                    paths_.push_front(std::move(forked_path));
                     pending_paths.push_front(&paths_.front());
                 }
             }

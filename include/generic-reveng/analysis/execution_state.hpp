@@ -17,14 +17,20 @@ namespace grev
          */
         void define(z3::expression key, z3::expression value);
 
-        execution_fork resolve(execution_fork source) const;
-        execution_state resolve(execution_state source) const;
+        std::unordered_set<std::uint32_t> memory_dependencies() const; // TODO Store as field (?)
+
+        void resolve(execution_fork* source) const;
+        void resolve(execution_state* source) const;
 
         z3::expression const& operator[](z3::expression const& key) const;
+
+        execution_state operator+=(execution_state);
 
     private:
 
         z3::expression resolve_key(z3::expression key) const;
         z3::expression resolve_value(z3::expression value) const;
     };
+
+    execution_state operator+(execution_state, execution_state);
 }

@@ -105,22 +105,21 @@ namespace grev
         return *this;
     }
 
-    std::pair<execution_state, execution_fork>
-        reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const data) const
+    execution_update reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const code) const
     {
-        std::vector<unsigned char> code(
-            data->begin(),
+        std::vector<unsigned char> narrowed_code(
+            code->begin(),
             std::next(
-                data->begin(),
-                std::min(data->size(), std::size_t{MAX_INST_LEN})));
+                code->begin(),
+                std::min(code->size(), std::size_t{MAX_INST_LEN})));
 
         instructions_.clear();
-        reil_translate_insn(handle_, *address, code.data(), code.size());
+        reil_translate_insn(handle_, *address, narrowed_code.data(), narrowed_code.size());
 
         auto const size = instructions_.front().raw_info.size;
 
         *address += size;
-        data->remove_prefix(size);
+        code->remove_prefix(size);
 
         std::optional<std::uint64_t> step_value{*address};
         for (auto const& instruction : instructions_)
@@ -139,16 +138,16 @@ namespace grev
                         break;
                     step_value = std::nullopt;
                 }
-                jumps_.insert(get_value(instruction.c));
+                update_.jumps.insert(get_value(instruction.c));
                 break;
             case I_STR:
                 set_value(instruction.c, get_value(instruction.a));
                 break;
             case I_STM:
-                state_.define(get_value(instruction.c).dereference(), get_value(instruction.a));
+                update_.state.define(get_value(instruction.c).dereference(), get_value(instruction.a));
                 break;
             case I_LDM:
-                set_value(instruction.c, state_[get_value(instruction.a)].dereference());
+                set_value(instruction.c, update_.state[get_value(instruction.a)].dereference());
                 break;
             default:
                 if (instruction.b.type == A_NONE)
@@ -169,10 +168,10 @@ namespace grev
         }
 
         if (step_value)
-            jumps_.emplace(*step_value);
+            update_.jumps.emplace(*step_value);
 
         temporary_state_.clear();
-        return { std::move(state_), std::move(jumps_) };
+        return std::move(update_);
     }
 
     z3::expression reil_disassembler::get_value(reil_arg_t const& argument) const
@@ -180,7 +179,7 @@ namespace grev
         switch (argument.type)
         {
         case A_REG:
-            return state_[get_key(argument)];
+            return update_.state[get_key(argument)];
         case A_TEMP:
             return temporary_state_[get_key(argument)];
         case A_CONST:
@@ -195,7 +194,7 @@ namespace grev
         switch (argument.type)
         {
         case A_REG:
-            state_.define(get_key(argument), std::move(value));
+            update_.state.define(get_key(argument), std::move(value));
             break;
         case A_TEMP:
             temporary_state_.define(get_key(argument), std::move(value));

@@ -35,30 +35,32 @@ namespace grev
         return *this;
     }
 
-    std::forward_list<execution_path> execution_path::update(execution_state state, execution_fork jumps)
+    std::forward_list<execution_path> execution_path::proceed(execution_update update, execution_state const& memory_patch_state)
     {
         // TODO Support patching (?)
 
-        jumps = current_state_.resolve(std::move(jumps));
+        current_state_.resolve(&update.jumps);
+        current_state_ += std::move(update.state);
 
-        current_state_ = current_state_.resolve(std::move(state));
+        // TODO Resolve jumps (?)
+        memory_patch_state.resolve(&current_state_);
 
-        if (jumps.empty())
+        if (update.jumps.empty())
         {
             current_jump_ = end();
             return { };
         }
 
-        auto current_jump = jumps.begin();
+        auto current_jump = update.jumps.begin();
 
         std::forward_list<execution_path> new_paths;
-        while (std::next(current_jump) != jumps.end())
+        while (std::next(current_jump) != update.jumps.end())
         {
             auto& new_path = new_paths.emplace_front(*this);
-            new_path.step(std::move(jumps.extract(current_jump++).value()));
+            new_path.step(std::move(update.jumps.extract(current_jump++).value()));
         }
 
-        step(std::move(jumps.extract(current_jump).value()));
+        step(std::move(update.jumps.extract(current_jump).value()));
         return new_paths;
     }
 

@@ -95,7 +95,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
     CHECK(updated_address == address + data.size());
     CHECK(updated_data.empty());
 
-    auto const actual_state = initial_state.resolve(update_state); // TODO Check only returned actual_state
+    auto const actual_state = initial_state + update_state; // TODO Check only returned actual_state
 
     CHECK(
         includes(

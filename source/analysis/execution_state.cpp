@@ -4,33 +4,79 @@ namespace grev
 {
     void execution_state::define(z3::expression key, z3::expression value)
     {
-        insert_or_assign(std::move(key), std::move(value));
-    }
-
-    execution_fork execution_state::resolve(execution_fork source) const
-    {
-        execution_fork resolved;
-        for (auto element = source.begin(); element != source.end();)
-            resolved.insert(resolve_value(std::move(source.extract(element++).value())));
-
-        return resolved;
-    }
-    execution_state execution_state::resolve(execution_state source) const
-    {
-        execution_state resolved;
-        for (auto element = source.begin(); element != source.end();)
+        // Override existing entry or insert new key/value pair
+        if (auto const entry = find(key); entry != end())
         {
-            auto element_node = source.extract(element++);
+            if (key == value)
+            {
+                erase(entry);
+                return;
+            }
 
-            element_node.key() = resolve_key(std::move(element_node.key()));
-            element_node.mapped() = resolve_value(std::move(element_node.mapped()));
-
-            resolved.insert(std::move(element_node));
+            entry->second = std::move(value);
         }
-        for (auto const& [key, value] : *this)
-            resolved.try_emplace(key, value);
+        else
+        {
+            if (key == value)
+                return;
 
-        return resolved;
+            emplace(std::move(key), std::move(value));
+        }
+    }
+
+    std::unordered_set<std::uint32_t> execution_state::memory_dependencies() const
+    {
+        std::unordered_set<std::uint32_t> memory_dependencies;
+        for (auto const& [key, value] : *this)
+        {
+            if (auto const key_reference = key.reference())
+            {
+                for (auto const& key_reference_dependency : key_reference->dependencies())
+                {
+                    if (auto const key_reference_dependency_reference = key_reference_dependency.reference())
+                    if (auto const key_reference_dependency_reference_value = key_reference_dependency_reference->evaluate())
+                        memory_dependencies.insert(*key_reference_dependency_reference_value);
+                }
+            }
+            for (auto const& value_dependency : value.dependencies())
+            {
+                if (auto const value_dependency_reference = value_dependency.reference())
+                if (auto const value_dependency_reference_value = value_dependency_reference->evaluate())
+                    memory_dependencies.insert(*value_dependency_reference_value);
+            }
+        }
+
+        return memory_dependencies;
+    }
+
+    void execution_state::resolve(execution_fork* const source) const
+    {
+        if (empty())
+            return;
+
+        execution_fork resolved;
+        for (auto value = source->begin(); value != source->end();)
+            resolved.insert(resolve_value(std::move(source->extract(value++).value())));
+
+        *source = std::move(resolved);
+    }
+    void execution_state::resolve(execution_state* const source) const
+    {
+        if (empty())
+            return;
+
+        execution_state resolved;
+        for (auto entry = source->begin(); entry != source->end();)
+        {
+            auto entry_node = source->extract(entry++);
+
+            entry_node.key() = resolve_key(std::move(entry_node.key()));
+            entry_node.mapped() = resolve_value(std::move(entry_node.mapped()));
+
+            resolved.insert(std::move(entry_node));
+        }
+
+        *source = std::move(resolved);
     }
 
     z3::expression const& execution_state::operator[](z3::expression const& key) const
@@ -39,6 +85,19 @@ namespace grev
             return entry->second;
 
         return key;
+    }
+
+    execution_state execution_state::operator+=(execution_state other)
+    {
+        resolve(&other);
+
+        for (auto entry = other.begin(); entry != other.end();)
+        {
+            auto entry_node = other.extract(entry++);
+            define(std::move(entry_node.key()), std::move(entry_node.mapped()));
+        }
+
+        return *this;
     }
 
     z3::expression execution_state::resolve_key(z3::expression key) const
@@ -54,6 +113,11 @@ namespace grev
             value = value.resolve_dependency(key, operator[](key));
 
         return value;
+    }
+
+    execution_state operator+(execution_state a, execution_state b)
+    {
+        return a += std::move(b);
     }
 }
 

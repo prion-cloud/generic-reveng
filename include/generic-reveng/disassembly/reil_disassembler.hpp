@@ -3,8 +3,7 @@
 #include <list>
 #include <memory>
 
-#include <generic-reveng/analysis/execution_fork.hpp>
-#include <generic-reveng/analysis/execution_state.hpp>
+#include <generic-reveng/analysis/execution_update.hpp>
 #include <generic-reveng/analysis/machine_architecture.hpp>
 
 struct _reil_arg_t;
@@ -19,9 +18,7 @@ namespace grev
 
         mutable std::list<_reil_inst_t> instructions_;
 
-        mutable execution_fork jumps_;
-
-        mutable execution_state state_;
+        mutable execution_update update_;
         mutable execution_state temporary_state_;
 
     public:
@@ -34,7 +31,7 @@ namespace grev
 
         reil_disassembler& operator=(reil_disassembler other) noexcept;
 
-        std::pair<execution_state, execution_fork> operator()(std::uint32_t* address, std::u8string_view* data) const;
+        execution_update operator()(std::uint32_t* address, std::u8string_view* code) const;
 
     private:
 
