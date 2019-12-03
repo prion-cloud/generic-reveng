@@ -1,3 +1,5 @@
+#include <climits>
+
 #ifdef LINT
 #include <generic-reveng/analysis/machine_monitor.hpp>
 #endif
@@ -39,16 +41,19 @@ namespace grev
                 auto update = disassembler(&*address, &code);
 
                 execution_state memory_patch_state;
-                for (auto const address : update.state.memory_dependencies())
+                for (auto const dependency_address : update.state.memory_dependencies())
                 {
-                    auto const dependency_data = program[address];
+                    auto const dependency_data = program[dependency_address];
 
                     if (dependency_data.size() < sizeof(std::uint32_t)) // TODO Distinguish between different sizes
                         continue;
 
+                    auto const dependency_value = *reinterpret_cast<std::uint32_t const*>(dependency_data.data());
+
                     memory_patch_state.define(
-                        z3::expression(address).dereference(),
-                        z3::expression(*reinterpret_cast<std::uint32_t const*>(dependency_data.data())));
+                        z3::expression(sizeof dependency_address * CHAR_BIT, dependency_address)
+                            .dereference(sizeof dependency_value * CHAR_BIT),
+                        z3::expression(sizeof dependency_value * CHAR_BIT, dependency_value));
                 }
 
                 // Step forward

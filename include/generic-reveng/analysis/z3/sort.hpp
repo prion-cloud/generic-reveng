@@ -4,5 +4,5 @@
 
 namespace grev::z3
 {
-    Z3_sort const& sort();
+    Z3_sort const& sort(unsigned width);
 }

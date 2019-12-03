@@ -80,7 +80,7 @@ namespace grev
             if (auto key_reference = entry_node.key().reference())
             {
                 resolve(&*key_reference);
-                entry_node.key() = key_reference->dereference();
+                entry_node.key() = key_reference->dereference(entry_node.key().width());
             }
             resolve(&entry_node.mapped());
 
@@ -96,7 +96,7 @@ namespace grev
         if (auto key_reference = key.reference())
         {
             resolve(&*key_reference);
-            entry = find(key_reference->dereference());
+            entry = find(key_reference->dereference(key.width()));
         }
         else
             entry = find(key);

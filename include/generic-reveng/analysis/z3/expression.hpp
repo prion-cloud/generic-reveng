@@ -28,14 +28,18 @@ namespace grev::z3
 
         /*!
          *  Constructs a new variable of unspecified value.
+         *  \param [in] width Number of bits
          *  \param [in] name Distinctive name for representation
          */
-        explicit expression(std::string const& name);
+        explicit expression(unsigned width, std::string const& name);
         /*!
          *  Constructs a new constant.
+         *  \param [in] width Number of bits
          *  \param [in] value Fixed integral value
          */
-        explicit expression(std::uint32_t value);
+        explicit expression(unsigned width, std::uint32_t value);
+
+        unsigned width() const;
 
         /*!
          *  Evaluates the expression to an integral value if possible.
@@ -47,7 +51,9 @@ namespace grev::z3
         expression resolve_dependency(expression const& dependency, expression const& value) const;
 
         std::optional<expression> reference() const;
-        expression dereference() const;
+        expression dereference(unsigned dereferenced_width) const;
+
+        expression resize(unsigned new_width) const;
 
         expression equals(expression const&) const;
         expression less_than(expression const&) const;
@@ -117,7 +123,7 @@ namespace grev::z3
 
     private:
 
-        static Z3_func_decl const& dereference_function();
+        static syntax_tree<_Z3_func_decl> dereference_function(unsigned domain_width, unsigned range_width);
     };
 
     /*!

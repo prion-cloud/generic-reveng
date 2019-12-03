@@ -1,3 +1,5 @@
+#include <climits>
+
 #include <catch2/catch.hpp>
 
 #include <generic-reveng/analysis/z3/expression.hpp>
@@ -26,7 +28,7 @@ TEST_CASE("Copy", "[grev::z3::expression]")
 {
     auto const value = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
-    auto a = std::make_unique<grev::z3::expression const>(value);
+    auto a = std::make_unique<grev::z3::expression const>(sizeof value * CHAR_BIT, value);
 
     SECTION("Construction")
     {
@@ -40,7 +42,7 @@ TEST_CASE("Copy", "[grev::z3::expression]")
     }
     SECTION("Assignment")
     {
-        grev::z3::expression b(value + 1);
+        grev::z3::expression b(sizeof value * CHAR_BIT, value + 1);
         b = *a;
 
         CHECK(b.evaluate() == value);
@@ -54,7 +56,7 @@ TEST_CASE("Move", "[grev::z3::expression]")
 {
     auto const value = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
-    auto a = std::make_unique<grev::z3::expression>(value);
+    auto a = std::make_unique<grev::z3::expression>(sizeof value * CHAR_BIT, value);
 
     SECTION("Construction")
     {
@@ -68,7 +70,7 @@ TEST_CASE("Move", "[grev::z3::expression]")
     }
     SECTION("Assignment")
     {
-        grev::z3::expression b(value + 1);
+        grev::z3::expression b(sizeof value * CHAR_BIT, value + 1);
         b = std::move(*a);
 
         CHECK(b.evaluate() == value);
@@ -85,7 +87,7 @@ TEST_CASE("Evaluate", "[grev::z3::expression]")
     {
         auto const name_a = GENERATE(as<std::string>(), TEST_NAMES);
 
-        grev::z3::expression const a(name_a);
+        grev::z3::expression const a(32, name_a);
 
         CHECK(a.evaluate() == std::nullopt);
     }
@@ -93,7 +95,7 @@ TEST_CASE("Evaluate", "[grev::z3::expression]")
     {
         auto const value_a = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
-        grev::z3::expression const a(value_a);
+        grev::z3::expression const a(sizeof value_a * CHAR_BIT, value_a);
 
         SECTION("Nullary")
         {
@@ -101,7 +103,7 @@ TEST_CASE("Evaluate", "[grev::z3::expression]")
         }
         SECTION("Unary")
         {
-            SECTION("dereference") { CHECK(a.dereference().evaluate() == std::nullopt); }
+            SECTION("dereference") { CHECK(a.dereference(32).evaluate() == std::nullopt); }
 
             SECTION("-") { CHECK((-a).evaluate() == -value_a); }
             SECTION("~") { CHECK((~a).evaluate() == ~value_a); }
@@ -110,7 +112,7 @@ TEST_CASE("Evaluate", "[grev::z3::expression]")
         {
             auto const value_b = GENERATE(as<std::uint32_t>(), TEST_VALUES);
 
-            grev::z3::expression const b(value_b);
+            grev::z3::expression const b(sizeof value_b * CHAR_BIT, value_b);
 
             SECTION("+") { CHECK((a + b).evaluate() == value_a + value_b); }
             SECTION("-") { CHECK((a - b).evaluate() == value_a - value_b); }
@@ -129,8 +131,8 @@ TEST_CASE("Evaluate", "[grev::z3::expression]")
             SECTION("|") { CHECK((a | b).evaluate() == (value_a | value_b)); }
             SECTION("^") { CHECK((a ^ b).evaluate() == (value_a ^ value_b)); }
 
-            SECTION("equals")    { CHECK(a.equals(b).evaluate()    == (value_a == value_b ? 0xFFFFFFFF : 0)); }
-            SECTION("less_than") { CHECK(a.less_than(b).evaluate() == (value_a <  value_b ? 0xFFFFFFFF : 0)); }
+            SECTION("equals")    { CHECK(a.equals(b).evaluate()    == (value_a == value_b ? 1 : 0)); }
+            SECTION("less_than") { CHECK(a.less_than(b).evaluate() == (value_a <  value_b ? 1 : 0)); }
         }
     }
 }

@@ -27,8 +27,8 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
             {
                 data = { 0xC3 };
 
-                expected_state.emplace(grev::z3::expression("R_ESP"), grev::z3::expression("R_ESP") + grev::z3::expression(4));
-                expected_jumps.emplace(grev::z3::expression::boolean_true(), grev::z3::expression("R_ESP").dereference());
+                expected_state.emplace(grev::z3::expression(32, "R_ESP"), grev::z3::expression(32, "R_ESP") + grev::z3::expression(32, 4));
+                expected_jumps.emplace(grev::z3::expression::boolean_true(), grev::z3::expression(32, "R_ESP").dereference(32));
             }
         }
         SECTION("B")
@@ -47,40 +47,40 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 {
                     data = { 0xA1, 0x1B, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(grev::z3::expression("R_EAX"), grev::z3::expression(27).dereference());
+                    expected_state.emplace(grev::z3::expression(32, "R_EAX"), grev::z3::expression(32, 27).dereference(32));
                 }
                 SECTION("mov [27], eax")
                 {
                     data = { 0xA3, 0x1B, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(grev::z3::expression(27).dereference(), grev::z3::expression("R_EAX"));
+                    expected_state.emplace(grev::z3::expression(32, 27).dereference(32), grev::z3::expression(32, "R_EAX"));
                 }
                 SECTION("mov ebx, [eax]")
                 {
                     data = { 0x8b, 0x18 };
 
-                    expected_state.emplace(grev::z3::expression("R_EBX"), grev::z3::expression("R_EAX").dereference());
+                    expected_state.emplace(grev::z3::expression(32, "R_EBX"), grev::z3::expression(32, "R_EAX").dereference(32));
                 }
                 SECTION("mov [eax], ebx")
                 {
                     data = { 0x89, 0x18 };
 
-                    expected_state.emplace(grev::z3::expression("R_EAX").dereference(), grev::z3::expression("R_EBX"));
+                    expected_state.emplace(grev::z3::expression(32, "R_EAX").dereference(32), grev::z3::expression(32, "R_EBX"));
                 }
             }
             SECTION("B2")
             {
-                initial_state.define(grev::z3::expression("R_EAX"), grev::z3::expression(26));
+                initial_state.define(grev::z3::expression(32, "R_EAX"), grev::z3::expression(32, 26));
 
                 SECTION("mov eax, 27")
                 {
                     data = { 0xb8, 0x1b, 0x00, 0x00, 0x00 };
 
-                    expected_state.emplace(grev::z3::expression("R_EAX"), grev::z3::expression(27));
+                    expected_state.emplace(grev::z3::expression(32, "R_EAX"), grev::z3::expression(32, 27));
                 }
             }
 
-            expected_jumps.emplace(grev::z3::expression::boolean_true(), grev::z3::expression(address + data.size()));
+            expected_jumps.emplace(grev::z3::expression::boolean_true(), grev::z3::expression(32, address + data.size()));
         }
         SECTION("C")
         {
@@ -90,13 +90,12 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 {
                     data = { 0x74, 0x19 };
 
-                    // TODO Boolean vector size 1
                     expected_jumps.emplace(
-                        grev::z3::expression("R_ZF") & grev::z3::expression(1) & grev::z3::expression::boolean_true(),
-                        grev::z3::expression(address + 27));
+                        grev::z3::expression(1, "R_ZF"),
+                        grev::z3::expression(32, address + 27));
                     expected_jumps.emplace(
-                        ~(grev::z3::expression("R_ZF") & grev::z3::expression(1) & grev::z3::expression::boolean_true()),
-                        grev::z3::expression(address + data.size()));
+                        ~grev::z3::expression(1, "R_ZF"),
+                        grev::z3::expression(32, address + data.size()));
                 }
             }
         }

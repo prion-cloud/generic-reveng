@@ -1,3 +1,4 @@
+#include <climits>
 #include <functional>
 
 #include <libopenreil.h>
@@ -6,15 +7,36 @@
 
 namespace grev
 {
-    static z3::expression get_key(reil_arg_t const& reil_key)
+    static std::size_t get_width(reil_arg_t const& argument)
     {
-        switch (reil_key.type)
+        if (argument.type == A_LOC)
+            return sizeof(std::uint32_t) * CHAR_BIT; // TODO Depending on machine architecture
+
+        // TODO U64
+        switch (argument.size)
+        {
+        case U1:
+            return 1;
+        case U8:
+            return sizeof(std::uint8_t) * CHAR_BIT;
+        case U16:
+            return sizeof(std::uint16_t) * CHAR_BIT;
+        case U32:
+            return sizeof(std::uint32_t) * CHAR_BIT;
+        default:
+            throw std::logic_error("Unexpected size");
+        }
+    }
+
+    static z3::expression get_key(reil_arg_t const& argument)
+    {
+        switch (argument.type)
         {
         case A_REG:
         case A_TEMP:
-            return z3::expression(std::begin(reil_key.name));
+            return z3::expression(get_width(argument), std::begin(argument.name));
         default:
-            throw std::logic_error("Unexpected argument type");
+            throw std::logic_error("Unexpected type");
         }
     }
 
@@ -139,11 +161,21 @@ namespace grev
                 set_value(instruction.c, get_value(instruction.a));
                 break;
             case I_STM:
-                update_.state.define(get_value(instruction.c).dereference(), get_value(instruction.a));
+                update_.state.define(
+                    get_value(instruction.c).dereference(get_width(instruction.a)),
+                    get_value(instruction.a));
                 break;
             case I_LDM:
-                set_value(instruction.c, update_.state[get_value(instruction.a)].dereference());
+                set_value(instruction.c, update_.state[get_value(instruction.a)].dereference(get_width(instruction.c)));
                 break;
+            case I_OR:
+                if (instruction.a.size != instruction.c.size)
+                {
+                    set_value(
+                        instruction.c,
+                        (get_value(instruction.a) | get_value(instruction.b)).resize(get_width(instruction.c)));
+                    break;
+                }
             default:
                 if (instruction.b.type == A_NONE)
                 {
@@ -163,7 +195,7 @@ namespace grev
         }
 
         if (step_condition != z3::expression::boolean_false())
-            update_.fork.jump(std::move(step_condition), z3::expression(step_value));
+            update_.fork.jump(std::move(step_condition), z3::expression(sizeof step_value * CHAR_BIT, step_value));
 
         temporary_state_.clear();
         return std::move(update_);
@@ -189,23 +221,25 @@ namespace grev
             return temporary_state_[get_key(argument)];
         case A_CONST:
         case A_LOC: // TODO Prohibit inum
-            return z3::expression(argument.val);
+            return z3::expression(get_width(argument), argument.val);
         default:
-            throw std::logic_error("Unexpected argument type");
+            throw std::logic_error("Unexpected type");
         }
     }
     void reil_disassembler::set_value(reil_arg_t const& argument, z3::expression value) const
     {
+        auto key = get_key(argument);
+
         switch (argument.type)
         {
         case A_REG:
-            update_.state.define(get_key(argument), std::move(value));
+            update_.state.define(std::move(key), std::move(value));
             break;
         case A_TEMP:
-            temporary_state_.define(get_key(argument), std::move(value));
+            temporary_state_.define(std::move(key), std::move(value));
             break;
         default:
-            throw std::logic_error("Unexpected argument type");
+            throw std::logic_error("Unexpected type");
         }
     }
 }

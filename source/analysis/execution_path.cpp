@@ -1,9 +1,11 @@
+#include <climits>
+
 #include <generic-reveng/analysis/execution_path.hpp>
 
 namespace grev
 {
     execution_path::execution_path(std::uint32_t const start_address) :
-        start_jump_(emplace(start_address, nullptr).first),
+        start_jump_(try_emplace(z3::expression(sizeof start_address * CHAR_BIT, start_address)).first),
         current_jump_(begin()),
         condition_(z3::expression::boolean_true()) { }
     execution_path::~execution_path() = default;
@@ -54,6 +56,8 @@ namespace grev
             current_jump_ = end();
             return { };
         }
+
+        // TODO Solve jump implications
 
         auto fork_entry = update.fork.begin();
 

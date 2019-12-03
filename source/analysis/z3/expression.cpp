@@ -7,10 +7,15 @@ namespace grev::z3
     expression::expression(Z3_ast const& base) :
         syntax_tree(Z3_simplify(context(), base)) { }
 
-    expression::expression(std::string const& name) :
-        syntax_tree(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), sort())) { }
-    expression::expression(std::uint32_t const value) :
-        syntax_tree(Z3_mk_unsigned_int(context(), value, sort())) { }
+    expression::expression(unsigned const width, std::string const& name) :
+        syntax_tree(Z3_mk_const(context(), Z3_mk_string_symbol(context(), name.c_str()), sort(width))) { }
+    expression::expression(unsigned const width, std::uint32_t const value) :
+        syntax_tree(Z3_mk_unsigned_int(context(), value, sort(width))) { }
+
+    unsigned expression::width() const
+    {
+        return Z3_get_bv_sort_size(context(), Z3_get_sort(context(), base()));
+    }
 
     std::optional<std::uint32_t> expression::evaluate() const
     {
@@ -56,9 +61,23 @@ namespace grev::z3
 
         return std::nullopt;
     }
-    expression expression::dereference() const
+    expression expression::dereference(unsigned const dereferenced_width) const
     {
-        return expression(Z3_mk_app(context(), dereference_function(), 1, &base()));
+        return expression(Z3_mk_app(context(), dereference_function(width(), dereferenced_width).base(), 1, &base()));
+    }
+
+    expression expression::resize(unsigned const new_width) const
+    {
+        auto const old_width = width();
+
+        if (new_width == old_width)
+            return *this;
+
+        if (new_width < old_width)
+            return expression(Z3_mk_extract(context(), new_width - 1, 0, base()));
+
+        expression const zero(new_width - old_width, 0);
+        return expression(Z3_mk_concat(context(), zero.base(), base()));
     }
 
     expression expression::equals(expression const& other) const
@@ -106,8 +125,7 @@ namespace grev::z3
     }
     expression& expression::operator%=(expression const& other)
     {
-        // TODO Signed/unsigned?
-        return *this = expression(Z3_mk_bvsmod(context(), base(), other.base()));
+        return *this = expression(Z3_mk_bvurem(context(), base(), other.base()));
     }
 
     expression& expression::operator&=(expression const& other)
@@ -139,28 +157,40 @@ namespace grev::z3
 
     bool expression::dereferenced() const
     {
-        return Z3_is_eq_func_decl(context(), Z3_get_app_decl(context(), application()), dereference_function());
+        return
+            std::string{Z3_get_symbol_string(context(), Z3_get_decl_name(context(), Z3_get_app_decl(context(), application())))}
+                .starts_with("deref"); // TODO
     }
 
     expression const& expression::boolean_true()
     {
-        static expression const boolean_true(std::numeric_limits<std::uint32_t>::max());
+        static expression const boolean_true(1, 1);
         return boolean_true;
     }
     expression const& expression::boolean_false()
     {
-        static expression const boolean_false(+0);
+        static expression const boolean_false(1, 0);
         return boolean_false;
     }
 
-    Z3_func_decl const& expression::dereference_function()
+    syntax_tree<_Z3_func_decl> expression::dereference_function(unsigned const domain_width, unsigned const range_width)
     {
+        // TODO
+
+        using namespace std::string_literals;
+
         class dereference_function : public syntax_tree<_Z3_func_decl>
         {
         public:
 
-            dereference_function() :
-                syntax_tree(Z3_mk_func_decl(context(), Z3_mk_string_symbol(context(), "deref"), 1, &sort(), sort())) { }
+            dereference_function(std::size_t const domain_width, std::size_t const range_width) :
+                syntax_tree(Z3_mk_func_decl(
+                    context(),
+                    Z3_mk_string_symbol(context(),
+                    ("deref"s + std::to_string(range_width)).c_str()),
+                    1,
+                    &sort(domain_width),
+                    sort(range_width))) { }
             ~dereference_function() override = default;
 
             dereference_function(dereference_function const&) = delete;
@@ -168,9 +198,9 @@ namespace grev::z3
 
             dereference_function& operator=(dereference_function const&) = delete;
             dereference_function& operator=(dereference_function&&) = delete;
-        }
-        static const dereference_function;
-        return dereference_function.base();
+        };
+
+        return dereference_function{domain_width, range_width};
     }
 
     expression operator+(expression a, expression const& b)
