@@ -15,7 +15,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
     grev::execution_state initial_state;
 
     std::unordered_map<grev::z3::expression, grev::z3::expression> expected_state;
-    std::unordered_set<grev::z3::expression> expected_jumps;
+    std::unordered_map<grev::z3::expression, grev::z3::expression> expected_jumps;
 
     SECTION("x86_32")
     {
@@ -28,7 +28,7 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 data = { 0xC3 };
 
                 expected_state.emplace(grev::z3::expression("R_ESP"), grev::z3::expression("R_ESP") + grev::z3::expression(4));
-                expected_jumps = { grev::z3::expression("R_ESP").dereference() };
+                expected_jumps.emplace(grev::z3::expression::boolean_true(), grev::z3::expression("R_ESP").dereference());
             }
         }
         SECTION("B")
@@ -80,7 +80,25 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
                 }
             }
 
-            expected_jumps = { grev::z3::expression(address + data.size()) };
+            expected_jumps.emplace(grev::z3::expression::boolean_true(), grev::z3::expression(address + data.size()));
+        }
+        SECTION("C")
+        {
+            SECTION("C1")
+            {
+                SECTION("je 27")
+                {
+                    data = { 0x74, 0x19 };
+
+                    // TODO Boolean vector size 1
+                    expected_jumps.emplace(
+                        grev::z3::expression("R_ZF") & grev::z3::expression(1) & grev::z3::expression::boolean_true(),
+                        grev::z3::expression(address + 27));
+                    expected_jumps.emplace(
+                        ~(grev::z3::expression("R_ZF") & grev::z3::expression(1) & grev::z3::expression::boolean_true()),
+                        grev::z3::expression(address + data.size()));
+                }
+            }
         }
     }
     // TODO x86_64, etc.
@@ -97,16 +115,10 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
 
     auto const actual_state = initial_state + update_state; // TODO Check only returned actual_state
 
-    CHECK(
-        includes(
-            *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_state), // TODO
-            expected_state,
-            [](auto const& a, auto const& b)
-            {
-                static constexpr std::equal_to<grev::z3::expression> eq;
-                return eq(a.first, b.first) && eq(a.second, b.second);
-            }));
-
-    CHECK(includes(expected_jumps, actual_jumps));
-    CHECK(includes(actual_jumps, expected_jumps));
+    CHECK(matches(
+        *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_state), // TODO
+        expected_state));
+    CHECK(matches(
+        *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_jumps), // TODO
+        expected_jumps));
 }

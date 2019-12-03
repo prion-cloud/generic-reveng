@@ -19,8 +19,8 @@ namespace grev
 
         std::unordered_set<std::uint32_t> memory_dependencies() const; // TODO Store as field (?)
 
-        void resolve(execution_fork* source) const;
-        void resolve(execution_state* source) const;
+        void resolve(execution_fork* fork) const;
+        void resolve(execution_state* state) const;
 
         z3::expression const& operator[](z3::expression const& key) const;
 
@@ -28,8 +28,7 @@ namespace grev
 
     private:
 
-        z3::expression resolve_key(z3::expression key) const;
-        z3::expression resolve_value(z3::expression value) const;
+        void resolve(z3::expression* expression) const;
     };
 
     execution_state operator+(execution_state, execution_state);

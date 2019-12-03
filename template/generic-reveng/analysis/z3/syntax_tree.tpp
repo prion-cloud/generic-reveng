@@ -54,6 +54,11 @@ namespace grev::z3
     {
         return Z3_is_eq_ast(context(), static_cast<Z3_ast>(*this), static_cast<Z3_ast>(other));
     }
+    template <typename Base>
+    bool syntax_tree<Base>::operator!=(syntax_tree const& other) const
+    {
+        return !(*this == other);
+    }
 }
 
 #ifdef LINT

@@ -13,6 +13,8 @@ namespace grev
         execution_state current_state_; // TODO Collect updates
         iterator current_jump_;
 
+        z3::expression condition_;
+
     public:
 
         explicit execution_path(std::uint32_t start_address);

@@ -110,6 +110,13 @@ namespace grev::z3
 
         bool dereferenced() const;
 
+    public:
+
+        static expression const& boolean_true();
+        static expression const& boolean_false();
+
+    private:
+
         static Z3_func_decl const& dereference_function();
     };
 

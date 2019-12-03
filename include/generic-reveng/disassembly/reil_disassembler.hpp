@@ -35,6 +35,8 @@ namespace grev
 
     private:
 
+        void jump(_reil_arg_t const& argument, z3::expression value, z3::expression* step_condition) const;
+
         z3::expression get_value(_reil_arg_t const& argument) const;
         void set_value(_reil_arg_t const& argument, z3::expression value) const;
     };

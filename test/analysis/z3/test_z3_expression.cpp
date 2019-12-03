@@ -129,8 +129,8 @@ TEST_CASE("Evaluate", "[grev::z3::expression]")
             SECTION("|") { CHECK((a | b).evaluate() == (value_a | value_b)); }
             SECTION("^") { CHECK((a ^ b).evaluate() == (value_a ^ value_b)); }
 
-            SECTION("equals")    { CHECK(a.equals(b).evaluate()    == (value_a == value_b ? 1 : 0)); }
-            SECTION("less_than") { CHECK(a.less_than(b).evaluate() == (value_a <  value_b ? 1 : 0)); }
+            SECTION("equals")    { CHECK(a.equals(b).evaluate()    == (value_a == value_b ? 0xFFFFFFFF : 0)); }
+            SECTION("less_than") { CHECK(a.less_than(b).evaluate() == (value_a <  value_b ? 0xFFFFFFFF : 0)); }
         }
     }
 }

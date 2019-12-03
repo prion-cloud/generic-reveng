@@ -44,6 +44,7 @@ namespace grev::z3
         Base* const& base() const;
 
         bool operator==(syntax_tree const&) const;
+        bool operator!=(syntax_tree const&) const;
     };
 }
 

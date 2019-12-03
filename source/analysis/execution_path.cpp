@@ -4,14 +4,16 @@ namespace grev
 {
     execution_path::execution_path(std::uint32_t const start_address) :
         start_jump_(emplace(start_address, nullptr).first),
-        current_jump_(begin()) { }
+        current_jump_(begin()),
+        condition_(z3::expression::boolean_true()) { }
     execution_path::~execution_path() = default;
 
     execution_path::execution_path(execution_path const& other) :
         std::unordered_map<z3::expression, z3::expression const*>(other),
         start_jump_(find(other.start_jump_->first)),
         current_state_(other.current_state_),
-        current_jump_(find(other.current_jump_->first))
+        current_jump_(find(other.current_jump_->first)),
+        condition_(other.condition_)
     {
         for (auto& [jump, succeeding_jump] : *this)
         {
@@ -32,6 +34,8 @@ namespace grev
         std::swap(current_state_, other.current_state_);
         std::swap(current_jump_, other.current_jump_);
 
+        std::swap(condition_, other.condition_);
+
         return *this;
     }
 
@@ -39,28 +43,34 @@ namespace grev
     {
         // TODO Support patching (?)
 
-        current_state_.resolve(&update.jumps);
+        current_state_.resolve(&update.fork);
         current_state_ += std::move(update.state);
 
         // TODO Resolve jumps (?)
         memory_patch_state.resolve(&current_state_);
 
-        if (update.jumps.empty())
+        if (update.fork.impasse())
         {
             current_jump_ = end();
             return { };
         }
 
-        auto current_jump = update.jumps.begin();
+        auto fork_entry = update.fork.begin();
 
         std::forward_list<execution_path> new_paths;
-        while (std::next(current_jump) != update.jumps.end())
+        while (std::next(fork_entry) != update.fork.end())
         {
             auto& new_path = new_paths.emplace_front(*this);
-            new_path.step(std::move(update.jumps.extract(current_jump++).value()));
+
+            auto fork_entry_node = update.fork.extract(fork_entry++);
+            new_path.condition_ &= fork_entry_node.key();
+            new_path.step(std::move(fork_entry_node.mapped()));
         }
 
-        step(std::move(update.jumps.extract(current_jump).value()));
+        auto fork_entry_node = update.fork.extract(fork_entry);
+        condition_ &= fork_entry_node.key();
+        step(std::move(fork_entry_node.mapped()));
+
         return new_paths;
     }
 

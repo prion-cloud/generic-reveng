@@ -7,6 +7,6 @@ namespace grev
     struct execution_update
     {
         execution_state state;
-        execution_fork jumps;
+        execution_fork fork;
     };
 }

@@ -121,7 +121,8 @@ namespace grev
         *address += size;
         code->remove_prefix(size);
 
-        std::optional<std::uint64_t> step_value{*address};
+        auto step_condition = z3::expression::boolean_true();
+        auto step_value = *address;
         for (auto const& instruction : instructions_)
         {
             switch (instruction.op)
@@ -132,13 +133,7 @@ namespace grev
                 step_value = *address - size + 1;
                 break;
             case I_JCC:
-                if (instruction.a.type == A_CONST)
-                {
-                    if (instruction.a.val == 0)
-                        break;
-                    step_value = std::nullopt;
-                }
-                update_.jumps.insert(get_value(instruction.c));
+                jump(instruction.a, get_value(instruction.c), &step_condition);
                 break;
             case I_STR:
                 set_value(instruction.c, get_value(instruction.a));
@@ -163,15 +158,25 @@ namespace grev
                 break;
             }
 
-            if (!step_value)
+            if (step_condition == z3::expression::boolean_false())
                 break;
         }
 
-        if (step_value)
-            update_.jumps.emplace(*step_value);
+        if (step_condition != z3::expression::boolean_false())
+            update_.fork.jump(std::move(step_condition), z3::expression(step_value));
 
         temporary_state_.clear();
         return std::move(update_);
+    }
+
+    void reil_disassembler::jump(_reil_arg_t const& argument, z3::expression value, z3::expression* const step_condition) const
+    {
+        auto const jump_condition = argument.type == A_CONST && argument.val != 0
+            ? z3::expression::boolean_true()
+            : get_value(argument);
+        update_.fork.jump(*step_condition & jump_condition, std::move(value));
+
+        *step_condition &= ~jump_condition;
     }
 
     z3::expression reil_disassembler::get_value(reil_arg_t const& argument) const

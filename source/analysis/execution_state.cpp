@@ -49,39 +49,59 @@ namespace grev
         return memory_dependencies;
     }
 
-    void execution_state::resolve(execution_fork* const source) const
+    void execution_state::resolve(execution_fork* const fork) const
     {
         if (empty())
             return;
 
         execution_fork resolved;
-        for (auto value = source->begin(); value != source->end();)
-            resolved.insert(resolve_value(std::move(source->extract(value++).value())));
+        for (auto entry = fork->begin(); entry != fork->end();)
+        {
+            auto entry_node = fork->extract(entry++);
 
-        *source = std::move(resolved);
+            resolve(&entry_node.key());
+            resolve(&entry_node.mapped());
+
+            resolved.jump(std::move(entry_node.key()), std::move(entry_node.mapped()));
+        }
+
+        *fork = std::move(resolved);
     }
-    void execution_state::resolve(execution_state* const source) const
+    void execution_state::resolve(execution_state* const state) const
     {
         if (empty())
             return;
 
         execution_state resolved;
-        for (auto entry = source->begin(); entry != source->end();)
+        for (auto entry = state->begin(); entry != state->end();)
         {
-            auto entry_node = source->extract(entry++);
+            auto entry_node = state->extract(entry++);
 
-            entry_node.key() = resolve_key(std::move(entry_node.key()));
-            entry_node.mapped() = resolve_value(std::move(entry_node.mapped()));
+            if (auto key_reference = entry_node.key().reference())
+            {
+                resolve(&*key_reference);
+                entry_node.key() = key_reference->dereference();
+            }
+            resolve(&entry_node.mapped());
 
             resolved.insert(std::move(entry_node));
         }
 
-        *source = std::move(resolved);
+        *state = std::move(resolved);
     }
 
     z3::expression const& execution_state::operator[](z3::expression const& key) const
     {
-        if (auto const entry = find(resolve_key(key)); entry != end())
+        const_iterator entry;
+        if (auto key_reference = key.reference())
+        {
+            resolve(&*key_reference);
+            entry = find(key_reference->dereference());
+        }
+        else
+            entry = find(key);
+
+        if (entry != end())
             return entry->second;
 
         return key;
@@ -100,19 +120,10 @@ namespace grev
         return *this;
     }
 
-    z3::expression execution_state::resolve_key(z3::expression key) const
+    void execution_state::resolve(z3::expression* expression) const
     {
-        if (auto key_reference = key.reference())
-            return resolve_value(std::move(*key_reference)).dereference();
-
-        return key;
-    }
-    z3::expression execution_state::resolve_value(z3::expression value) const
-    {
-        for (auto const& key : value.dependencies())
-            value = value.resolve_dependency(key, operator[](key));
-
-        return value;
+        for (auto const& key : expression->dependencies())
+            *expression = expression->resolve_dependency(key, operator[](key));
     }
 
     execution_state operator+(execution_state a, execution_state b)

@@ -66,16 +66,16 @@ namespace grev::z3
         return expression(
             Z3_mk_ite(context(),
                 Z3_mk_eq(context(), base(), other.base()),
-                expression{1}.base(),
-                expression{+0}.base()));
+                boolean_true().base(),
+                boolean_false().base()));
     }
     expression expression::less_than(expression const& other) const
     {
         return expression(
             Z3_mk_ite(context(),
                 Z3_mk_bvult(context(), base(), other.base()),
-                expression{1}.base(),
-                expression{+0}.base()));
+                boolean_true().base(),
+                boolean_false().base()));
     }
 
     expression expression::operator-() const
@@ -140,6 +140,17 @@ namespace grev::z3
     bool expression::dereferenced() const
     {
         return Z3_is_eq_func_decl(context(), Z3_get_app_decl(context(), application()), dereference_function());
+    }
+
+    expression const& expression::boolean_true()
+    {
+        static expression const boolean_true(std::numeric_limits<std::uint32_t>::max());
+        return boolean_true;
+    }
+    expression const& expression::boolean_false()
+    {
+        static expression const boolean_false(+0);
+        return boolean_false;
     }
 
     Z3_func_decl const& expression::dereference_function()
