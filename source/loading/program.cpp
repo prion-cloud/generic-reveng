@@ -1,38 +1,59 @@
+#include <memory>
+
 #include <generic-reveng/loading/program.hpp>
 
-#include "pe/pe_program.hpp"
+#include "pe/pe_loader.hpp"
 
 namespace grev
 {
     program::program(std::u8string data) :
-        data_(std::move(data)) { }
+        data_(std::move(data))
+    {
+        std::unique_ptr<loader const> loader;
+        if (data_.starts_with(u8"MZ"))
+            loader = std::make_unique<pe_loader const>(data_);
+        // TODO ELF
+        else
+            throw std::invalid_argument("Unknown binary format");
 
-    program::~program() = default;
+        architecture_ = loader->architecture();
+        entry_point_address_ = loader->entry_point_address();
+
+        memory_segments_ = loader->memory_segments();
+    }
+    program::program(std::u8string data, machine_architecture architecture) :
+        data_(std::move(data)),
+        architecture_(std::move(architecture)),
+        entry_point_address_(0)
+    {
+        memory_segments_.emplace(0, data_);
+    }
+
+    machine_architecture const& program::architecture() const
+    {
+        return architecture_;
+    }
+    std::optional<std::uint32_t> const& program::entry_point_address() const
+    {
+        return entry_point_address_;
+    }
 
     std::u8string_view program::operator[](std::uint32_t address) const
     {
-        auto const& seg = segments(); // TODO rename
+        std::uint32_t segment_address;
+        std::u8string_view segment_data;
 
-        if (auto const segment = seg.lower_bound(address); segment != seg.upper_bound(address))
-            return segment->dissect(data_, address);
+        for (auto segment = memory_segments_.begin();; ++segment)
+        {
+            if (segment == memory_segments_.end())
+                return { };
 
-        return std::u8string_view(nullptr, 0);
-    }
+            std::tie(segment_address, segment_data) = *segment;
 
-    std::u8string_view program::data_view() const
-    {
-        return data_;
-    }
-    std::size_t program::data_size() const
-    {
-        return data_.size();
-    }
+            if (segment_address <= address && address < segment_address + segment_data.size())
+                break;
+        }
 
-    std::unique_ptr<program> program::load(std::u8string data)
-    {
-        if (data.starts_with(u8"MZ"))
-            return std::make_unique<pe_program>(std::move(data));
-
-        throw std::invalid_argument("Unknown binary format");
+        return segment_data.substr(address - segment_address);
     }
 }

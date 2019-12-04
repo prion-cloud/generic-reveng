@@ -6,8 +6,8 @@
 
 #include <generic-reveng/analysis/machine_monitor.hpp>
 #include <generic-reveng/disassembly/reil_disassembler.hpp> // TODO Mockup
+#include <generic-reveng/loading/program.hpp> // TODO Mockup
 
-#include "mock_program.hpp"
 #include "test.hpp"
 
 #define ADD_EAX_EBX 0x01, 0xD8
@@ -298,7 +298,7 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     // TODO x86_64, etc.
 
     grev::reil_disassembler const disassembler(architecture); // TODO Mockup
-    mock_program const program(data, architecture);
+    grev::program const program(data, architecture);
 
     auto const actual_path_addresses =
         grev::machine_monitor(disassembler, program).path_addresses();
@@ -314,8 +314,8 @@ TEST_CASE("Real path inspection")
 
         SECTION("helloworld_32.exe")
         {
-            auto const p = grev::program::load(read_test_data("helloworld_32.exe"));
-            CHECK(matches(grev::machine_monitor(d, *p).path_addresses(), std::vector<std::vector<std::uint32_t>>
+            grev::program const p(read_test_data("helloworld_32.exe"));
+            CHECK(matches(grev::machine_monitor(d, p).path_addresses(), std::vector<std::vector<std::uint32_t>>
             {
                 // Incomplete, tailored to current functionality TODO
                 {

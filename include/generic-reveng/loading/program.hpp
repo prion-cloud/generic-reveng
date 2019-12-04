@@ -1,10 +1,8 @@
 #pragma once
 
-#include <memory>
-#include <set>
+#include <map>
 
 #include <generic-reveng/analysis/machine_architecture.hpp>
-#include <generic-reveng/loading/address_space_segment.hpp>
 
 namespace grev
 {
@@ -12,29 +10,28 @@ namespace grev
     {
         std::u8string data_;
 
-    protected:
+        machine_architecture architecture_;
+        std::optional<std::uint32_t> entry_point_address_;
 
-        explicit program(std::u8string data);
+        std::map<std::uint32_t, std::u8string_view> memory_segments_;
 
     public:
 
-        virtual ~program();
+        /*!
+         *  Constructs a new program by reading formatted data.
+         *  \param [in] data Formatted binary data
+         */
+        explicit program(std::u8string data);
+        /*!
+         *  Constructs a new program using unformatted machine code.
+         *  \param [in] data Machine code data
+         *  \param [in] architecture Instruction set architecture
+         */
+        program(std::u8string data, machine_architecture architecture);
 
-        virtual machine_architecture architecture() const = 0;
-        virtual std::uint32_t start_address() const = 0;
+        machine_architecture const& architecture() const;
+        std::optional<std::uint32_t> const& entry_point_address() const;
 
         std::u8string_view operator[](std::uint32_t address) const;
-
-    protected:
-
-        virtual std::set<address_space_segment, address_space_segment::exclusive_address_order> const&
-            segments() const = 0; // TODO std::span<...>
-
-        std::u8string_view data_view() const;
-        std::size_t data_size() const;
-
-    public:
-
-        static std::unique_ptr<program> load(std::u8string data);
     };
 }

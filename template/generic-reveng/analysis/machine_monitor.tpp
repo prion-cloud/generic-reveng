@@ -9,7 +9,7 @@ namespace grev
     template <typename Disassembler, typename Program>
     machine_monitor::machine_monitor(Disassembler const& disassembler, Program const& program)
     {
-        auto& initial_path = paths_.emplace_front(program.start_address());
+        auto& initial_path = paths_.emplace_front(*program.entry_point_address());
 
         std::forward_list<execution_path*> pending_paths;
         pending_paths.push_front(&initial_path);
