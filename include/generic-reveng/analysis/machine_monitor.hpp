@@ -16,6 +16,11 @@ namespace grev
         // >>-----
         std::vector<std::vector<std::uint32_t>> path_addresses() const; // Testing seam TODO
         // -----<<
+
+    private:
+
+        template <typename Program>
+        static execution_state create_memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies);
     };
 }
 

@@ -24,29 +24,23 @@ namespace grev
         }
     }
 
-    std::unordered_set<std::uint32_t> execution_state::memory_dependencies() const
+    std::unordered_set<z3::expression> execution_state::dependencies() const
     {
-        std::unordered_set<std::uint32_t> memory_dependencies;
+        std::unordered_set<z3::expression> dependencies;
         for (auto const& [key, value] : *this)
         {
             if (auto const key_reference = key.reference())
-            {
-                for (auto const& key_reference_dependency : key_reference->dependencies())
-                {
-                    if (auto const key_reference_dependency_reference = key_reference_dependency.reference())
-                    if (auto const key_reference_dependency_reference_value = key_reference_dependency_reference->evaluate())
-                        memory_dependencies.insert(*key_reference_dependency_reference_value);
-                }
-            }
-            for (auto const& value_dependency : value.dependencies())
-            {
-                if (auto const value_dependency_reference = value_dependency.reference())
-                if (auto const value_dependency_reference_value = value_dependency_reference->evaluate())
-                    memory_dependencies.insert(*value_dependency_reference_value);
-            }
+                dependencies.merge(key_reference->dependencies());
+            dependencies.merge(value.dependencies());
         }
 
-        return memory_dependencies;
+        return dependencies;
+    }
+
+    void execution_state::resolve(z3::expression* expression) const
+    {
+        for (auto const& key : expression->dependencies())
+            *expression = expression->resolve_dependency(key, operator[](key));
     }
 
     void execution_state::resolve(execution_fork* const fork) const
@@ -111,6 +105,7 @@ namespace grev
     {
         resolve(&other);
 
+        // TODO 'append' method (?)
         for (auto entry = other.begin(); entry != other.end();)
         {
             auto entry_node = other.extract(entry++);
@@ -118,12 +113,6 @@ namespace grev
         }
 
         return *this;
-    }
-
-    void execution_state::resolve(z3::expression* expression) const
-    {
-        for (auto const& key : expression->dependencies())
-            *expression = expression->resolve_dependency(key, operator[](key));
     }
 
     execution_state operator+(execution_state a, execution_state b)

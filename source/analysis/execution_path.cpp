@@ -41,7 +41,7 @@ namespace grev
         return *this;
     }
 
-    std::forward_list<execution_path> execution_path::proceed(execution_update update, execution_state const& memory_patch_state)
+    std::forward_list<execution_path> execution_path::proceed(execution_update update, execution_state const& memory_patch)
     {
         // TODO Support patching (?)
 
@@ -49,7 +49,7 @@ namespace grev
         current_state_ += std::move(update.state);
 
         // TODO Resolve jumps (?)
-        memory_patch_state.resolve(&current_state_);
+        memory_patch.resolve(&current_state_);
 
         if (update.fork.impasse())
         {
@@ -78,12 +78,12 @@ namespace grev
         return new_paths;
     }
 
-    std::optional<std::uint32_t> execution_path::next_address() const
+    std::optional<z3::expression> execution_path::current_jump() const
     {
         if (current_jump_ == end() || current_jump_->second != nullptr) // TODO Support loops with changing states
             return std::nullopt;
 
-        return current_jump_->first.evaluate();
+        return current_jump_->first;
     }
 
     // >>-----

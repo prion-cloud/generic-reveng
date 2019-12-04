@@ -1,3 +1,5 @@
+#include <climits>
+
 #include <generic-reveng/analysis/machine_monitor.hpp>
 
 namespace grev

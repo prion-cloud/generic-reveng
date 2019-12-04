@@ -21,15 +21,22 @@ namespace grev
             // Follow the current path as far as possible (-> depth first search)
             for (auto [address, code] = std::pair<std::optional<std::uint32_t>, std::u8string_view> { };;)
             {
-                // Go on with the next address if unambiguous
-                if (auto next_address = path->next_address())
+                // Proceed if jump is pending
+                if (auto current_jump = path->current_jump())
                 {
-                    // (Re-)extract code if the next address is the first one or not adjacent to the previous address
-                    if (address != *next_address)
+                    create_memory_patch(program, current_jump->dependencies()).resolve(&*current_jump);
+
+                    // Proceed if unambiguous
+                    if (auto next_address = current_jump->evaluate())
                     {
-                        address = std::move(*next_address);
-                        code = program[*address];
+                        // (Re-)extract code if the next address is the first one or not adjacent to the previous address
+                        if (address != *next_address)
+                        {
+                            address = std::move(*next_address);
+                            code = program[*address];
+                        }
                     }
+                    else break;
                 }
                 else break;
 
@@ -40,24 +47,9 @@ namespace grev
                 // Disassemble next code
                 auto update = disassembler(&*address, &code);
 
-                execution_state memory_patch_state;
-                for (auto const dependency_address : update.state.memory_dependencies())
-                {
-                    auto const dependency_data = program[dependency_address];
-
-                    if (dependency_data.size() < sizeof(std::uint32_t)) // TODO Distinguish between different sizes
-                        continue;
-
-                    auto const dependency_value = *reinterpret_cast<std::uint32_t const*>(dependency_data.data());
-
-                    memory_patch_state.define(
-                        z3::expression(sizeof dependency_address * CHAR_BIT, dependency_address)
-                            .dereference(sizeof dependency_value * CHAR_BIT),
-                        z3::expression(sizeof dependency_value * CHAR_BIT, dependency_value));
-                }
-
                 // Step forward
-                auto forked_paths = path->proceed(std::move(update), memory_patch_state);
+                auto const dependencies = update.state.dependencies();
+                auto forked_paths = path->proceed(std::move(update), create_memory_patch(program, dependencies));
 
                 // Store and enqueue each forked path
                 for (auto& forked_path : forked_paths)
@@ -68,6 +60,43 @@ namespace grev
             }
         }
         while (!pending_paths.empty());
+    }
+
+    template <typename Program>
+    execution_state
+        machine_monitor::create_memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies)
+    {
+        execution_state memory_patch;
+        for (auto const& dependency : dependencies)
+        {
+            auto const dependency_reference = dependency.reference();
+
+            // Needs to be a memory access
+            if (!dependency_reference)
+                continue;
+
+            auto const address = dependency_reference->evaluate();
+
+            // Needs to be an unambiguous number
+            if (!address)
+                continue;
+
+            auto data = program[*address];
+
+            auto const value_width = dependency.width();
+            auto const value_width_bytes = (value_width - 1) / CHAR_BIT + 1; // TODO Possible underflow (?)
+
+            if (data.size() < value_width_bytes)
+                continue;
+
+            std::uint32_t value { };
+            for (data.remove_suffix(data.size() - value_width_bytes); !data.empty(); data.remove_suffix(1)) // Little endian
+                value = (value << CHAR_BIT) + data.back();
+
+            memory_patch.define(dependency, z3::expression(value_width, value));
+        }
+
+        return memory_patch;
     }
 }
 

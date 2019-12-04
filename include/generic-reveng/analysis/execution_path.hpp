@@ -25,9 +25,9 @@ namespace grev
 
         execution_path& operator=(execution_path other) noexcept;
 
-        std::forward_list<execution_path> proceed(execution_update update, execution_state const& memory_patch_state);
+        std::forward_list<execution_path> proceed(execution_update update, execution_state const& memory_patch);
 
-        std::optional<std::uint32_t> next_address() const;
+        std::optional<z3::expression> current_jump() const;
 
         // >>-----
         std::vector<std::uint32_t> addresses() const; // Testing seam TODO
