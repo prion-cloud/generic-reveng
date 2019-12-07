@@ -107,17 +107,28 @@ TEST_CASE("Disassembling", "[grev::reil_disassembler]")
     auto updated_address = address;
     std::u8string_view updated_data{data};
 
-    auto const [update_state, actual_jumps] = reil_disassembler(&updated_address, &updated_data);
+    auto const actual_execution = reil_disassembler(&updated_address, &updated_data);
 
     CHECK(updated_address == address + data.size());
     CHECK(updated_data.empty());
 
-    auto const actual_state = initial_state + update_state; // TODO Check only returned actual_state
+    auto actual_state = actual_execution.front().state();
+    // TODO same state for every path?
+    for (auto const& path : actual_execution)
+    {
+        REQUIRE(matches(
+            *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_state), // TODO
+            *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&path.state())));
+    }
+
+    actual_state = initial_state + actual_state; // TODO Check only returned actual_state
+
+    std::unordered_map<grev::z3::expression, grev::z3::expression> actual_jumps;
+    for (auto const& path : actual_execution)
+        actual_jumps.emplace(path.condition(), *path.jump());
 
     CHECK(matches(
         *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_state), // TODO
         expected_state));
-    CHECK(matches(
-        *reinterpret_cast<std::unordered_map<grev::z3::expression, grev::z3::expression> const*>(&actual_jumps), // TODO
-        expected_jumps));
+    CHECK(matches(actual_jumps, expected_jumps));
 }

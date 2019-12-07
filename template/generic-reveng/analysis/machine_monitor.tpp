@@ -9,7 +9,8 @@ namespace grev
     template <typename Disassembler, typename Program>
     machine_monitor::machine_monitor(Disassembler const& disassembler, Program const& program)
     {
-        auto& initial_path = paths_.emplace_front(*program.entry_point_address());
+        auto& initial_path =
+            execution_.emplace_front(z3::expression(sizeof(std::uint32_t) * CHAR_BIT, *program.entry_point_address()));
 
         std::forward_list<execution_path*> pending_paths;
         pending_paths.push_front(&initial_path);
@@ -21,13 +22,13 @@ namespace grev
             // Follow the current path as far as possible (-> depth first search)
             for (auto [address, code] = std::pair<std::optional<std::uint32_t>, std::u8string_view> { };;)
             {
-                // Proceed if jump is pending
-                if (auto current_jump = path->current_jump())
+                // Proceed if jump is available
+                if (auto jump = path->jump())
                 {
-                    create_memory_patch(program, current_jump->dependencies()).resolve(&*current_jump);
+                    memory_patch(program, jump->dependencies()).resolve(&*jump);
 
                     // Proceed if unambiguous
-                    if (auto next_address = current_jump->evaluate())
+                    if (auto next_address = jump->evaluate())
                     {
                         // (Re-)extract code if the next address is the first one or not adjacent to the previous address
                         if (address != *next_address)
@@ -45,26 +46,41 @@ namespace grev
                     break;
 
                 // Disassemble next code
-                auto update = disassembler(&*address, &code);
+                auto update_execution = disassembler(&*address, &code);
 
-                // Step forward
-                auto const dependencies = update.state.dependencies();
-                auto forked_paths = path->proceed(std::move(update), create_memory_patch(program, dependencies));
+                if (update_execution.empty())
+                    break;
 
-                // Store and enqueue each forked path
-                for (auto& forked_path : forked_paths)
+                std::forward_list<execution_path> resolved_update_execution;
+                for (auto& update_path : update_execution)
                 {
-                    paths_.push_front(std::move(forked_path));
-                    pending_paths.push_front(&paths_.front());
+                    memory_patch(program, update_path.state().dependencies()).resolve(&update_path.state());
+
+                    path->state().resolve(&update_path.condition());
+
+                    if (update_path.condition() == z3::expression::boolean_false())
+                        continue;
+
+                    resolved_update_execution.push_front(std::move(update_path));
                 }
+
+                auto update_path = resolved_update_execution.begin();
+                for (; std::next(update_path) != resolved_update_execution.end(); ++update_path)
+                {
+                    auto& next_path = execution_.emplace_front(*path);
+                    pending_paths.push_front(&next_path);
+
+                    next_path.proceed(std::move(*update_path));
+                }
+
+                path->proceed(std::move(*update_path));
             }
         }
         while (!pending_paths.empty());
     }
 
     template <typename Program>
-    execution_state
-        machine_monitor::create_memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies)
+    execution_state machine_monitor::memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies)
     {
         execution_state memory_patch;
         for (auto const& dependency : dependencies)

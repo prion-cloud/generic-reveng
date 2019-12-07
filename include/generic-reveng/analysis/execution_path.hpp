@@ -1,23 +1,20 @@
 #pragma once
 
-#include <forward_list>
-
-#include <generic-reveng/analysis/execution_update.hpp>
+#include <generic-reveng/analysis/execution_state.hpp>
 
 namespace grev
 {
     class execution_path : std::unordered_map<z3::expression, z3::expression const*>
     {
-        const_iterator start_jump_;
-
-        execution_state current_state_; // TODO Collect updates
-        iterator current_jump_;
+        const_iterator initial_jump_;
 
         z3::expression condition_;
+        execution_state state_;
+        iterator jump_;
 
     public:
 
-        explicit execution_path(std::uint32_t start_address);
+        explicit execution_path(z3::expression initial_jump);
         ~execution_path();
 
         execution_path(execution_path const& other);
@@ -25,16 +22,19 @@ namespace grev
 
         execution_path& operator=(execution_path other) noexcept;
 
-        std::forward_list<execution_path> proceed(execution_update update, execution_state const& memory_patch);
+        z3::expression& condition();
+        z3::expression const& condition() const;
 
-        std::optional<z3::expression> current_jump() const;
+        execution_state& state();
+        execution_state const& state() const;
+
+        void proceed(z3::expression jump);
+        void proceed(execution_path update_path);
+
+        std::optional<z3::expression> jump() const;
 
         // >>-----
         std::vector<std::uint32_t> addresses() const; // Testing seam TODO
         // -----<<
-
-    private:
-
-        void step(z3::expression jump);
     };
 }

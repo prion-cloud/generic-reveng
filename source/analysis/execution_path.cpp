@@ -1,21 +1,19 @@
-#include <climits>
-
 #include <generic-reveng/analysis/execution_path.hpp>
 
 namespace grev
 {
-    execution_path::execution_path(std::uint32_t const start_address) :
-        start_jump_(try_emplace(z3::expression(sizeof start_address * CHAR_BIT, start_address)).first),
-        current_jump_(begin()),
-        condition_(z3::expression::boolean_true()) { }
+    execution_path::execution_path(z3::expression initial_jump) :
+        initial_jump_(try_emplace(std::move(initial_jump)).first),
+        condition_(z3::expression::boolean_true()),
+        jump_(begin()) { }
     execution_path::~execution_path() = default;
 
     execution_path::execution_path(execution_path const& other) :
         std::unordered_map<z3::expression, z3::expression const*>(other),
-        start_jump_(find(other.start_jump_->first)),
-        current_state_(other.current_state_),
-        current_jump_(find(other.current_jump_->first)),
-        condition_(other.condition_)
+        initial_jump_(find(other.jump_->first)),
+        condition_(other.condition_),
+        state_(other.state_),
+        jump_(find(other.jump_->first))
     {
         for (auto& [jump, succeeding_jump] : *this)
         {
@@ -31,87 +29,83 @@ namespace grev
     {
         swap(other);
 
-        std::swap(start_jump_, other.start_jump_);
-
-        std::swap(current_state_, other.current_state_);
-        std::swap(current_jump_, other.current_jump_);
+        std::swap(initial_jump_, other.initial_jump_);
 
         std::swap(condition_, other.condition_);
+        std::swap(state_, other.state_);
+        std::swap(jump_, other.jump_);
 
         return *this;
     }
 
-    std::forward_list<execution_path> execution_path::proceed(execution_update update, execution_state const& memory_patch)
+    z3::expression& execution_path::condition()
     {
-        // TODO Support patching (?)
-
-        current_state_.resolve(&update.fork);
-        current_state_ += std::move(update.state);
-
-        // TODO Resolve jumps (?)
-        memory_patch.resolve(&current_state_);
-
-        if (update.fork.impasse())
-        {
-            current_jump_ = end();
-            return { };
-        }
-
-        // TODO Solve jump implications
-
-        auto fork_entry = update.fork.begin();
-
-        std::forward_list<execution_path> new_paths;
-        while (std::next(fork_entry) != update.fork.end())
-        {
-            auto& new_path = new_paths.emplace_front(*this);
-
-            auto fork_entry_node = update.fork.extract(fork_entry++);
-            new_path.condition_ &= fork_entry_node.key();
-            new_path.step(std::move(fork_entry_node.mapped()));
-        }
-
-        auto fork_entry_node = update.fork.extract(fork_entry);
-        condition_ &= fork_entry_node.key();
-        step(std::move(fork_entry_node.mapped()));
-
-        return new_paths;
+        return condition_;
+    }
+    z3::expression const& execution_path::condition() const
+    {
+        return condition_;
     }
 
-    std::optional<z3::expression> execution_path::current_jump() const
+    execution_state& execution_path::state()
     {
-        if (current_jump_ == end() || current_jump_->second != nullptr) // TODO Support loops with changing states
+        return state_;
+    }
+    execution_state const& execution_path::state() const
+    {
+        return state_;
+    }
+
+    void execution_path::proceed(z3::expression jump)
+    {
+        state_.resolve(&jump);
+
+        auto new_jump = try_emplace(std::move(jump)).first;
+
+        jump_->second = &new_jump->first;
+        jump_ = std::move(new_jump);
+    }
+    void execution_path::proceed(execution_path update_path)
+    {
+        for (auto jump = update_path.initial_jump_;; jump = update_path.find(*jump->second))
+        {
+            if (auto const* const next_jump = jump->second)
+                proceed(*next_jump);
+
+            if (jump == update_path.jump_)
+                break;
+        }
+
+        condition_ &= update_path.condition_;
+        state_ += std::move(update_path.state_);
+    }
+
+    std::optional<z3::expression> execution_path::jump() const
+    {
+        if (jump_->second != nullptr) // TODO Support loops with changing states
             return std::nullopt;
 
-        return current_jump_->first;
+        return jump_->first;
     }
 
     // >>-----
     std::vector<std::uint32_t> execution_path::addresses() const
     {
         std::vector<std::uint32_t> addresses;
-        for (auto jump = start_jump_;; jump = find(*jump->second))
+        for (auto jump = initial_jump_;; jump = find(*jump->second))
         {
             if (auto const address = jump->first.evaluate())
                 addresses.push_back(*address);
             else
                 break;
 
-            if (jump == current_jump_ || jump->second == nullptr)
+            if (jump == jump_ || jump->second == nullptr)
                 break;
         }
 
         return addresses;
     }
     // -----<<
-
-    void execution_path::step(z3::expression jump)
-    {
-        auto new_jump = try_emplace(std::move(jump)).first;
-
-        current_jump_->second = &new_jump->first;
-        current_jump_ = std::move(new_jump);
-    }
 }
 
 static_assert(std::is_destructible_v<grev::execution_path>);

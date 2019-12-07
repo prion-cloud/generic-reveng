@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include <generic-reveng/analysis/execution_fork.hpp>
+#include <generic-reveng/analysis/z3/expression.hpp>
 
 namespace grev
 {
@@ -20,8 +20,6 @@ namespace grev
         std::unordered_set<z3::expression> dependencies() const; // TODO Store as field
 
         void resolve(z3::expression* expression) const;
-
-        void resolve(execution_fork* fork) const;
         void resolve(execution_state* state) const;
 
         z3::expression const& operator[](z3::expression const& key) const;

@@ -42,25 +42,6 @@ namespace grev
         for (auto const& key : expression->dependencies())
             *expression = expression->resolve_dependency(key, operator[](key));
     }
-
-    void execution_state::resolve(execution_fork* const fork) const
-    {
-        if (empty())
-            return;
-
-        execution_fork resolved;
-        for (auto entry = fork->begin(); entry != fork->end();)
-        {
-            auto entry_node = fork->extract(entry++);
-
-            resolve(&entry_node.key());
-            resolve(&entry_node.mapped());
-
-            resolved.jump(std::move(entry_node.key()), std::move(entry_node.mapped()));
-        }
-
-        *fork = std::move(resolved);
-    }
     void execution_state::resolve(execution_state* const state) const
     {
         if (empty())

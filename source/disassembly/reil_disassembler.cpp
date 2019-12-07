@@ -127,8 +127,10 @@ namespace grev
         return *this;
     }
 
-    execution_update reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const code) const
+    execution reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const code) const
     {
+        execution_.emplace_front(z3::expression(sizeof(std::uint32_t) * CHAR_BIT, *address));
+
         std::vector<unsigned char> narrowed_code(
             code->begin(),
             std::next(
@@ -143,10 +145,10 @@ namespace grev
         *address += size;
         code->remove_prefix(size);
 
-        auto step_condition = z3::expression::boolean_true();
         auto step_value = *address;
         for (auto const& instruction : instructions_)
         {
+            auto& state = path().state();
             switch (instruction.op)
             {
             case I_NONE:
@@ -155,18 +157,18 @@ namespace grev
                 step_value = *address - size + 1;
                 break;
             case I_JCC:
-                jump(instruction.a, get_value(instruction.c), &step_condition);
+                jump(instruction.a, get_value(instruction.c));
                 break;
             case I_STR:
                 set_value(instruction.c, get_value(instruction.a));
                 break;
             case I_STM:
-                update_.state.define(
+                state.define(
                     get_value(instruction.c).dereference(get_width(instruction.a)),
                     get_value(instruction.a));
                 break;
             case I_LDM:
-                set_value(instruction.c, update_.state[get_value(instruction.a)].dereference(get_width(instruction.c)));
+                set_value(instruction.c, state[get_value(instruction.a)].dereference(get_width(instruction.c)));
                 break;
             case I_OR:
                 if (instruction.a.size != instruction.c.size)
@@ -190,33 +192,47 @@ namespace grev
                 break;
             }
 
-            if (step_condition == z3::expression::boolean_false())
+            if (path().condition() == z3::expression::boolean_false())
                 break;
         }
 
-        if (step_condition != z3::expression::boolean_false())
-            update_.fork.jump(std::move(step_condition), z3::expression(sizeof step_value * CHAR_BIT, step_value));
+        if (path().condition() == z3::expression::boolean_false())
+            execution_.pop_front();
+        else
+            path().proceed(z3::expression(sizeof step_value * CHAR_BIT, step_value));
 
         temporary_state_.clear();
-        return std::move(update_);
+        return std::move(execution_);
     }
 
-    void reil_disassembler::jump(_reil_arg_t const& argument, z3::expression value, z3::expression* const step_condition) const
+    execution_path& reil_disassembler::path() const
+    {
+        return execution_.front();
+    }
+
+    void reil_disassembler::jump(_reil_arg_t const& argument, z3::expression value) const
     {
         auto const jump_condition = argument.type == A_CONST && argument.val != 0
             ? z3::expression::boolean_true()
             : get_value(argument);
-        update_.fork.jump(*step_condition & jump_condition, std::move(value));
 
-        *step_condition &= ~jump_condition;
+        auto& forked_path = path();
+
+        execution_.push_front(path());
+
+        forked_path.condition() &= jump_condition;
+        forked_path.proceed(std::move(value));
+
+        path().condition() &= ~jump_condition;
     }
 
     z3::expression reil_disassembler::get_value(reil_arg_t const& argument) const
     {
+        auto& state = path().state();
         switch (argument.type)
         {
         case A_REG:
-            return update_.state[get_key(argument)];
+            return state[get_key(argument)];
         case A_TEMP:
             return temporary_state_[get_key(argument)];
         case A_CONST:
@@ -230,10 +246,11 @@ namespace grev
     {
         auto key = get_key(argument);
 
+        auto& state = path().state();
         switch (argument.type)
         {
         case A_REG:
-            update_.state.define(std::move(key), std::move(value));
+            state.define(std::move(key), std::move(value));
             break;
         case A_TEMP:
             temporary_state_.define(std::move(key), std::move(value));

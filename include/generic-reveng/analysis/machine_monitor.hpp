@@ -1,12 +1,12 @@
 #pragma once
 
-#include <generic-reveng/analysis/execution_path.hpp>
+#include <generic-reveng/analysis/execution.hpp>
 
 namespace grev
 {
     class machine_monitor
     {
-        std::forward_list<execution_path> paths_;
+        execution execution_;
 
     public:
 
@@ -20,7 +20,7 @@ namespace grev
     private:
 
         template <typename Program>
-        static execution_state create_memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies);
+        static execution_state memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies);
     };
 }
 
