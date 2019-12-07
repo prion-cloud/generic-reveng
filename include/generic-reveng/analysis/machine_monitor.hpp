@@ -1,17 +1,20 @@
 #pragma once
 
 #include <generic-reveng/analysis/execution.hpp>
+#include <generic-reveng/analysis/machine_program.hpp>
 
 namespace grev
 {
     class machine_monitor
     {
+        machine_program program_;
+
         execution execution_;
 
     public:
 
-        template <typename Disassembler, typename Program>
-        explicit machine_monitor(Disassembler const& disassembler, Program const& program);
+        template <typename Disassembler>
+        explicit machine_monitor(Disassembler const& disassembler, machine_program program);
 
         // >>-----
         std::vector<std::vector<std::uint32_t>> path_addresses() const; // Testing seam TODO
@@ -19,8 +22,7 @@ namespace grev
 
     private:
 
-        template <typename Program>
-        static execution_state memory_patch(Program const& program, std::unordered_set<z3::expression> const& dependencies);
+        execution_state memory_patch(std::unordered_set<z3::expression> const& dependencies) const;
     };
 }
 

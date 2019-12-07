@@ -6,7 +6,7 @@
 
 #include <generic-reveng/analysis/machine_monitor.hpp>
 #include <generic-reveng/disassembly/reil_disassembler.hpp> // TODO Mockup
-#include <generic-reveng/loading/program.hpp> // TODO Mockup
+#include <generic-reveng/loading/pe_loader.hpp>
 
 #include "test.hpp"
 
@@ -298,7 +298,7 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     // TODO x86_64, etc.
 
     grev::reil_disassembler const disassembler(architecture); // TODO Mockup
-    grev::program const program(data, architecture);
+    grev::machine_program const program(data, architecture);
 
     auto const actual_path_addresses =
         grev::machine_monitor(disassembler, program).path_addresses();
@@ -314,7 +314,7 @@ TEST_CASE("Real path inspection")
 
         SECTION("helloworld_32.exe")
         {
-            grev::program const p(read_test_data("helloworld_32.exe"));
+            auto const p = grev::machine_program::load<grev::pe_loader>(read_test_data("helloworld_32.exe"));
             CHECK(matches(grev::machine_monitor(d, p).path_addresses(), std::vector<std::vector<std::uint32_t>>
             {
                 // Incomplete, tailored to current functionality TODO
