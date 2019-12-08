@@ -12,7 +12,6 @@ namespace grev
         if (argument.type == A_LOC)
             return sizeof(std::uint32_t) * CHAR_BIT; // TODO Depending on machine architecture
 
-        // TODO U64
         switch (argument.size)
         {
         case U1:
@@ -23,6 +22,8 @@ namespace grev
             return sizeof(std::uint16_t) * CHAR_BIT;
         case U32:
             return sizeof(std::uint32_t) * CHAR_BIT;
+        case U64:
+            return sizeof(std::uint64_t) * CHAR_BIT;
         default:
             throw std::logic_error("Unexpected size");
         }

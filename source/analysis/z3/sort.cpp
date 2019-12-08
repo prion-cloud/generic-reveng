@@ -20,7 +20,7 @@ namespace grev::z3
             sort& operator=(sort const&) = delete;
             sort& operator=(sort&&) = delete;
         }
-        static const sort1{1}, sort7{7}, sort8{8}, sort15{15}, sort16{16}, sort31{31}, sort32{32};
+        static const sort1{1}, sort7{7}, sort8{8}, sort15{15}, sort16{16}, sort24{24}, sort31{31}, sort32{32}, sort48{48}, sort56{56}, sort63{63}, sort64{64};
 
         // TODO
         switch (width)
@@ -35,10 +35,20 @@ namespace grev::z3
             return sort15.base();
         case 16:
             return sort16.base();
+        case 24:
+            return sort24.base();
         case 31:
             return sort31.base();
         case 32:
             return sort32.base();
+        case 48:
+            return sort48.base();
+        case 56:
+            return sort56.base();
+        case 63:
+            return sort63.base();
+        case 64:
+            return sort64.base();
         default:
             throw std::logic_error("Unexpected width");
         }
