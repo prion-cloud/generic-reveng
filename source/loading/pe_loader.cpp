@@ -21,7 +21,7 @@ namespace grev
     }
     std::uint32_t pe_loader::entry_point_address() const
     {
-        return header_->optional.base_address + header_->optional.relative_start_address;
+        return header_->optional.base_address + header_->optional.relative_entry_point_address;
     }
 
     std::map<std::uint32_t, std::u8string_view> pe_loader::memory_segments() const
