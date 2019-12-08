@@ -10,7 +10,7 @@ namespace grev
 
     execution_path::execution_path(execution_path const& other) :
         std::unordered_map<z3::expression, z3::expression const*>(other),
-        initial_jump_(find(other.jump_->first)),
+        initial_jump_(find(other.initial_jump_->first)),
         condition_(other.condition_),
         state_(other.state_),
         jump_(find(other.jump_->first))
