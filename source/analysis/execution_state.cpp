@@ -81,9 +81,6 @@ namespace grev
 
     execution_state execution_state::operator+=(execution_state other)
     {
-        resolve(&other);
-
-        // TODO 'append' method (?)
         for (auto entry = other.begin(); entry != other.end();)
         {
             auto entry_node = other.extract(entry++);

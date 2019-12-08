@@ -56,10 +56,15 @@ namespace grev
         return state_;
     }
 
+    void execution_path::patch_jump(z3::expression value)
+    {
+        auto nh = extract(jump_);
+        nh.key() = std::move(value);
+        insert(std::move(nh));
+    }
+
     void execution_path::proceed(z3::expression jump)
     {
-        state_.resolve(&jump);
-
         auto new_jump = try_emplace(std::move(jump)).first;
 
         jump_->second = &new_jump->first;
@@ -76,8 +81,8 @@ namespace grev
                 break;
         }
 
-        condition_ &= update_path.condition_;
-        state_ += std::move(update_path.state_);
+        if (update_path.jump_->second != nullptr)
+            jump_->second = &find(*update_path.jump_->second)->first;
     }
 
     std::optional<z3::expression> execution_path::jump() const

@@ -28,6 +28,8 @@ namespace grev
         execution_state& state();
         execution_state const& state() const;
 
+        void patch_jump(z3::expression value);
+
         void proceed(z3::expression jump);
         void proceed(execution_path update_path);
 

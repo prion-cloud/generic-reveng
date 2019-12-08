@@ -13,6 +13,8 @@
 #define ADD_EAX_EBX 0x01, 0xD8
 #define ADD_EAX(v) 0x83, 0xC0, char8_t(v)
 #define CALL(v) 0xE8, char8_t{v}, 0x00, 0x00, 0x00
+#define CALL_DWORD_PTR_EAX 0xFF, 0x10
+#define CMP_DWORD_PTR_EAX(v) 0x83, 0x38, char8_t(v)
 #define INT3 0xCC
 #define JE(v) 0x74, char8_t(v)
 #define JMP(v) 0xEB, char8_t(v)
@@ -20,8 +22,10 @@
 #define JNE(v) 0x75, char8_t(v)
 #define MOV_EAX(v) 0xB8, char8_t(v), 0x00, 0x00, 0x00
 #define MOV_EBX(v) 0xBB, char8_t(v), 0x00, 0x00, 0x00
+#define MOV_DWORD_PTR_ESP(s, v) 0xC7, 0x44, 0x24, char8_t(s), char8_t(v), 0x00, 0x00, 0x00
 #define NOP 0x90
 #define RET 0xC3
+#define RET_(v) 0xC2, char8_t(v), 0x00
 
 TEST_CASE("Path inspection", "[grev::machine_monitor]")
 {
@@ -140,20 +144,6 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
             expected_path_addresses =
             {
                 { 0 }
-            };
-        }
-        SECTION("H")
-        {
-            data =
-            {
-                JE(-2), // <- WHILE
-                RET
-            };
-
-            expected_path_addresses =
-            {
-                { 0 },
-                { 0, 2 }
             };
         }
         SECTION("I")
@@ -280,6 +270,53 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
             expected_path_addresses =
             {
                 { 0, 6, 5 }
+            };
+        }
+        SECTION("P")
+        {
+            data =
+            {
+                MOV_EAX(8),             // 0
+                CALL_DWORD_PTR_EAX,     // 5
+                RET,                    // 7
+                0x0C, 0x00, 0x00, 0x00, // 8
+                RET                     // 12
+            };
+
+            expected_path_addresses =
+            {
+                { 0, 5, 12, 7 }
+            };
+        }
+        SECTION("Q")
+        {
+            data =
+            {
+                CALL(1), // 0
+                RET,     // 5
+                RET_(4)  // 6
+            };
+
+            expected_path_addresses =
+            {
+                { 0, 6, 5 }
+            };
+        }
+        SECTION("R")
+        {
+            data =
+            {
+                MOV_EAX(12),           //  0
+                CMP_DWORD_PTR_EAX(4),  //  5
+                JE(1),                 //  8
+                NOP,                   // 10
+                RET,                   // 11
+                0x04, 0x00, 0x00, 0x00 // 12
+            };
+
+            expected_path_addresses =
+            {
+                { 0, 5, 8, 11 }
             };
         }
     }
