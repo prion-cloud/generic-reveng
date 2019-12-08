@@ -158,7 +158,8 @@ namespace grev
                 step_value = *address - size + 1;
                 break;
             case I_JCC:
-                jump(instruction.a, get_value(instruction.c));
+                if (instruction.c.inum == 0) // Prohibit instruction-internal jumps (TODO)
+                    jump(instruction.a, get_value(instruction.c));
                 break;
             case I_STR:
                 set_value(instruction.c, get_value(instruction.a));
@@ -237,7 +238,7 @@ namespace grev
         case A_TEMP:
             return temporary_state_[get_key(argument)];
         case A_CONST:
-        case A_LOC: // TODO Prohibit inum
+        case A_LOC:
             return z3::expression(get_width(argument), argument.val);
         default:
             throw std::logic_error("Unexpected type");
