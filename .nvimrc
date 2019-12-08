@@ -4,7 +4,7 @@ let options = '
 \ -D LINT
 \
 \ -I include
-\ -I source
+\ -I source/grev-load
 \ -I test
 \
 \ -I submodule/openreil/libopenreil/include

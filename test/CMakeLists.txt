@@ -8,9 +8,9 @@ add_executable(test
 
 target_include_directories(test
     PRIVATE
-        ${PROJECT_SOURCE_DIR}/test)
+        ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(test
     PRIVATE
-        grev-analysis
-        grev-disassembly
-        grev-loading)
+        grev
+        grev-lift
+        grev-load)
