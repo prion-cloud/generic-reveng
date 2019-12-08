@@ -65,18 +65,15 @@ namespace grev
         *state = std::move(resolved);
     }
 
-    z3::expression const& execution_state::operator[](z3::expression const& key) const
+    z3::expression execution_state::operator[](z3::expression key) const
     {
-        const_iterator entry;
         if (auto key_reference = key.reference())
         {
             resolve(&*key_reference);
-            entry = find(key_reference->dereference(key.width()));
+            key = key_reference->dereference(key.width());
         }
-        else
-            entry = find(key);
 
-        if (entry != end())
+        if (auto const entry = find(key); entry != end())
             return entry->second;
 
         return key;

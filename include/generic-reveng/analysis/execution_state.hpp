@@ -22,7 +22,7 @@ namespace grev
         void resolve(z3::expression* expression) const;
         void resolve(execution_state* state) const;
 
-        z3::expression const& operator[](z3::expression const& key) const;
+        z3::expression operator[](z3::expression key) const;
 
         execution_state operator+=(execution_state);
     };
