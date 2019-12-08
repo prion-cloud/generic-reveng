@@ -1,3 +1,7 @@
+#include <fstream>
+
+#include <libgen.h>
+
 #include <generic-reveng/analysis/machine_program.hpp>
 
 namespace grev
@@ -38,5 +42,35 @@ namespace grev
         }
 
         return segment_data.substr(address - segment_address);
+    }
+
+    std::optional<machine_program> machine_program::load_imported(std::uint32_t const address) const
+    {
+        if (auto const import_map_entry = import_map_.find(address); import_map_entry != import_map_.end())
+        {
+            auto import = *import_map_entry->second;
+            import.entry_point_address_ = import_reals_.at(address);
+
+            return import;
+        }
+
+        return std::nullopt; // TODO
+    }
+
+    std::u8string machine_program::load_data(std::string const& file_name)
+    {
+        std::ifstream file_stream(file_name, std::ios::ate);
+
+        std::u8string data(file_stream.tellg(), '\0');
+
+        file_stream.seekg(0);
+        file_stream.read(reinterpret_cast<char*>(data.data()), data.size());
+
+        return data;
+    }
+
+    std::string machine_program::directory_name(std::string file_name)
+    {
+        return std::string{dirname(file_name.data())} + '/';
     }
 }
