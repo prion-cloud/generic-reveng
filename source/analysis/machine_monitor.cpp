@@ -15,6 +15,11 @@ namespace grev
     }
     // -----<<
 
+    std::unordered_map<std::uint32_t, std::forward_list<execution_state>> const& machine_monitor::import_calls() const
+    {
+        return import_calls_;
+    }
+
     execution_state machine_monitor::memory_patch(std::unordered_set<z3::expression> const& dependencies) const
     {
         execution_state memory_patch;
@@ -32,10 +37,46 @@ namespace grev
             if (!address)
                 continue;
 
-            auto data = program_[*address];
-
             auto const value_width = dependency.width();
             auto const value_width_bytes = (value_width - 1) / CHAR_BIT + 1; // TODO Possible underflow (?)
+
+            if (*address == 0x40336c)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0x00000000));
+                continue;
+            }
+            if (*address == 0x403370)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0x00130000));
+                continue;
+            }
+            if (*address == 0x40337c)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0x00000001));
+                continue;
+            }
+            if (*address == 0x403380)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0x00000000));
+                continue;
+            }
+            if (*address == 0x7ffe0014)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0xed72313c));
+                continue;
+            }
+            if (*address == 0x7ffe0018 || *address == 0x7ffe001c)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0x01d5adc1));
+                continue;
+            }
+            if (*address == 0x7ffe0300)
+            {
+                memory_patch.define(dependency, z3::expression(value_width, 0x7c90e4f0));
+                continue;
+            }
+
+            auto data = program_[*address];
 
             if (data.size() < value_width_bytes)
                 continue;

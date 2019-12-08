@@ -52,15 +52,44 @@ namespace grev
                 }
                 else break;
 
-                // Stop if no (more) code is available
+                execution update_execution;
                 if (code.empty())
-                    break;
+                {
+                    execution const* import_execution;
+                    if (auto const cached = import_cache_.find(*address); cached != import_cache_.end())
+                    {
+                        // Use cached entry
+                        import_execution = &cached->second;
+                    }
+                    else if (auto const import = program_.load_imported(*address))
+                    {
+                        // Create new and cache
+                        auto const cached = import_cache_.try_emplace(*address).first;
+                        for (auto const& import_path : machine_monitor(disassembler, *import).execution_)
+                            cached->second.push_front(import_path); // TODO move
+                        import_execution = &cached->second;
+                    }
+                    else break; // TODO Do not rely on missing code for import call detection.
 
-                // Disassemble next code
-                auto update_execution = disassembler(&*address, &code);
+                    execution_state call_state;
+                    for (auto const& current_state = path->state(); auto const& import_path : *import_execution)
+                    {
+                        auto const& import_state = import_path.state();
 
-                if (update_execution.empty())
-                    break;
+                        // TODO Use conditions
+                        for (auto const& import_path_dependency : import_state.dependencies())
+                            call_state.define(import_path_dependency, current_state[import_path_dependency]);
+                    }
+
+                    import_calls_[*address].push_front(call_state);
+
+                    update_execution = std::move(*import_execution);
+                }
+                else
+                {
+                    // Disassemble next code
+                    update_execution = disassembler(&*address, &code);
+                }
 
                 std::forward_list<execution_path> resolved_update_execution;
                 for (auto& update_path : update_execution)

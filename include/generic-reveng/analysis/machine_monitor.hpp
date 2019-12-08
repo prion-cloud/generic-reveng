@@ -11,6 +11,9 @@ namespace grev
 
         execution execution_;
 
+        std::unordered_map<std::uint32_t, execution> import_cache_; // Previously executed imports to be reused
+        std::unordered_map<std::uint32_t, std::forward_list<execution_state>> import_calls_; // The execution states during import calls, trimmed to the import's dependencies
+
     public:
 
         template <typename Disassembler>
@@ -19,6 +22,8 @@ namespace grev
         // >>-----
         std::vector<std::vector<std::uint32_t>> path_addresses() const; // Testing seam TODO
         // -----<<
+
+        std::unordered_map<std::uint32_t, std::forward_list<execution_state>> const& import_calls() const;
 
     private:
 
