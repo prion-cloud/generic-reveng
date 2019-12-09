@@ -17,7 +17,7 @@ namespace grev
 
         mutable std::list<_reil_inst_t> instructions_;
 
-        mutable execution execution_;
+        mutable std::forward_list<execution_path> update_paths_;
         mutable execution_state temporary_state_;
 
     public:
@@ -30,7 +30,7 @@ namespace grev
 
         reil_disassembler& operator=(reil_disassembler other) noexcept;
 
-        execution operator()(std::uint32_t* address, std::u8string_view* code) const;
+        std::forward_list<execution_path> operator()(std::uint32_t* address, std::u8string_view* code) const;
 
     private:
 

@@ -6,5 +6,13 @@
 
 namespace grev
 {
-    using execution = std::forward_list<execution_path>;
+    struct execution
+    {
+        std::forward_list<execution_path> paths;
+
+        /*!
+         *  The execution states during import calls, trimmed to the respective import's dependencies.
+         */
+        std::unordered_map<std::uint32_t, std::forward_list<execution_state>> import_calls;
+    };
 }

@@ -128,9 +128,10 @@ namespace grev
         return *this;
     }
 
-    execution reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const code) const
+    std::forward_list<execution_path>
+        reil_disassembler::operator()(std::uint32_t* const address, std::u8string_view* const code) const
     {
-        execution_.emplace_front(z3::expression(sizeof(std::uint32_t) * CHAR_BIT, *address));
+        update_paths_.emplace_front(z3::expression(sizeof(std::uint32_t) * CHAR_BIT, *address));
 
         std::vector<unsigned char> narrowed_code(
             code->begin(),
@@ -199,17 +200,17 @@ namespace grev
         }
 
         if (path().condition() == z3::expression::boolean_false())
-            execution_.pop_front();
+            update_paths_.pop_front();
         else
             path().proceed(z3::expression(sizeof step_value * CHAR_BIT, step_value));
 
         temporary_state_.clear();
-        return std::move(execution_);
+        return std::move(update_paths_);
     }
 
     execution_path& reil_disassembler::path() const
     {
-        return execution_.front();
+        return update_paths_.front();
     }
 
     void reil_disassembler::jump(_reil_arg_t const& argument, z3::expression value) const
@@ -220,7 +221,7 @@ namespace grev
 
         auto& forked_path = path();
 
-        execution_.push_front(path());
+        update_paths_.push_front(path());
 
         forked_path.condition() &= jump_condition;
         forked_path.proceed(std::move(value));

@@ -1,17 +1,18 @@
 #include <climits>
 
 #ifdef LINT
-#include <grev/machine_monitor.hpp>
+#include <grev/machine_process.hpp>
 #endif
 
 namespace grev
 {
     template <typename Disassembler>
-    machine_monitor::machine_monitor(Disassembler const& disassembler, machine_program program) :
-        program_(std::move(program))
+    execution machine_process::execute(Disassembler const& disassembler) const
     {
+        execution execution;
+
         auto& initial_path =
-            execution_.emplace_front(z3::expression(sizeof(std::uint32_t) * CHAR_BIT, program_.entry_point_address()));
+            execution.paths.emplace_front(z3::expression(sizeof(std::uint32_t) * CHAR_BIT, program_.entry_point_address()));
 
         std::forward_list<execution_path*> pending_paths;
         pending_paths.push_front(&initial_path);
@@ -52,47 +53,36 @@ namespace grev
                 }
                 else break;
 
-                execution update_execution;
+                std::forward_list<execution_path> update_paths;
                 if (code.empty())
                 {
-                    execution const* import_execution;
-                    if (auto const cached = import_cache_.find(*address); cached != import_cache_.end())
+                    if (auto import = program_.load_imported(*address))
                     {
-                        // Use cached entry
-                        import_execution = &cached->second;
-                    }
-                    else if (auto const import = program_.load_imported(*address))
-                    {
-                        // Create new and cache
-                        auto const cached = import_cache_.try_emplace(*address).first;
-                        for (auto const& import_path : machine_monitor(disassembler, *import).execution_)
-                            cached->second.push_front(import_path); // TODO move
-                        import_execution = &cached->second;
+                        auto const import_execution = machine_process(std::move(*import), patches_).execute(disassembler);
+                        update_paths = std::move(import_execution.paths);
                     }
                     else break; // TODO Do not rely on missing code for import call detection.
 
                     execution_state call_state;
-                    for (auto const& current_state = path->state(); auto const& import_path : *import_execution)
+                    for (auto const& import_path : update_paths)
                     {
                         auto const& import_state = import_path.state();
 
                         // TODO Use conditions
                         for (auto const& import_path_dependency : import_state.dependencies())
-                            call_state.define(import_path_dependency, current_state[import_path_dependency]);
+                            call_state.define(import_path_dependency, path->state()[import_path_dependency]);
                     }
 
-                    import_calls_[*address].push_front(call_state);
-
-                    update_execution = std::move(*import_execution);
+                    execution.import_calls[*address].push_front(call_state);
                 }
                 else
                 {
                     // Disassemble next code
-                    update_execution = disassembler(&*address, &code);
+                    update_paths = disassembler(&*address, &code);
                 }
 
-                std::forward_list<execution_path> resolved_update_execution;
-                for (auto& update_path : update_execution)
+                std::forward_list<execution_path> resolved_update_paths;
+                for (auto& update_path : update_paths)
                 {
                     if (auto const update_jump = update_path.jump())
                     {
@@ -112,16 +102,16 @@ namespace grev
                     if (update_path.condition() == z3::expression::boolean_false())
                         continue;
 
-                    resolved_update_execution.push_front(std::move(update_path));
+                    resolved_update_paths.push_front(std::move(update_path));
                 }
 
-                if (resolved_update_execution.empty())
+                if (resolved_update_paths.empty())
                     break;
 
-                auto update_path = resolved_update_execution.begin();
-                for (; std::next(update_path) != resolved_update_execution.end(); ++update_path)
+                auto update_path = resolved_update_paths.begin();
+                for (; std::next(update_path) != resolved_update_paths.end(); ++update_path)
                 {
-                    auto& next_path = execution_.emplace_front(*path);
+                    auto& next_path = execution.paths.emplace_front(*path);
                     pending_paths.push_front(&next_path);
 
                     next_path.condition() &= update_path->condition();
@@ -135,10 +125,12 @@ namespace grev
             }
         }
         while (!pending_paths.empty());
+
+        return execution;
     }
 }
 
 #ifdef LINT
 #include <grev-lift/reil_disassembler.hpp>
-template grev::machine_monitor::machine_monitor(grev::reil_disassembler const&, grev::machine_program);
+template grev::execution grev::machine_process::execute(grev::reil_disassembler const&) const;
 #endif

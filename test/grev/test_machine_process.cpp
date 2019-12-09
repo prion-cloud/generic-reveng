@@ -4,7 +4,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <grev/machine_monitor.hpp>
+#include <grev/machine_process.hpp>
 #include <grev-lift/reil_disassembler.hpp> // TODO Mockup
 #include <grev-load/pe_loader.hpp>
 
@@ -27,7 +27,16 @@
 #define RET 0xC3
 #define RET_(v) 0xC2, char8_t(v), 0x00
 
-TEST_CASE("Path inspection", "[grev::machine_monitor]")
+std::vector<std::vector<std::uint32_t>> get_path_addresses(std::forward_list<grev::execution_path> const& paths)
+{
+    std::vector<std::vector<std::uint32_t>> path_addresses;
+    for (auto const& path : paths)
+        path_addresses.push_back(path.addresses());
+
+    return path_addresses;
+}
+
+TEST_CASE("Path inspection", "[grev::machine_process]")
 {
     grev::machine_architecture architecture;
     std::u8string data;
@@ -325,21 +334,32 @@ TEST_CASE("Path inspection", "[grev::machine_monitor]")
     grev::reil_disassembler const disassembler(architecture); // TODO Mockup
     grev::machine_program const program(data, architecture);
 
-    auto const actual_path_addresses =
-        grev::machine_monitor(disassembler, program).path_addresses();
+    auto const execution = grev::machine_process(program, { }).execute(disassembler);
+    auto const actual_path_addresses = get_path_addresses(execution.paths);
 
     CHECK(matches(actual_path_addresses, expected_path_addresses));
 }
-TEST_CASE("Real path inspection")
+TEST_CASE("Real path inspection", "[grev::machine_process]")
 {
     SECTION("x86_32")
     {
-        grev::reil_disassembler const d(grev::machine_architecture::x86_32);
+        grev::reil_disassembler const disassembler(grev::machine_architecture::x86_32);
 
         SECTION("helloworld_32.exe")
         {
-            auto const p = grev::machine_program::load<grev::pe_loader>("/home/superbr4in/hello_world_32/hello_world_32.exe");
-            CHECK(matches(grev::machine_monitor(d, p).path_addresses(), std::vector<std::vector<std::uint32_t>>
+            grev::machine_process const process(
+                grev::machine_program::load<grev::pe_loader>("/home/superbr4in/hello_world_32/hello_world_32.exe"),
+                {
+                    { 0x0040336C, std::u8string(u8"\x00\x00\x00\x00", 4) },
+                    { 0x00403370, std::u8string(u8"\x00\x00\x13\x00", 4) },
+                    { 0x0040337C, std::u8string(u8"\x01\x00\x00\x00", 4) },
+                    { 0x00403380, std::u8string(u8"\x00\x00\x00\x00", 4) },
+                    { 0x7FFE0014, std::u8string(u8"\x3C\x31\x72\xED", 4) },
+                    { 0x7FFE0018, std::u8string(u8"\xC1\xAD\xD5\x01", 4) },
+                    { 0x7FFE001C, std::u8string(u8"\xC1\xAD\xD5\x01", 4) },
+                    { 0x7FFE0300, std::u8string(u8"\xF0\xE4\x90\x7C", 4) }
+                });
+            CHECK(matches(get_path_addresses(process.execute(disassembler).paths), std::vector<std::vector<std::uint32_t>>
             {
                 // Incomplete, tailored to current functionality TODO
                 {
