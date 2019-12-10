@@ -7,13 +7,13 @@ namespace grev
 {
     class machine_process
     {
-        machine_program program_;
+        machine_program const& program_;
 
         std::unordered_map<std::uint32_t, std::u8string> patches_;
 
     public:
 
-        machine_process(machine_program program, std::unordered_map<std::uint32_t, std::u8string> patches);
+        machine_process(machine_program const& program, std::unordered_map<std::uint32_t, std::u8string> patches);
 
         template <typename Disassembler>
         execution execute(Disassembler const& disassembler) const;

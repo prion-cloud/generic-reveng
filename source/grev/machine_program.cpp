@@ -54,7 +54,12 @@ namespace grev
             return import;
         }
 
-        return std::nullopt; // TODO
+        return std::nullopt;
+    }
+
+    std::string const& machine_program::import_name(std::uint32_t address) const
+    {
+        return import_names_.at(address);
     }
 
     std::u8string machine_program::load_data(std::string const& file_name)

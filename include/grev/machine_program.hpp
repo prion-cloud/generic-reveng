@@ -45,6 +45,8 @@ namespace grev
 
         std::optional<machine_program> load_imported(std::uint32_t address) const;
 
+        std::string const& import_name(std::uint32_t address) const;
+
         template <typename Loader>
         static machine_program load(std::string const& file_name);
 

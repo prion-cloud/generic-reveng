@@ -70,10 +70,19 @@ namespace grev
 
                         // TODO Use conditions
                         for (auto const& import_path_dependency : import_state.dependencies())
-                            call_state.define(import_path_dependency, path->state()[import_path_dependency]);
+                        {
+                            auto ipd_copy = import_path_dependency;
+                            if (auto import_path_dependency_reference = import_path_dependency.reference())
+                            {
+                                path->state().resolve(&*import_path_dependency_reference);
+                                ipd_copy = import_path_dependency_reference->dereference(import_path_dependency.width());
+                            }
+
+                            call_state.define(std::move(ipd_copy), path->state()[import_path_dependency]);
+                        }
                     }
 
-                    execution.import_calls[*address].push_front(call_state);
+                    execution.import_calls.emplace_back(*address, std::move(call_state));
                 }
                 else
                 {

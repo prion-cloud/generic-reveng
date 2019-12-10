@@ -12,6 +12,9 @@ namespace grev
 
         using std::unordered_map<z3::expression, z3::expression>::clear;
 
+        using std::unordered_map<z3::expression, z3::expression>::begin;
+        using std::unordered_map<z3::expression, z3::expression>::end;
+
         /*!
          *  Sets a new unbound value to a certain, possibly existing key.
          */

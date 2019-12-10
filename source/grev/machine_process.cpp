@@ -4,8 +4,8 @@
 
 namespace grev
 {
-    machine_process::machine_process(machine_program program, std::unordered_map<std::uint32_t, std::u8string> patches) :
-        program_(std::move(program)),
+    machine_process::machine_process(machine_program const& program, std::unordered_map<std::uint32_t, std::u8string> patches) :
+        program_(program),
         patches_(std::move(patches)) { }
 
     execution_state machine_process::memory_patch(std::unordered_set<z3::expression> const& dependencies) const
@@ -53,5 +53,5 @@ static_assert(std::is_destructible_v<grev::machine_process>);
 static_assert(std::is_copy_constructible_v<grev::machine_process>);
 static_assert(std::is_nothrow_move_constructible_v<grev::machine_process>);
 
-static_assert(std::is_copy_assignable_v<grev::machine_process>);
-static_assert(std::is_nothrow_move_assignable_v<grev::machine_process>);
+static_assert(!std::is_copy_assignable_v<grev::machine_process>); // TODO
+static_assert(!std::is_nothrow_move_assignable_v<grev::machine_process>); // TODO

@@ -347,8 +347,8 @@ TEST_CASE("Real path inspection", "[grev::machine_process]")
 
         SECTION("helloworld_32.exe")
         {
-            grev::machine_process const process(
-                grev::machine_program::load<grev::pe_loader>("/home/superbr4in/hello_world_32/hello_world_32.exe"),
+            auto const prog = grev::machine_program::load<grev::pe_loader>("/home/superbr4in/hello_world_32/hello_world_32.exe");
+            grev::machine_process const process(prog,
                 {
                     { 0x0040336C, std::u8string(u8"\x00\x00\x00\x00", 4) },
                     { 0x00403370, std::u8string(u8"\x00\x00\x13\x00", 4) },

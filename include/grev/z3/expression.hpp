@@ -41,6 +41,8 @@ namespace grev::z3
 
         unsigned width() const;
 
+        std::string str() const;
+
         /*!
          *  Evaluates the expression to an integral value if possible.
          *  \returns Potential evaluation result

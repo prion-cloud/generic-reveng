@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include <grev/z3/context.hpp>
 #include <grev/z3/expression.hpp>
 #include <grev/z3/sort.hpp>
@@ -15,6 +17,14 @@ namespace grev::z3
     unsigned expression::width() const
     {
         return Z3_get_bv_sort_size(context(), Z3_get_sort(context(), base()));
+    }
+
+    std::string expression::str() const
+    {
+        std::ostringstream oss;
+        oss << Z3_ast_to_string(grev::z3::context(), base()) << " [" << width() << "]";
+
+        return oss.str();
     }
 
     std::optional<std::uint32_t> expression::evaluate() const
