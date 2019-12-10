@@ -1,22 +1,51 @@
 # Generic Reverse Engineering
 
-Adaptive C++ APIs for solving fundamental challenges in reversing compiled software.
+Static binary analysis through symbolic execution
 
-## Projects
+___THIS PROJECT IS A WORK IN PROGRESS AND THEREFORE NOT READY TO BE USED IN PRODUCTION___
 
-Independently compilable shared libraries providing various functionalities for each other.
+## API
 
-### Analysis
+A program analysis outputs an [`execution`](include/grev/execution.hpp) structure that contains:
+* Code paths a program possibly takes (e.g. depending on user input).
+* Import function calls including the respective values of their parameters.
 
-Static program analyzer
+Start with a [`machine_process`](include/grev/machine_process.hpp) to examine software.
 
-### Disassembly
+## Example
 
-Collection of machine code disassemblers for analysis
+Consider a compiled program containing x86/32 instructions.
+A detected call to `printf` may create the following dependency:
+```
+[ESP - 48] := 004020F4 -> "Hello, world!"
+```
 
-### Loading
+This clearly shows a parameter access through the stack, particularly in `[ESP - 48]`.
+From the program's perspective, the stack has already been increased in size, but during the library function, the parameter value is referred to as `[ESP + 4]`, just like familiar calling conventions would suggest.
 
-Executable file format reader
+Function arguments are revealed through the use of unbound (therefore unknown) registers and memory locations.
+Evaluating these unknowns using the computed program state at the function call lead to the actual passed parameter values; in this particular example `004020F4`. The attempt to interpret this value as a memory location shows that it points to a `Hello, world!` string, the text to be printed.
+
+## Build
+
+Be sure to get all dependencies.
+```
+git submodule update --init --recursive
+```
+Use a different directory for the build tree.
+```
+mkdir build
+cd build
+```
+Configure and compile the code using [CMake](https://cmake.org/).
+```
+cmake ..
+make
+```
+
+## Test
+
+To run the tests, a [Catch2](https://github.com/catchorg/Catch2) installation is required.
 
 ## License
 
